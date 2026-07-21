@@ -5,6 +5,10 @@ import { WEEK, BADGES, DEFAULT_TARGET_DATE, type TaskTemplate } from "./forge-da
 
 export interface DayRecord {
   checked: Record<string, boolean>; // taskId -> done
+  session?: {
+    startedAt?: string;
+    completedAt?: string;
+  };
   journal?: {
     energy?: number; // 1..10
     fatigue?: number;
@@ -34,6 +38,10 @@ export interface ForgeState {
   days: Record<string, DayRecord>; // yyyy-mm-dd
   perf: PerfEntry[];
   badges: string[]; // ids unlocked
+  activeSession?: {
+    date: string;
+    startedAt: string;
+  };
 }
 
 const KEY = "forge.state.v1";
@@ -52,6 +60,8 @@ interface Ctx {
   state: ForgeState;
   setState: (s: ForgeState | ((prev: ForgeState) => ForgeState)) => void;
   toggleTask: (date: string, taskId: string) => void;
+  startSession: (date: string) => void;
+  finishSession: (date: string) => void;
   setJournal: (date: string, journal: DayRecord["journal"]) => void;
   setPsycho: (date: string, psycho: DayRecord["psycho"]) => void;
   addPerf: (entry: Omit<PerfEntry, "id">) => void;
@@ -70,7 +80,9 @@ export function ForgeProvider({ children }: { children: ReactNode }) {
     try {
       const raw = localStorage.getItem(KEY);
       if (raw) setState({ ...initial, ...JSON.parse(raw) });
-    } catch {}
+    } catch {
+      // Local storage can be unavailable in restricted browser contexts.
+    }
     setHydrated(true);
   }, []);
 
@@ -78,7 +90,9 @@ export function ForgeProvider({ children }: { children: ReactNode }) {
     if (!hydrated) return;
     try {
       localStorage.setItem(KEY, JSON.stringify(state));
-    } catch {}
+    } catch {
+      // Persistence is best-effort; the UI remains usable without it.
+    }
   }, [state, hydrated]);
 
   const value: Ctx = useMemo(
@@ -90,19 +104,68 @@ export function ForgeProvider({ children }: { children: ReactNode }) {
         setState((prev) => {
           const day = prev.days[date] ?? { checked: {} };
           const checked = { ...day.checked, [taskId]: !day.checked[taskId] };
+          const completed = tasksForDate(date).every((task) => checked[task.id]);
           const newBadges = new Set(prev.badges);
           if (Object.values(checked).some(Boolean)) newBadges.add("first");
-          return { ...prev, days: { ...prev.days, [date]: { ...day, checked } }, badges: [...newBadges] };
+          return {
+            ...prev,
+            activeSession:
+              completed && prev.activeSession?.date === date ? undefined : prev.activeSession,
+            days: {
+              ...prev.days,
+              [date]: {
+                ...day,
+                checked,
+                session: {
+                  ...day.session,
+                  completedAt: completed ? new Date().toISOString() : undefined,
+                },
+              },
+            },
+            badges: [...newBadges],
+          };
+        }),
+      startSession: (date) =>
+        setState((prev) => {
+          const day = prev.days[date] ?? { checked: {} };
+          const startedAt = day.session?.startedAt ?? new Date().toISOString();
+          return {
+            ...prev,
+            activeSession: { date, startedAt },
+            days: {
+              ...prev.days,
+              [date]: { ...day, session: { ...day.session, startedAt } },
+            },
+          };
+        }),
+      finishSession: (date) =>
+        setState((prev) => {
+          const day = prev.days[date] ?? { checked: {} };
+          const completedAt = new Date().toISOString();
+          return {
+            ...prev,
+            activeSession: prev.activeSession?.date === date ? undefined : prev.activeSession,
+            days: {
+              ...prev.days,
+              [date]: { ...day, session: { ...day.session, completedAt } },
+            },
+          };
         }),
       setJournal: (date, journal) =>
         setState((prev) => {
           const day = prev.days[date] ?? { checked: {} };
-          return { ...prev, days: { ...prev.days, [date]: { ...day, journal: { ...day.journal, ...journal } } } };
+          return {
+            ...prev,
+            days: { ...prev.days, [date]: { ...day, journal: { ...day.journal, ...journal } } },
+          };
         }),
       setPsycho: (date, psycho) =>
         setState((prev) => {
           const day = prev.days[date] ?? { checked: {} };
-          return { ...prev, days: { ...prev.days, [date]: { ...day, psycho: { ...day.psycho, ...psycho } } } };
+          return {
+            ...prev,
+            days: { ...prev.days, [date]: { ...day, psycho: { ...day.psycho, ...psycho } } },
+          };
         }),
       addPerf: (entry) =>
         setState((prev) => {
@@ -116,7 +179,8 @@ export function ForgeProvider({ children }: { children: ReactNode }) {
           if (entry.type === "luc" && entry.value >= 12) badges.add("goalLuc");
           return { ...prev, perf: withEntry, badges: [...badges] };
         }),
-      removePerf: (id) => setState((prev) => ({ ...prev, perf: prev.perf.filter((p) => p.id !== id) })),
+      removePerf: (id) =>
+        setState((prev) => ({ ...prev, perf: prev.perf.filter((p) => p.id !== id) })),
       reset: () => setState(initial),
     }),
     [state, hydrated],
@@ -218,7 +282,9 @@ export function unlockBadges(state: ForgeState): string[] {
   const streak = computeStreak(state);
   if (streak >= 7) b.add("streak7");
   if (streak >= 30) b.add("streak30");
-  const totalRun = state.perf.filter((p) => p.type === "run5" || p.type === "run10").reduce((s, p) => s + p.value, 0);
+  const totalRun = state.perf
+    .filter((p) => p.type === "run5" || p.type === "run10")
+    .reduce((s, p) => s + p.value, 0);
   if (totalRun >= 100) b.add("run100");
   const totalSwim = 0; // could sum a swim perf if added
   if (totalSwim >= 50) b.add("swim50");

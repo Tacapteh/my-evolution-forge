@@ -16,12 +16,18 @@ export interface TaskTemplate {
   label: string;
   type: TaskType;
   detail?: string;
+  moment?: "morning" | "afternoon" | "evening" | "psychotechniques";
+  estimatedMinutes?: number;
+  rest?: string;
+  steps?: string[];
   xp: number;
 }
 
 export interface DayTemplate {
   name: string; // Lundi, Mardi...
   objective: string;
+  title?: string;
+  priority?: "Haute" | "Normale" | "Recuperation";
   tasks: TaskTemplate[];
 }
 

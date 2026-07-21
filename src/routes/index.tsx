@@ -1,19 +1,19 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { PageHeader } from "@/components/forge/AppShell";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Flame, Target, ArrowRight, Dumbbell, Timer, Footprints, Award, CheckCircle2 } from "lucide-react";
 import {
-  useForge,
-  todayISO,
-  tasksForDate,
-  dayTemplate,
-  xpForDate,
-  computeStreak,
-  daysUntil,
-  totalXP,
-} from "@/lib/forge-store";
+  Flame,
+  Target,
+  ArrowRight,
+  Dumbbell,
+  Timer,
+  Footprints,
+  Award,
+  CheckCircle2,
+} from "lucide-react";
+import { useForge, todayISO, computeStreak, daysUntil, totalXP } from "@/lib/forge-store";
 import {
   StatCard,
   XPCard,
@@ -21,31 +21,30 @@ import {
   ObjectiveCard,
   SectionTitle,
 } from "@/components/forge/primitives";
-import { MissionCard } from "@/components/forge/MissionCard";
 import { DailyChecklist } from "@/components/forge/DailyChecklist";
-import { FocusMode } from "@/components/forge/FocusMode";
+import { DayMissionCard, FocusSessionPanel } from "@/components/forge/program-components";
+import { buildDayMission } from "@/lib/forge-program";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/")({
   component: Dashboard,
-  head: () => ({ meta: [{ title: "Dashboard — FORGE" }] }),
+  head: () => ({ meta: [{ title: "Dashboard - FORGE" }] }),
 });
 
 function Dashboard() {
-  const { state, hydrated, toggleTask } = useForge();
+  const { state, hydrated, toggleTask, startSession } = useForge();
   const iso = todayISO();
-  const tpl = dayTemplate(iso);
-  const tasks = tasksForDate(iso);
-  const day = state.days[iso];
-  const checked = day?.checked ?? {};
-  const done = tasks.filter((t) => checked[t.id]).length;
-  const xpToday = xpForDate(state, iso);
+  const mission = buildDayMission(state, iso);
+  const tasks = mission.tasks;
+  const checked = state.days[iso]?.checked ?? {};
+  const done = mission.doneCount;
+  const xpToday = mission.xp;
   const streak = hydrated ? computeStreak(state) : 0;
   const dLeft = daysUntil(state.targetDate);
   const total = totalXP(state);
 
   const [focus, setFocus] = useState(false);
 
-  // Weekly completion (last 7 days)
   const weekDone = (() => {
     let count = 0;
     for (let i = 0; i < 7; i++) {
@@ -58,11 +57,17 @@ function Dashboard() {
     return count;
   })();
 
-  const sessionsDone = Object.values(state.days).filter((d) => Object.values(d.checked).some(Boolean)).length;
-
+  const sessionsDone = Object.values(state.days).filter((d) =>
+    Object.values(d.checked).some(Boolean),
+  ).length;
   const bestPull = Math.max(0, ...state.perf.filter((p) => p.type === "pull").map((p) => p.value));
-  const bestChair = Math.max(0, ...state.perf.filter((p) => p.type === "chair").map((p) => p.value));
-  const totalRun = state.perf.filter((p) => p.type === "run5" || p.type === "run10").reduce((s, p) => s + p.value, 0);
+  const bestChair = Math.max(
+    0,
+    ...state.perf.filter((p) => p.type === "chair").map((p) => p.value),
+  );
+  const totalRun = state.perf
+    .filter((p) => p.type === "run5" || p.type === "run10")
+    .reduce((s, p) => s + p.value, 0);
   const bestLuc = Math.max(0, ...state.perf.filter((p) => p.type === "luc").map((p) => p.value));
 
   const [celebrate, setCelebrate] = useState(false);
@@ -74,50 +79,57 @@ function Dashboard() {
     }
   }, [done, tasks.length, hydrated]);
 
+  const handleToggle = (id: string) => {
+    const task = tasks.find((item) => item.id === id);
+    const wasDone = !!checked[id];
+    toggleTask(iso, id);
+    if (task && !wasDone) toast.success(`+${task.xp} XP`, { description: task.label });
+  };
+
   return (
     <div>
       <PageHeader
         title={`Bonjour ${state.userName}`}
-        subtitle={`${tpl.name} — ${tpl.objective}`}
+        subtitle={`${mission.dayName} - ${mission.objective}`}
         right={
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <Badge variant="outline" className="border-primary/30 text-primary">
-              <Flame className="h-3 w-3 mr-1" /> {streak}j
+              <Flame className="mr-1 h-3 w-3" /> {streak}j
             </Badge>
-            <span className="hidden sm:inline-flex items-center gap-1">
-              <Target className="h-3 w-3" /> J–{dLeft}
+            <span className="hidden items-center gap-1 sm:inline-flex">
+              <Target className="h-3 w-3" /> J-{dLeft}
             </span>
           </div>
         }
       />
 
-      <div className="px-4 md:px-8 pb-10 space-y-6">
-        {/* Mission + résumé rapide */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
-          <div className="lg:col-span-2 relative">
+      <div className="space-y-6 px-4 pb-10 md:px-8">
+        <div className="grid grid-cols-1 gap-4 md:gap-6 lg:grid-cols-3">
+          <div className="relative lg:col-span-2">
             {celebrate && (
               <div className="pointer-events-none absolute -inset-4 rounded-3xl bg-primary/10 blur-2xl animate-fade-in" />
             )}
-            <MissionCard
-              dayName={tpl.name}
-              objective={tpl.objective}
-              tasks={tasks}
-              done={done}
-              onStart={() => setFocus(true)}
+            <DayMissionCard
+              mission={mission}
+              checked={checked}
+              onToggle={handleToggle}
+              onStart={() => {
+                startSession(iso);
+                setFocus(true);
+              }}
             />
           </div>
 
-          <div className="grid grid-cols-2 lg:grid-cols-1 gap-4 md:gap-6">
+          <div className="grid grid-cols-2 gap-4 md:gap-6 lg:grid-cols-1">
             <XPCard totalXP={total} xpToday={xpToday} />
             <StreakCard streak={streak} daysLeft={dLeft} />
           </div>
         </div>
 
-        {/* Progression rapide */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
           <StatCard
             icon={<CheckCircle2 className="h-4 w-4" />}
-            label="Séances totales"
+            label="Seances totales"
             value={sessionsDone}
             suffix="jours actifs"
           />
@@ -132,57 +144,86 @@ function Dashboard() {
             icon={<Target className="h-4 w-4" />}
             label="Aujourd'hui"
             value={`${done}/${tasks.length}`}
-            progress={tasks.length ? (done / tasks.length) * 100 : 0}
+            progress={mission.completionPct}
           />
           <StatCard
             icon={<Award className="h-4 w-4" />}
             label="Badges"
             value={state.badges.length}
-            suffix="débloqués"
+            suffix="debloques"
           />
         </div>
 
-        {/* Checklist + objectifs */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
+        <div className="grid grid-cols-1 gap-4 md:gap-6 lg:grid-cols-3">
           <Card className="card-forge p-5 lg:col-span-2">
             <SectionTitle
               action={
-                <Link to="/programme" className="text-xs text-primary inline-flex items-center gap-1 hover:underline">
+                <Link
+                  to="/programme"
+                  className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                >
                   Programme <ArrowRight className="h-3 w-3" />
                 </Link>
               }
             >
               Checklist du jour
             </SectionTitle>
-            <DailyChecklist tasks={tasks} checked={checked} onToggle={(id) => toggleTask(iso, id)} />
+            <DailyChecklist tasks={tasks} checked={checked} onToggle={handleToggle} />
           </Card>
 
           <Card className="card-forge p-5">
             <SectionTitle
               action={
-                <Link to="/progression" className="text-xs text-primary inline-flex items-center gap-1 hover:underline">
+                <Link
+                  to="/progression"
+                  className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                >
                   Voir <ArrowRight className="h-3 w-3" />
                 </Link>
               }
             >
-              Objectifs clés
+              Objectifs cles
             </SectionTitle>
             <div className="space-y-2.5">
-              <ObjectiveCard label="Tractions" current={bestPull} target={17} unit="reps" icon={<Dumbbell className="h-3.5 w-3.5" />} />
-              <ObjectiveCard label="Chaise" current={bestChair} target={168} unit="s" icon={<Timer className="h-3.5 w-3.5" />} />
-              <ObjectiveCard label="Course cumulée" current={Math.round(totalRun)} target={100} unit="km" icon={<Footprints className="h-3.5 w-3.5" />} />
-              <ObjectiveCard label="Luc Léger" current={bestLuc} target={12} unit="paliers" icon={<Award className="h-3.5 w-3.5" />} />
+              <ObjectiveCard
+                label="Tractions"
+                current={bestPull}
+                target={17}
+                unit="reps"
+                icon={<Dumbbell className="h-3.5 w-3.5" />}
+              />
+              <ObjectiveCard
+                label="Chaise"
+                current={bestChair}
+                target={168}
+                unit="s"
+                icon={<Timer className="h-3.5 w-3.5" />}
+              />
+              <ObjectiveCard
+                label="Course cumulee"
+                current={Math.round(totalRun)}
+                target={100}
+                unit="km"
+                icon={<Footprints className="h-3.5 w-3.5" />}
+              />
+              <ObjectiveCard
+                label="Luc Leger"
+                current={bestLuc}
+                target={12}
+                unit="paliers"
+                icon={<Award className="h-3.5 w-3.5" />}
+              />
             </div>
           </Card>
         </div>
       </div>
 
-      <FocusMode
+      <FocusSessionPanel
         open={focus}
         onClose={() => setFocus(false)}
-        tasks={tasks}
+        mission={mission}
         checked={checked}
-        onToggle={(id) => toggleTask(iso, id)}
+        onToggle={handleToggle}
       />
     </div>
   );
