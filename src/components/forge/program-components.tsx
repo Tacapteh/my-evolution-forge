@@ -28,6 +28,13 @@ import { cn } from "@/lib/utils";
 import type { TrainingDaySummary, TrainingMission, TrainingTask } from "@/types/training";
 
 type ToggleTask = (id: string) => void;
+type ProgressMissionLike = {
+  doneCount: number;
+  totalCount: number;
+  remainingCount: number;
+  completionPct: number;
+  status: string;
+};
 
 const MOMENTS = [
   ["morning", "Matin"],
@@ -273,7 +280,7 @@ export function SessionBlock({
       <div className="mb-3 flex items-center justify-between gap-2">
         <div className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">{title}</div>
         <span className="text-[11px] text-muted-foreground">
-          {tasks.reduce((sum, task) => sum + task.estimatedMinutes, 0)} min
+          {tasks.reduce((sum, task) => sum + (task.estimatedMinutes ?? 0), 0)} min
         </span>
       </div>
       <SessionChecklist tasks={tasks} checked={checked} onToggle={onToggle} dense />
@@ -407,7 +414,7 @@ export function FocusSessionPanel({
                 {task.detail && <p className="mt-4 text-muted-foreground">{task.detail}</p>}
 
                 <div className="mx-auto mt-6 grid max-w-md gap-2">
-                  {task.steps.map((step) => (
+                  {(task.steps ?? []).map((step) => (
                     <div
                       key={step}
                       className="rounded-lg border border-border bg-card px-4 py-2 text-sm text-muted-foreground"
@@ -478,7 +485,7 @@ export function DailyProgressBar({
   mission,
   compact = false,
 }: {
-  mission: TrainingMission;
+  mission: ProgressMissionLike;
   compact?: boolean;
 }) {
   return (

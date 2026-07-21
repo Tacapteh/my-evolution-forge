@@ -21,14 +21,33 @@ export interface TrainingTask {
   rest?: string;
   steps?: string[];
   xp: number;
+  completed?: boolean;
+}
+
+export interface TrainingObjective {
+  id: string;
+  label: string;
+  target: number;
+  unit: string;
+}
+
+export interface TrainingExercise extends TrainingTask {}
+
+export interface TrainingSession {
+  id: string;
+  title: string;
+  type: string;
+  exercises: TrainingExercise[];
 }
 
 export interface TrainingDayDefinition {
+  id?: string;
   name: string;
   objective: string;
   title?: string;
   priority?: TrainingPriority;
-  tasks: TrainingTask[];
+  tasks?: TrainingTask[];
+  sessions?: TrainingSession[];
 }
 
 export interface TrainingWeekDefinition {
@@ -37,7 +56,19 @@ export interface TrainingWeekDefinition {
   days: TrainingDayDefinition[];
 }
 
+export interface TrainingProgram {
+  id: string;
+  name: string;
+  description: string;
+  objectives: TrainingObjective[];
+  weeks: TrainingWeekDefinition[];
+  tests: Array<{ id: string; name: string; description: string }>;
+  tips: string[];
+}
+
 export interface TrainingMission {
+  programId: string;
+  weekId: string;
   iso: string;
   dayName: string;
   title: string;

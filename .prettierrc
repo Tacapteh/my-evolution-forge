@@ -2,5 +2,11 @@
   "printWidth": 100,
   "semi": true,
   "singleQuote": false,
-  "trailingComma": "all"
+  "trailingComma": "all",
+  "name": "read_file",
+  "arguments": {
+    "filepath": "src/views/WeeklyScheduleView.py"
+  }
 }
+
+

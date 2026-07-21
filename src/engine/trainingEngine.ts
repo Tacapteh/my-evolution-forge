@@ -1,16 +1,9 @@
 import { toISO } from "../lib/forge-store";
 import type { ForgeState } from "../lib/forge-store";
-import { week1 } from "../data/training/week1";
-import { week2 } from "../data/training/week2";
-import { week3 } from "../data/training/week3";
-import { week4 } from "../data/training/week4";
-import { week5 } from "../data/training/week5";
-import { week6 } from "../data/training/week6";
-import { week7 } from "../data/training/week7";
-import { week8 } from "../data/training/week8";
+import { militarySeptemberProgram } from "../data/programs/military-september";
 import type { TrainingMission, TrainingProgress, TrainingWeeklyCompletion, TrainingDaySummary } from "../types/training";
 
-const TRAINING_WEEKS = [week1, week2, week3, week4, week5, week6, week7, week8];
+const TRAINING_WEEKS = militarySeptemberProgram.weeks;
 const TRAINING_START = new Date("2026-07-20T12:00:00");
 const DAY_LABELS = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
 
@@ -44,8 +37,12 @@ export function createTrainingEngine(
   };
 
   const buildMission = (dateISO: string): TrainingMission => {
-    const definition = getProgramDefinition(dateISO);
-    const tasks = definition.tasks.map((task, index) => ({
+    const { week, dayIndex } = getTrainingWeek(dateISO);
+    const definition = week.days[dayIndex];
+    const rawTasks = (definition.tasks ?? []).length
+      ? definition.tasks ?? []
+      : (definition.sessions ?? []).flatMap((session) => session.exercises);
+    const tasks = rawTasks.map((task, index) => ({
       ...task,
       moment: task.moment ?? inferMoment(task.type, index),
       estimatedMinutes: task.estimatedMinutes ?? defaultDuration(task.type),
@@ -53,15 +50,18 @@ export function createTrainingEngine(
       steps: task.steps ?? defaultSteps(task),
     }));
     const day = state.days[dateISO];
-    const doneCount = tasks.filter((task) => day?.checked[task.id]).length;
+    const checked = day?.checked ?? {};
+    const doneCount = tasks.filter((task) => isTaskDone(task, checked)).length;
     const totalCount = tasks.length;
     const completionPct = totalCount ? Math.round((doneCount / totalCount) * 100) : 0;
     const remainingCount = Math.max(0, totalCount - doneCount);
     const status = doneCount === 0 ? "a_faire" : remainingCount === 0 ? "termine" : "en_cours";
     const psychoTask = tasks.find((task) => task.type === "psycho");
-    const psychoDone = psychoTask ? !!day?.checked[psychoTask.id] : false;
+    const psychoDone = psychoTask ? isTaskDone(psychoTask, checked) : false;
 
     return {
+      programId: militarySeptemberProgram.id,
+      weekId: week.id,
       iso: dateISO,
       dayName: definition.name,
       title: definition.title ?? `${definition.name} - ${definition.objective}`,
@@ -72,7 +72,7 @@ export function createTrainingEngine(
       remainingCount,
       totalCount,
       completionPct,
-      xp: tasks.reduce((sum, task) => sum + (day?.checked[task.id] ? task.xp : 0), 0),
+      xp: tasks.reduce((sum, task) => sum + (isTaskDone(task, checked) ? task.xp : 0), 0),
       estimatedMinutes: tasks.reduce((sum, task) => sum + task.estimatedMinutes, 0),
       status,
       psychotechnique: psychoTask
@@ -118,7 +118,7 @@ export function createTrainingEngine(
 
   const getWeeklyState = (dateISO: string) => {
     const week = buildWeek(dateISO);
-    const completedDays = week.filter((day) => day.completionPct === 100).length;
+    const completedDays = week.filter((day) => day.doneCount > 0).length;
     const totalDays = week.length;
     const completedTasks = week.reduce((sum, day) => sum + day.doneCount, 0);
     const totalTasks = week.reduce((sum, day) => sum + day.totalCount, 0);
@@ -206,4 +206,18 @@ function buildSummary(doneCount: number, totalCount: number, remainingCount: num
   if (remainingCount === 0) return "Mission complète. La journée est bien avancée.";
   if (doneCount === 0) return "La journée commence, concentre-toi sur la première étape.";
   return `${doneCount}/${totalCount} terminés — ${remainingCount} restant${remainingCount > 1 ? "s" : ""}.`;
+}
+
+function isTaskDone(task: { id: string }, checked: Record<string, boolean>) {
+  if (checked[task.id]) return true;
+
+  const legacyAliases: Record<string, string[]> = {
+    "w1-mon-pull": ["pull-1"],
+    "w1-mon-chair": ["chair-1"],
+    "w1-mon-psycho": ["psycho-1", "stretch-1", "hydro-1"],
+    "w1-tue-run": ["run-2"],
+    "w1-tue-psycho": ["psycho-2"],
+  };
+
+  return (legacyAliases[task.id] ?? []).some((alias) => checked[alias]);
 }

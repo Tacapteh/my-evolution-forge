@@ -1,5 +1,9 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { WEEK, BADGES, DEFAULT_TARGET_DATE, type TaskTemplate } from "./forge-data";
+import { militarySeptemberProgram } from "../data/programs/military-september";
+
+const TRAINING_START = new Date("2026-07-20T12:00:00");
+const TRAINING_WEEKS = militarySeptemberProgram.weeks;
 
 // --- Types
 
@@ -215,13 +219,29 @@ export function dowMon(d: Date) {
 }
 
 export function tasksForDate(dateISO: string): TaskTemplate[] {
-  const d = new Date(dateISO + "T12:00:00");
-  return WEEK[dowMon(d)].tasks;
+  const date = new Date(`${dateISO}T12:00:00`);
+  const dayIndex = (date.getDay() + 6) % 7;
+  const diffDays = Math.floor((date.getTime() - TRAINING_START.getTime()) / 86400000);
+  const weekIndex = Math.max(0, Math.min(TRAINING_WEEKS.length - 1, Math.floor(diffDays / 7)));
+  const week = TRAINING_WEEKS[weekIndex];
+  const definition = week.days[dayIndex];
+  const rawTasks = (definition.tasks ?? []).length
+    ? definition.tasks ?? []
+    : (definition.sessions ?? []).flatMap((session) => session.exercises);
+  return rawTasks.map((t, idx) => ({
+    ...t,
+    type: t.type as any,
+    estimatedMinutes: t.estimatedMinutes ?? 10,
+    xp: t.xp ?? 10,
+  }));
 }
 
 export function dayTemplate(dateISO: string) {
-  const d = new Date(dateISO + "T12:00:00");
-  return WEEK[dowMon(d)];
+  const date = new Date(`${dateISO}T12:00:00`);
+  const dayIndex = (date.getDay() + 6) % 7;
+  const diffDays = Math.floor((date.getTime() - TRAINING_START.getTime()) / 86400000);
+  const weekIndex = Math.max(0, Math.min(TRAINING_WEEKS.length - 1, Math.floor(diffDays / 7)));
+  return TRAINING_WEEKS[weekIndex].days[dayIndex];
 }
 
 export function daysUntil(targetISO: string) {

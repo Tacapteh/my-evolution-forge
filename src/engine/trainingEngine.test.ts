@@ -36,11 +36,24 @@ describe("training engine", () => {
     const dailyXP = engine.getDailyXP();
 
     expect(mission.dayName).toBe("Mardi");
+    expect(mission.programId).toBe("military-september");
+    expect(mission.weekId).toBe("week-1");
     expect(mission.doneCount).toBe(1);
     expect(mission.completionPct).toBe(25);
     expect(progress.completionPct).toBe(25);
-    expect(weeklyCompletion.completionPct).toBe(14);
+    expect(weeklyCompletion.completionPct).toBe(29);
     expect(dailyXP).toBe(50);
+  });
+
+  test("loads the personalized weekly program data from the training week files", () => {
+    const engine = createTrainingEngine(state, { toggleTask: () => {} }, { todayISO: "2026-07-20" });
+
+    const mission = engine.getMission("2026-07-20");
+
+    expect(mission.tasks[0].label).toBe("Natation — 45 min");
+    expect(mission.tasks[0].detail).toBe("Piscine + échauffement");
+    expect(mission.tasks[0].estimatedMinutes).toBe(45);
+    expect(mission.tasks[1].label).toBe("Tractions — 5×4");
   });
 
   test("can complete an exercise through the engine", () => {
