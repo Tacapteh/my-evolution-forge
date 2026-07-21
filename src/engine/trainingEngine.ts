@@ -242,12 +242,12 @@ export function createTrainingEngine(
     });
     const day = state.days[dateISO];
     const checked = day?.checked ?? {};
-    const doneCount = tasks.filter((task) => isTaskDone(task, checked)).length;
-    const totalCount = tasks.length;
+    const doneCount = finalTasks.filter((task) => isTaskDone(task, checked)).length;
+    const totalCount = finalTasks.length;
     const completionPct = totalCount ? Math.round((doneCount / totalCount) * 100) : 0;
     const remainingCount = Math.max(0, totalCount - doneCount);
     const status = doneCount === 0 ? "a_faire" : remainingCount === 0 ? "termine" : "en_cours";
-    const psychoTask = tasks.find((task) => task.type === "psycho");
+    const psychoTask = finalTasks.find((task) => task.type === "psycho");
     const psychoDone = psychoTask ? isTaskDone(psychoTask, checked) : false;
 
     return {

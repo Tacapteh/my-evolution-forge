@@ -442,7 +442,7 @@ export function ForgeProvider({ children }: { children: ReactNode }) {
           };
         }),
       setMomentSwap: (date, moment, activityId) =>
-        setLocalState((prev) => {
+        setState((prev) => {
           const day = prev.days[date] ?? { checked: {} };
           const swaps = { ...day.swaps, [moment]: activityId };
           return {

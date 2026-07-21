@@ -23,6 +23,7 @@ import {
   Timer,
   Footprints,
   RotateCcw,
+  Pencil,
   Check,
   CheckCircle2,
   Calendar,
@@ -70,7 +71,7 @@ function ProgrammePage() {
 
   const handleSwapMoment = (date: string, moment: string) => {
     const choice = window.prompt(
-      `Changer l'activité du ${MOMENT_LABELS[moment as keyof typeof MOMENT_LABELS]} :\n` +
+      `Modifier l'activité du ${MOMENT_LABELS[moment as keyof typeof MOMENT_LABELS]} :\n` +
         "1: 🏊 Natation (1000m continu & éducatifs)\n" +
         "2: 🏃 Course à pied (Endurance fondamentale)\n" +
         "3: ⚡ Fractionné 30/30 (VMA)\n" +
@@ -94,8 +95,8 @@ function ProgrammePage() {
     const key = map[choice.trim()];
     if (key) {
       setMomentSwap(date, moment, key);
-      toast.success("Activité réagencée !", {
-        description: `Le bloc ${MOMENT_LABELS[moment as keyof typeof MOMENT_LABELS]} a été modifié.`,
+      toast.success("Activité modifiée !", {
+        description: `Le bloc ${MOMENT_LABELS[moment as keyof typeof MOMENT_LABELS]} a été mis à jour.`,
       });
     }
   };
@@ -311,9 +312,9 @@ function ProgrammePage() {
                           size="sm"
                           className="h-6 text-[10px] px-2 text-muted-foreground hover:text-primary gap-1"
                           onClick={() => handleSwapMoment(today, momentKey)}
-                          title="Changer l'activité de ce moment"
+                          title="Modifier l'activité de ce moment"
                         >
-                          <RotateCcw className="h-3 w-3" /> Réagencer
+                          <Pencil className="h-3 w-3" /> Modifier
                         </Button>
                       </div>
                       <ul className="space-y-2">
@@ -471,9 +472,9 @@ function ProgrammePage() {
                                 size="sm"
                                 className="h-5 text-[9px] px-1.5 text-muted-foreground hover:text-primary gap-1"
                                 onClick={() => handleSwapMoment(day.iso, key)}
-                                title="Changer l'activité de ce moment"
+                                title="Modifier l'activité de ce moment"
                               >
-                                <RotateCcw className="h-2.5 w-2.5" /> Réagencer
+                                <Pencil className="h-2.5 w-2.5" /> Modifier
                               </Button>
                             </div>
 
