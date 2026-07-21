@@ -46,6 +46,11 @@ function Dashboard() {
   const dLeft = daysUntil(state.targetDate);
   const total = totalXP(state);
   const healthData = state.days[iso]?.health;
+  const hasHealthData =
+    healthData &&
+    (healthData.steps != null ||
+      healthData.avgHeartRate != null ||
+      (healthData.workouts && healthData.workouts.length > 0));
 
   const [focus, setFocus] = useState(false);
   const [celebrate, setCelebrate] = useState(false);
@@ -233,7 +238,7 @@ function Dashboard() {
                 Santé Connectée
               </SectionTitle>
               
-              {healthData ? (
+              {hasHealthData ? (
                 <div className="space-y-4 mt-4">
                   <div className="flex items-center justify-between p-3 rounded-lg bg-primary/5 border border-primary/10">
                     <div className="flex items-center gap-3">

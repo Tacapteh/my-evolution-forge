@@ -253,23 +253,28 @@ export function ForgeProvider({ children }: { children: ReactNode }) {
           let updatedCount = 0;
 
           for (const item of syncItems) {
-            const date = item.date;
-            if (!date) continue;
+            const rawDate = item.date ? String(item.date).trim() : todayISO();
+            const date = rawDate.length >= 10 ? rawDate.slice(0, 10) : todayISO();
 
             const day = updatedState.days[date] ?? { checked: {} };
+
+            const steps = item.health?.steps ?? item.steps ?? item.stepCount ?? day.health?.steps;
+            const avgHeartRate = item.health?.avgHeartRate ?? item.avgHeartRate ?? item.heartRate ?? day.health?.avgHeartRate;
+            const workouts = item.workouts ?? item.health?.workouts ?? day.health?.workouts;
+
             const health = {
               ...day.health,
-              steps: item.health?.steps ?? day.health?.steps,
-              avgHeartRate: item.health?.avgHeartRate ?? day.health?.avgHeartRate,
-              workouts: item.workouts ?? day.health?.workouts,
+              steps: steps != null ? Number(steps) : undefined,
+              avgHeartRate: avgHeartRate != null ? Number(avgHeartRate) : undefined,
+              workouts: Array.isArray(workouts) ? workouts : day.health?.workouts ?? [],
             };
 
             // Check workouts and auto-toggle corresponding tasks
             const checked = { ...day.checked };
             const tasks = tasksForDate(date);
             
-            const hasSwimming = item.workouts?.some((w: any) => w.type === "swimming");
-            const hasRunning = item.workouts?.some((w: any) => w.type === "running");
+            const hasSwimming = health.workouts?.some((w: any) => w.type === "swimming" || w.type === "swim");
+            const hasRunning = health.workouts?.some((w: any) => w.type === "running" || w.type === "run");
 
             for (const task of tasks) {
               if (task.type === "swim" && hasSwimming && !checked[task.id]) {
