@@ -164,9 +164,11 @@ function normalizeWorkoutsServer(rawWorkouts: any): any[] {
 
     const parseDistNum = (val: any): number | undefined => {
       if (val == null) return undefined;
-      const str = String(val).trim();
-      if (str.includes("kcal") || isNaN(Number(str))) return undefined;
-      const num = Number(str);
+      const str = String(val).trim().replace(",", ".");
+      if (str.includes("kcal")) return undefined;
+      const match = str.match(/(\d+(?:\.\d+)?)/);
+      if (!match) return undefined;
+      const num = parseFloat(match[1]);
       return num > 0 ? num : undefined;
     };
 

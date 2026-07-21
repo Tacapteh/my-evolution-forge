@@ -348,19 +348,19 @@ function Dashboard() {
                             const isCycle = typeStr.includes("velo") || typeStr.includes("cycle") || typeStr.includes("bike");
                             const displayType = w.type || "Natation";
 
-                            const durationMin = w.durationMinutes ?? 30;
+                            const hasValidDur = w.durationMinutes != null && w.durationMinutes > 0 && w.durationMinutes < 1440;
 
                             const meters = w.distanceMeters ?? (w.distanceKm ? Math.round(w.distanceKm * 1000) : null);
                             const km = w.distanceKm ?? (w.distanceMeters ? Number((w.distanceMeters / 1000).toFixed(1)) : null);
 
                             let distanceStr = "";
-                            if (meters && km) {
-                              distanceStr = `${meters}m (${km} km)`;
-                            } else if (meters) {
-                              distanceStr = `${meters}m`;
-                            } else if (km) {
-                              distanceStr = `${km} km`;
+                            if (meters && meters > 0) {
+                              distanceStr = isSwim || meters < 1000 ? `${meters}m` : `${km ?? (meters / 1000).toFixed(1)} km`;
+                            } else if (km && km > 0) {
+                              distanceStr = isSwim || km < 1 ? `${Math.round(km * 1000)}m` : `${km} km`;
                             }
+
+                            const hasValidDist = Boolean(distanceStr);
 
                             return (
                               <div
@@ -387,14 +387,21 @@ function Dashboard() {
                                         Apple Health
                                       </Badge>
                                     </div>
-                                    <p className="text-[11px] text-muted-foreground mt-0.5 font-medium">
-                                      Durée: <span className="font-semibold text-foreground">{durationMin} min</span>
-                                      {distanceStr && (
-                                        <>
-                                          {" • "}Distance: <span className="font-semibold text-foreground">{distanceStr}</span>
-                                        </>
-                                      )}
-                                    </p>
+                                    {hasValidDur || hasValidDist ? (
+                                      <p className="text-[11px] text-muted-foreground mt-0.5 font-medium">
+                                        {hasValidDur && (
+                                          <>
+                                            Durée: <span className="font-semibold text-foreground">{w.durationMinutes} min</span>
+                                          </>
+                                        )}
+                                        {hasValidDur && hasValidDist && <> • </>}
+                                        {hasValidDist && (
+                                          <>
+                                            Distance: <span className="font-semibold text-foreground">{distanceStr}</span>
+                                          </>
+                                        )}
+                                      </p>
+                                    ) : null}
                                   </div>
                                 </div>
                                 {w.calories != null && w.calories > 0 && (
