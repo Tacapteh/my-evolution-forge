@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "@tanstack/react-router";
 import { PageHeader } from "@/components/forge/AppShell";
 import { Card } from "@/components/ui/card";
@@ -17,7 +17,7 @@ import {
   daysUntil,
   totalXP,
 } from "@/lib/forge-store";
-import { QUOTES, GOALS } from "@/lib/forge-data";
+import { GOALS } from "@/lib/forge-data";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/")({
