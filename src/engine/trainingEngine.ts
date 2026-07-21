@@ -124,7 +124,7 @@ export function createTrainingEngine(
       ? definition.tasks ?? []
       : (definition?.sessions ?? []).flatMap((session) => session.exercises);
 
-    const tasks = rawTasks.map((task, index) => {
+    let tasks = rawTasks.map((task, index) => {
       let label = task.label;
       let detail = task.detail;
       let steps = task.steps;
@@ -220,26 +220,75 @@ export function createTrainingEngine(
       };
     });
 
-    // Appliquer les réagencements / swaps d'activités personnalisés pour cette journée
+    // Éviter d'avoir deux Luc Léger le Jeudi : le soir est un footing léger
+    let thuRunCount = 0;
+    tasks = tasks.map((t) => {
+      if (dayIndex === 3 && t.type === "run") {
+        thuRunCount++;
+        if (thuRunCount > 1) {
+          return {
+            ...t,
+            label: "Course en duo — Footing de récupération léger",
+            detail: "Footing très doux à allure confortable (Pas de Luc Léger le soir)",
+            steps: ["Footing très doux 20-30 min", "Respiration aisée", "Étirements"],
+          };
+        }
+      }
+      return t;
+    });
+
+    // Appliquer les réagencements / modifications d'activités personnalisés
     const swaps = state.days[dateISO]?.swaps ?? {};
-    const finalTasks = tasks.map((t) => {
+    const finalTasks: any[] = [];
+    const processedMoments = new Set<string>();
+
+    for (const t of tasks) {
       const moment = t.moment;
       const swapId = swaps[moment];
       if (swapId && ACTIVITY_PRESETS[swapId]) {
+        if (!processedMoments.has(moment)) {
+          processedMoments.add(moment);
+          const preset = ACTIVITY_PRESETS[swapId];
+          finalTasks.push({
+            ...t,
+            id: `swapped-${dateISO}-${moment}-${swapId}`,
+            moment,
+            label: preset.label,
+            detail: preset.detail,
+            type: preset.type,
+            estimatedMinutes: preset.estimatedMinutes,
+            xp: preset.xp,
+            steps: preset.steps,
+          });
+        }
+      } else {
+        finalTasks.push(t);
+      }
+    }
+
+    // Gérer aussi les moments qui n'avaient pas de tâche initiale sur ce jour
+    const allMoments = ["morning", "afternoon", "evening", "psychotechniques"] as const;
+    for (const mKey of allMoments) {
+      const swapId = swaps[mKey];
+      if (swapId && ACTIVITY_PRESETS[swapId] && !processedMoments.has(mKey)) {
+        processedMoments.add(mKey);
         const preset = ACTIVITY_PRESETS[swapId];
-        return {
-          ...t,
-          id: `${t.id}-swapped-${swapId}`,
+        finalTasks.push({
+          id: `swapped-${dateISO}-${mKey}-${swapId}`,
+          moment: mKey,
           label: preset.label,
           detail: preset.detail,
           type: preset.type,
           estimatedMinutes: preset.estimatedMinutes,
           xp: preset.xp,
           steps: preset.steps,
-        };
+          completed: false,
+        });
       }
-      return t;
-    });
+    }
+
+    const momentOrder: Record<string, number> = { morning: 1, afternoon: 2, evening: 3, psychotechniques: 4 };
+    finalTasks.sort((a, b) => (momentOrder[a.moment] ?? 5) - (momentOrder[b.moment] ?? 5));
     const day = state.days[dateISO];
     const checked = day?.checked ?? {};
     const doneCount = finalTasks.filter((task) => isTaskDone(task, checked)).length;

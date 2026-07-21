@@ -298,7 +298,28 @@ function ProgrammePage() {
                   const label = MOMENT_LABELS[momentKey];
                   const tasks = todayMission.tasks.filter((t) => t.moment === momentKey);
 
-                  if (tasks.length === 0) return null;
+                  if (tasks.length === 0) {
+                    return (
+                      <div key={momentKey} className="rounded-xl border border-border/40 bg-muted/10 p-4 space-y-2 opacity-80 hover:opacity-100 transition-opacity">
+                        <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-muted-foreground pb-2 border-b border-border/40">
+                          <div className="flex items-center gap-2">
+                            <Icon className="h-4 w-4 text-muted-foreground/50" />
+                            <span>{label}</span>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 text-[10px] px-2 text-primary hover:text-primary gap-1"
+                            onClick={() => handleSwapMoment(today, momentKey)}
+                            title="Ajouter une activité"
+                          >
+                            <Pencil className="h-3 w-3" /> + Ajouter
+                          </Button>
+                        </div>
+                        <p className="text-[11px] text-muted-foreground/70 italic">Aucune activité programmée.</p>
+                      </div>
+                    );
+                  }
 
                   return (
                     <div key={momentKey} className="rounded-xl border border-border/60 bg-muted/20 p-4 space-y-3">
@@ -456,7 +477,24 @@ function ProgrammePage() {
                     {/* Liste des exercices par moment */}
                     <div className="p-5 space-y-4 flex-1">
                       {moments.map(({ key, tasks }) => {
-                        if (tasks.length === 0) return null;
+                        if (tasks.length === 0) {
+                          return (
+                            <div key={key} className="flex items-center justify-between text-[10px] text-muted-foreground/60 py-1 border-b border-border/20 last:border-0">
+                              <div className="flex items-center gap-1.5 font-semibold uppercase">
+                                <Icon className="h-3 w-3 text-muted-foreground/40" />
+                                <span>{label}</span>
+                              </div>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-5 text-[9px] px-1 text-primary hover:text-primary gap-0.5"
+                                onClick={() => handleSwapMoment(day.iso, key)}
+                              >
+                                <Pencil className="h-2.5 w-2.5" /> + Ajouter
+                              </Button>
+                            </div>
+                          );
+                        }
                         const Icon = MOMENT_ICONS[key];
                         const label = MOMENT_LABELS[key];
 
