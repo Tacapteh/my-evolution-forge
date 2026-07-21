@@ -14,14 +14,15 @@ import { cn } from "@/lib/utils";
 import { useForge, computeStreak } from "@/lib/forge-store";
 
 const NAV = [
-  { to: "/", label: "Dashboard", icon: LayoutDashboard },
-  { to: "/programme", label: "Programme", icon: CalendarDays },
-  { to: "/progression", label: "Progression", icon: TrendingUp },
-  { to: "/performances", label: "Performances", icon: Trophy },
-  { to: "/psychotechniques", label: "Psycho", icon: Brain },
-  { to: "/journal", label: "Journal", icon: BookOpen },
-  { to: "/parametres", label: "Paramètres", icon: Settings },
+  { to: "/", label: "Dashboard", icon: LayoutDashboard, primary: true },
+  { to: "/programme", label: "Programme", icon: CalendarDays, primary: true },
+  { to: "/progression", label: "Progression", icon: TrendingUp, primary: true },
+  { to: "/performances", label: "Perfs", icon: Trophy, primary: false },
+  { to: "/psychotechniques", label: "Psycho", icon: Brain, primary: false },
+  { to: "/journal", label: "Journal", icon: BookOpen, primary: true },
+  { to: "/parametres", label: "Réglages", icon: Settings, primary: true },
 ] as const;
+
 
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
@@ -77,25 +78,26 @@ export function AppShell({ children }: { children: ReactNode }) {
 
       {/* Bottom nav mobile */}
       <nav className="fixed md:hidden bottom-0 inset-x-0 z-40 border-t border-border bg-card/95 backdrop-blur">
-        <div className="grid grid-cols-7">
-          {NAV.map((n) => {
+        <div className="grid grid-cols-5">
+          {NAV.filter((n) => n.primary).map((n) => {
             const active = n.to === "/" ? pathname === "/" : pathname.startsWith(n.to);
             return (
               <Link
                 key={n.to}
                 to={n.to}
                 className={cn(
-                  "flex flex-col items-center justify-center gap-1 py-2 text-[10px]",
+                  "flex flex-col items-center justify-center gap-1 py-2.5 text-[10px] transition-colors",
                   active ? "text-primary" : "text-muted-foreground",
                 )}
               >
                 <n.icon className="h-4 w-4" />
-                <span className="truncate max-w-[52px]">{n.label}</span>
+                <span className="truncate max-w-[64px]">{n.label}</span>
               </Link>
             );
           })}
         </div>
       </nav>
+
     </div>
   );
 }
