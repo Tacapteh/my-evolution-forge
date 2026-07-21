@@ -52,13 +52,15 @@ function Dashboard() {
   const rawHealth = state.days[iso]?.health;
   const latestHealthFromState = Object.values(state.days || {})
     .map((d) => d?.health)
-    .filter((h) => h && (h.steps != null || h.avgHeartRate != null || (h.workouts && h.workouts.length > 0)))
+    .filter((h) => h && (h.steps != null || h.avgHeartRate != null || h.activeCalories != null || h.exerciseMinutes != null || (h.workouts && h.workouts.length > 0)))
     .pop();
 
   const healthData =
     rawHealth &&
     (rawHealth.steps != null ||
       rawHealth.avgHeartRate != null ||
+      rawHealth.activeCalories != null ||
+      rawHealth.exerciseMinutes != null ||
       (rawHealth.workouts && rawHealth.workouts.length > 0))
       ? rawHealth
       : latestHealthFromState;
@@ -67,6 +69,8 @@ function Dashboard() {
     healthData &&
     (healthData.steps != null ||
       healthData.avgHeartRate != null ||
+      healthData.activeCalories != null ||
+      healthData.exerciseMinutes != null ||
       (healthData.workouts && healthData.workouts.length > 0));
 
   const [focus, setFocus] = useState(false);
@@ -118,11 +122,20 @@ function Dashboard() {
     if (stepsInput === null) return;
     const hrInput = window.prompt("Saisir votre fréquence cardiaque moyenne en bpm (ex: 68) :", String(healthData?.avgHeartRate ?? 68));
     if (hrInput === null) return;
+    const moveInput = window.prompt("Saisir vos calories Bouger (kcal) :", String(healthData?.activeCalories ?? 420));
+    if (moveInput === null) return;
+    const trainInput = window.prompt("Saisir votre temps d'entraînement M'entraîner (min) :", String(healthData?.exerciseMinutes ?? 45));
+    if (trainInput === null) return;
+    const standInput = window.prompt("Saisir vos heures debout Me lever (ex: 8) :", String(healthData?.standHours ?? 8));
+    if (standInput === null) return;
 
-    const addWorkout = window.confirm("Souhaitez-vous inclure une séance de Natation (1000m, 45 min) à la synchro ?");
+    const addWorkout = window.confirm("Souhaitez-vous inclure une séance de Natation (1000m, 45 min, 320 kcal) à la synchro ?");
 
     const steps = parseInt(stepsInput, 10);
     const hr = parseInt(hrInput, 10);
+    const move = parseInt(moveInput, 10);
+    const train = parseInt(trainInput, 10);
+    const stand = parseInt(standInput, 10);
 
     const workouts = [...(healthData?.workouts ?? [])];
     if (addWorkout) {
@@ -138,12 +151,15 @@ function Dashboard() {
     const updatedHealth = {
       steps: !isNaN(steps) ? steps : healthData?.steps,
       avgHeartRate: !isNaN(hr) ? hr : healthData?.avgHeartRate,
+      activeCalories: !isNaN(move) ? move : healthData?.activeCalories,
+      exerciseMinutes: !isNaN(train) ? train : healthData?.exerciseMinutes,
+      standHours: !isNaN(stand) ? stand : healthData?.standHours,
       workouts,
     };
 
     setHealth(iso, updatedHealth);
     toast.success("Données Santé enregistrées !", {
-      description: `${steps} pas • FC: ${hr} bpm ${addWorkout ? "• Natation 1000m (45 min)" : ""}`,
+      description: `${steps} pas • FC: ${hr} bpm • ${move} kcal • ${train} min • ${stand}/12h`,
     });
   };
 
@@ -296,27 +312,58 @@ function Dashboard() {
               
               {hasHealthData ? (
                 <div className="space-y-4 mt-4">
-                  <div className="flex items-center justify-between p-3 rounded-lg bg-primary/5 border border-primary/10">
-                    <div className="flex items-center gap-3">
-                      <Footprints className="h-5 w-5 text-primary" />
-                      <div>
-                        <div className="text-xs text-muted-foreground">Pas du jour</div>
-                        <div className="text-lg font-bold tabular-nums">{healthData.steps?.toLocaleString() ?? "0"}</div>
+                  {/* Section ACTIVITÉ (Anneaux Apple Health) */}
+                  <div className="space-y-2">
+                    <div className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                      <Flame className="h-3.5 w-3.5 text-amber-500" />
+                      Activité (Apple Health)
+                    </div>
+                    <div className="grid grid-cols-3 gap-2">
+                      <div className="p-2.5 rounded-lg bg-red-500/10 border border-red-500/20 text-center">
+                        <div className="text-[10px] text-red-400 font-bold uppercase tracking-wider flex items-center justify-center gap-1">
+                          <Flame className="h-3 w-3" /> Bouger
+                        </div>
+                        <div className="text-sm font-bold text-foreground tabular-nums mt-1">
+                          {healthData.activeCalories ? `${healthData.activeCalories} kcal` : "--"}
+                        </div>
+                      </div>
+                      <div className="p-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-center">
+                        <div className="text-[10px] text-emerald-400 font-bold uppercase tracking-wider flex items-center justify-center gap-1">
+                          <Timer className="h-3 w-3" /> M'entraîner
+                        </div>
+                        <div className="text-sm font-bold text-foreground tabular-nums mt-1">
+                          {healthData.exerciseMinutes ? `${healthData.exerciseMinutes} min` : "--"}
+                        </div>
+                      </div>
+                      <div className="p-2.5 rounded-lg bg-cyan-500/10 border border-cyan-500/20 text-center">
+                        <div className="text-[10px] text-cyan-400 font-bold uppercase tracking-wider flex items-center justify-center gap-1">
+                          <Activity className="h-3 w-3" /> Me lever
+                        </div>
+                        <div className="text-sm font-bold text-foreground tabular-nums mt-1">
+                          {healthData.standHours ? `${healthData.standHours}/12h` : "--"}
+                        </div>
                       </div>
                     </div>
-                    {healthData.steps && healthData.steps >= 8000 ? (
-                      <Badge className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20 text-[10px] hover:bg-emerald-500/10">Objectif</Badge>
-                    ) : (
-                      <span className="text-[10px] text-muted-foreground">Cible: 8k</span>
-                    )}
                   </div>
 
-                  <div className="flex items-center gap-3 p-3 rounded-lg bg-card border border-border">
-                    <Heart className="h-5 w-5 text-red-500" />
-                    <div>
-                      <div className="text-xs text-muted-foreground">Fréquence cardiaque</div>
-                      <div className="text-lg font-bold tabular-nums">
-                        {healthData.avgHeartRate ? `${healthData.avgHeartRate} bpm` : "--"}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="flex items-center justify-between p-3 rounded-lg bg-primary/5 border border-primary/10">
+                      <div className="flex items-center gap-2.5">
+                        <Footprints className="h-5 w-5 text-primary" />
+                        <div>
+                          <div className="text-xs text-muted-foreground">Pas du jour</div>
+                          <div className="text-base font-bold tabular-nums">{healthData.steps?.toLocaleString() ?? "0"}</div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2.5 p-3 rounded-lg bg-card border border-border">
+                      <Heart className="h-5 w-5 text-red-500" />
+                      <div>
+                        <div className="text-xs text-muted-foreground">Fréquence cardiaque</div>
+                        <div className="text-base font-bold tabular-nums">
+                          {healthData.avgHeartRate ? `${healthData.avgHeartRate} bpm` : "--"}
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -341,9 +388,9 @@ function Dashboard() {
 
                             let distLabel = "";
                             if (w.distanceMeters && w.distanceMeters > 0) {
-                              distLabel = w.distanceMeters < 1000 ? `${w.distanceMeters}m` : `${(w.distanceMeters / 1000).toFixed(2)} km`;
+                              distLabel = isSwim || w.distanceMeters < 1000 ? `${w.distanceMeters}m` : `${(w.distanceMeters / 1000).toFixed(1)} km`;
                             } else if (w.distanceKm && w.distanceKm > 0) {
-                              distLabel = w.distanceKm < 1 ? `${Math.round(w.distanceKm * 1000)}m` : `${w.distanceKm} km`;
+                              distLabel = isSwim || w.distanceKm < 1 ? `${Math.round(w.distanceKm * 1000)}m` : `${w.distanceKm} km`;
                             }
 
                             return (
@@ -371,7 +418,7 @@ function Dashboard() {
                                         Apple Health
                                       </Badge>
                                     </div>
-                                    <div className="text-[10px] text-muted-foreground mt-0.5">
+                                    <div className="text-[10px] text-muted-foreground mt-0.5 font-medium">
                                       {w.durationMinutes != null && w.durationMinutes > 0 && (
                                         <>
                                           Durée: <span className="font-semibold text-foreground">{w.durationMinutes} min</span>

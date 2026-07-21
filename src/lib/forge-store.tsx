@@ -30,9 +30,12 @@ export interface DayRecord {
   health?: {
     steps?: number;
     avgHeartRate?: number;
+    activeCalories?: number; // Bouger (kcal)
+    exerciseMinutes?: number; // M'entraîner (min)
+    standHours?: number; // Me lever (heures)
     workouts?: Array<{
       type: string;
-      durationMinutes: number;
+      durationMinutes?: number;
       distanceKm?: number;
       distanceMeters?: number;
       calories?: number;
@@ -665,8 +668,19 @@ export function normalizeWorkouts(rawWorkouts: any): Array<{
       return num > 0 ? num : undefined;
     };
 
-    const dMeters = parseDistNum(w.distanceMeters ?? w.distanceInMeters);
-    const dKm = parseDistNum(w.distanceKm ?? w.distanceInKm);
+    const dMeters = parseDistNum(
+      w.distanceMeters ??
+        w.distanceInMeters ??
+        w.swimmingDistance ??
+        w.swimmingDistanceMeters ??
+        w.distanceWalkingRunningMeters,
+    );
+    const dKm = parseDistNum(
+      w.distanceKm ??
+        w.distanceInKm ??
+        w.distanceWalkingRunning ??
+        w.swimmingDistanceKm,
+    );
     const dGen = parseDistNum(w.distance ?? w.totalDistance);
 
     if (dMeters) {

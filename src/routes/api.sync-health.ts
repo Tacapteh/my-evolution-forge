@@ -170,8 +170,19 @@ function normalizeWorkoutsServer(rawWorkouts: any): any[] {
       return num > 0 ? num : undefined;
     };
 
-    const dMeters = parseDistNum(w.distanceMeters ?? w.distanceInMeters);
-    const dKm = parseDistNum(w.distanceKm ?? w.distanceInKm);
+    const dMeters = parseDistNum(
+      w.distanceMeters ??
+        w.distanceInMeters ??
+        w.swimmingDistance ??
+        w.swimmingDistanceMeters ??
+        w.distanceWalkingRunningMeters,
+    );
+    const dKm = parseDistNum(
+      w.distanceKm ??
+        w.distanceInKm ??
+        w.distanceWalkingRunning ??
+        w.swimmingDistanceKm,
+    );
     const dGen = parseDistNum(w.distance ?? w.totalDistance);
 
     if (dMeters) {
@@ -212,6 +223,9 @@ async function mergeHealthIntoServerStates(payload: any) {
 
     const steps = payload.health?.steps ?? payload.steps ?? payload.stepCount;
     const avgHeartRate = payload.health?.avgHeartRate ?? payload.avgHeartRate ?? payload.heartRate;
+    const activeCalories = payload.health?.activeCalories ?? payload.activeCalories ?? payload.calories ?? payload.moveCalories;
+    const exerciseMinutes = payload.health?.exerciseMinutes ?? payload.exerciseMinutes ?? payload.exerciseTime ?? payload.workoutMinutes;
+    const standHours = payload.health?.standHours ?? payload.standHours ?? payload.appleStandHours ?? payload.standTime;
     const rawWorkouts = payload.workouts ?? payload.health?.workouts ?? [];
     const normalizedWorkouts = normalizeWorkoutsServer(rawWorkouts);
 
@@ -232,6 +246,9 @@ async function mergeHealthIntoServerStates(payload: any) {
                   ...day.health,
                   steps: steps != null ? Number(steps) : day.health?.steps,
                   avgHeartRate: avgHeartRate != null ? Number(avgHeartRate) : day.health?.avgHeartRate,
+                  activeCalories: activeCalories != null ? Number(activeCalories) : day.health?.activeCalories,
+                  exerciseMinutes: exerciseMinutes != null ? Number(exerciseMinutes) : day.health?.exerciseMinutes,
+                  standHours: standHours != null ? Number(standHours) : day.health?.standHours,
                   workouts: normalizedWorkouts.length ? normalizedWorkouts : day.health?.workouts ?? [],
                 };
                 state.days[date] = day;
