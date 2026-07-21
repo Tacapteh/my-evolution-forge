@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { PageHeader } from "@/components/forge/AppShell";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -23,7 +23,7 @@ import {
 } from "@/components/forge/primitives";
 import { DailyChecklist } from "@/components/forge/DailyChecklist";
 import { DayMissionCard, FocusSessionPanel } from "@/components/forge/program-components";
-import { buildDayMission } from "@/lib/forge-program";
+import { createTrainingEngine } from "@/engine/trainingEngine";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/")({
@@ -34,28 +34,19 @@ export const Route = createFileRoute("/")({
 function Dashboard() {
   const { state, hydrated, toggleTask, startSession } = useForge();
   const iso = todayISO();
-  const mission = buildDayMission(state, iso);
+  const engine = useMemo(() => createTrainingEngine(state, { toggleTask }, { todayISO: iso }), [iso, state, toggleTask]);
+  const mission = engine.getTodayProgram();
   const tasks = mission.tasks;
   const checked = state.days[iso]?.checked ?? {};
   const done = mission.doneCount;
-  const xpToday = mission.xp;
+  const xpToday = engine.getDailyXP(iso);
   const streak = hydrated ? computeStreak(state) : 0;
   const dLeft = daysUntil(state.targetDate);
   const total = totalXP(state);
 
   const [focus, setFocus] = useState(false);
 
-  const weekDone = (() => {
-    let count = 0;
-    for (let i = 0; i < 7; i++) {
-      const d = new Date();
-      d.setDate(d.getDate() - i);
-      const key = d.toISOString().slice(0, 10);
-      const rec = state.days[key];
-      if (rec && Object.values(rec.checked).some(Boolean)) count++;
-    }
-    return count;
-  })();
+  const weekDone = engine.getWeeklyCompletion(iso).completedDays;
 
   const sessionsDone = Object.values(state.days).filter((d) =>
     Object.values(d.checked).some(Boolean),
@@ -82,7 +73,7 @@ function Dashboard() {
   const handleToggle = (id: string) => {
     const task = tasks.find((item) => item.id === id);
     const wasDone = !!checked[id];
-    toggleTask(iso, id);
+    engine.completeExercise(id, iso);
     if (task && !wasDone) toast.success(`+${task.xp} XP`, { description: task.label });
   };
 

@@ -1,4 +1,4 @@
-import type { TaskTemplate } from "@/lib/forge-data";
+import type { TrainingTask } from "@/types/training";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 import {
@@ -15,7 +15,7 @@ export function DailyChecklist({
   checked,
   onToggle,
 }: {
-  tasks: TaskTemplate[];
+  tasks: TrainingTask[];
   checked: Record<string, boolean>;
   onToggle: (id: string) => void;
 }) {

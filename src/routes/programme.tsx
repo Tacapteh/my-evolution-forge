@@ -10,14 +10,8 @@ import {
   SessionHistoryItem,
   WeeklyProgramView,
 } from "@/components/forge/program-components";
-import { useForge, todayISO } from "@/lib/forge-store";
-import {
-  buildDayMission,
-  buildHistoryItems,
-  buildWeekDays,
-  startOfProgramWeek,
-  toLocalISO,
-} from "@/lib/forge-program";
+import { useForge, todayISO, toISO } from "@/lib/forge-store";
+import { createTrainingEngine } from "@/engine/trainingEngine";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/programme")({
@@ -28,13 +22,32 @@ export const Route = createFileRoute("/programme")({
 function ProgrammePage() {
   const { state, toggleTask, startSession } = useForge();
   const today = todayISO();
-  const [anchor, setAnchor] = useState(() => startOfProgramWeek(new Date()));
+  const [anchor, setAnchor] = useState(() => new Date());
   const [selectedISO, setSelectedISO] = useState(today);
   const [focusOpen, setFocusOpen] = useState(false);
 
-  const week = useMemo(() => buildWeekDays(anchor, state, today), [anchor, state, today]);
-  const mission = useMemo(() => buildDayMission(state, selectedISO), [state, selectedISO]);
-  const history = useMemo(() => buildHistoryItems(state, today, 5), [state, today]);
+  const engine = useMemo(
+    () => createTrainingEngine(state, { toggleTask }, { todayISO: today }),
+    [state, toggleTask, today],
+  );
+  const week = useMemo(() => engine.getCurrentWeek(toISO(anchor)), [anchor, engine]);
+  const mission = useMemo(() => engine.getMission(selectedISO), [engine, selectedISO]);
+  const history = useMemo(() => {
+    return Array.from({ length: 5 }, (_, index) => {
+      const date = new Date(`${today}T12:00:00`);
+      date.setDate(date.getDate() - index);
+      const iso = toISO(date);
+      const item = engine.getMission(iso);
+      return {
+        iso,
+        dayName: item.dayName,
+        completionPct: item.completionPct,
+        completed: item.status === "termine",
+        highlight: item.tasks.find((task) => !!state.days[iso]?.checked[task.id])?.label ?? item.tasks[0]?.label ?? "Repos",
+        note: state.days[iso]?.journal?.notes,
+      };
+    });
+  }, [engine, state.days, today]);
   const checked = state.days[selectedISO]?.checked ?? {};
 
   const weekLabel = `${formatShortDate(week[0].iso)} - ${formatShortDate(week[6].iso)}`;
@@ -42,7 +55,7 @@ function ProgrammePage() {
   const handleToggle = (taskId: string) => {
     const task = mission.tasks.find((item) => item.id === taskId);
     const wasDone = !!checked[taskId];
-    toggleTask(selectedISO, taskId);
+    engine.completeExercise(taskId, selectedISO);
     if (task && !wasDone) toast.success(`+${task.xp} XP`, { description: task.label });
   };
 
@@ -52,7 +65,7 @@ function ProgrammePage() {
 
       <div className="px-4 pb-10 md:px-8">
         <div className="sticky top-0 z-20 -mx-4 mb-5 border-b border-border bg-background/92 px-4 py-3 backdrop-blur md:-mx-8 md:px-8">
-          <DailyProgressBar mission={buildDayMission(state, today)} />
+          <DailyProgressBar mission={engine.getCurrentDay(today)} />
         </div>
 
         <div className="space-y-6">
@@ -61,7 +74,7 @@ function ProgrammePage() {
             onPrevious={() => setAnchor(shiftWeek(anchor, -1))}
             onNext={() => setAnchor(shiftWeek(anchor, 1))}
             onToday={() => {
-              setAnchor(startOfProgramWeek(new Date()));
+              setAnchor(new Date());
               setSelectedISO(today);
             }}
           />
@@ -113,7 +126,7 @@ function ProgrammePage() {
 function shiftWeek(date: Date, amount: number) {
   const next = new Date(date);
   next.setDate(next.getDate() + amount * 7);
-  return startOfProgramWeek(next);
+  return next;
 }
 
 function formatShortDate(iso: string) {

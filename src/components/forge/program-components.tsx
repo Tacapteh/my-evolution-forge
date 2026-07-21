@@ -25,13 +25,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
-import type {
-  DayMission,
-  ProgramTask,
-  SessionHistoryItem as HistoryItem,
-  WeekDaySummary,
-} from "@/lib/forge-program";
-import { groupTasksByMoment } from "@/lib/forge-program";
+import type { TrainingDaySummary, TrainingMission, TrainingTask } from "@/types/training";
 
 type ToggleTask = (id: string) => void;
 
@@ -81,7 +75,7 @@ export function WeeklyProgramView({
   selectedISO,
   onSelect,
 }: {
-  days: WeekDaySummary[];
+  days: TrainingDaySummary[];
   selectedISO: string;
   onSelect: (iso: string) => void;
 }) {
@@ -154,7 +148,7 @@ export function DaySummaryCard({
   selected,
   onSelect,
 }: {
-  day: WeekDaySummary;
+  day: TrainingDaySummary;
   selected: boolean;
   onSelect: (iso: string) => void;
 }) {
@@ -200,7 +194,7 @@ export function DayMissionCard({
   onToggle,
   onStart,
 }: {
-  mission: DayMission;
+  mission: TrainingMission;
   checked: Record<string, boolean>;
   onToggle: ToggleTask;
   onStart: () => void;
@@ -270,7 +264,7 @@ export function SessionBlock({
   onToggle,
 }: {
   title: string;
-  tasks: ProgramTask[];
+  tasks: TrainingTask[];
   checked: Record<string, boolean>;
   onToggle: ToggleTask;
 }) {
@@ -293,7 +287,7 @@ export function SessionChecklist({
   onToggle,
   dense = false,
 }: {
-  tasks: ProgramTask[];
+  tasks: TrainingTask[];
   checked: Record<string, boolean>;
   onToggle: ToggleTask;
   dense?: boolean;
@@ -349,7 +343,7 @@ export function FocusSessionPanel({
   onClose,
 }: {
   open: boolean;
-  mission: DayMission;
+  mission: TrainingMission;
   checked: Record<string, boolean>;
   onToggle: ToggleTask;
   onClose: () => void;
@@ -484,7 +478,7 @@ export function DailyProgressBar({
   mission,
   compact = false,
 }: {
-  mission: DayMission;
+  mission: TrainingMission;
   compact?: boolean;
 }) {
   return (
@@ -521,7 +515,7 @@ export function PsychotechniqueCard({
   mission,
   onStart,
 }: {
-  mission: DayMission;
+  mission: TrainingMission;
   onStart: () => void;
 }) {
   const psycho = mission.psychotechnique;
@@ -556,7 +550,7 @@ export function PsychotechniqueCard({
   );
 }
 
-export function SessionHistoryItem({ item }: { item: HistoryItem }) {
+export function SessionHistoryItem({ item }: { item: SessionHistoryItemView }) {
   return (
     <div className="rounded-lg border border-border bg-card p-4">
       <div className="flex items-center justify-between gap-3">
@@ -582,8 +576,24 @@ export function SessionHistoryItem({ item }: { item: HistoryItem }) {
     </div>
   );
 }
+function groupTasksByMoment(tasks: TrainingTask[]) {
+  return {
+    morning: tasks.filter((task) => task.moment === "morning"),
+    afternoon: tasks.filter((task) => task.moment === "afternoon"),
+    evening: tasks.filter((task) => task.moment === "evening"),
+    psychotechniques: tasks.filter((task) => task.moment === "psychotechniques"),
+  };
+}
 
-function iconForTask(type: ProgramTask["type"]) {
+interface SessionHistoryItemView {
+  iso: string;
+  dayName: string;
+  completionPct: number;
+  completed: boolean;
+  highlight: string;
+  note?: string;
+}
+function iconForTask(type: TrainingTask["type"]) {
   if (type === "swim") return Waves;
   if (type === "pull") return Dumbbell;
   if (type === "chair") return Timer;
