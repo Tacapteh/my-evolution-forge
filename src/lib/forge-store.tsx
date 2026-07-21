@@ -27,6 +27,16 @@ export interface DayRecord {
     duration?: number; // s
     type?: string;
   };
+  health?: {
+    steps?: number;
+    avgHeartRate?: number;
+    workouts?: Array<{
+      type: string;
+      durationMinutes: number;
+      distanceKm?: number;
+      calories?: number;
+    }>;
+  };
 }
 
 export interface PerfEntry {
@@ -46,6 +56,7 @@ export interface ForgeState {
     date: string;
     startedAt: string;
   };
+  healthToken?: string;
 }
 
 const KEY = "forge.state.v1";
@@ -56,6 +67,7 @@ const initial: ForgeState = {
   days: {},
   perf: [],
   badges: [],
+  healthToken: "my-super-secret-token",
 };
 
 // --- Context
@@ -68,6 +80,7 @@ interface Ctx {
   finishSession: (date: string) => void;
   setJournal: (date: string, journal: DayRecord["journal"]) => void;
   setPsycho: (date: string, psycho: DayRecord["psycho"]) => void;
+  setHealth: (date: string, health: DayRecord["health"]) => void;
   addPerf: (entry: Omit<PerfEntry, "id">) => void;
   removePerf: (id: string) => void;
   reset: () => void;
@@ -98,6 +111,95 @@ export function ForgeProvider({ children }: { children: ReactNode }) {
       // Persistence is best-effort; the UI remains usable without it.
     }
   }, [state, hydrated]);
+
+  useEffect(() => {
+    if (!hydrated) return;
+
+    const token = state.healthToken || "my-super-secret-token";
+
+    const runSync = async () => {
+      try {
+        const response = await fetch("/api/sync-health", {
+          headers: {
+            "X-Health-Token": token,
+          },
+        });
+        if (!response.ok) return;
+        const syncItems = await response.json();
+        if (!Array.isArray(syncItems) || syncItems.length === 0) return;
+
+        // Apply items to the state
+        setState((prev) => {
+          let updatedState = { ...prev };
+          let updatedCount = 0;
+
+          for (const item of syncItems) {
+            const date = item.date;
+            if (!date) continue;
+
+            const day = updatedState.days[date] ?? { checked: {} };
+            const health = {
+              ...day.health,
+              steps: item.health?.steps ?? day.health?.steps,
+              avgHeartRate: item.health?.avgHeartRate ?? day.health?.avgHeartRate,
+              workouts: item.workouts ?? day.health?.workouts,
+            };
+
+            // Check workouts and auto-toggle corresponding tasks
+            const checked = { ...day.checked };
+            const tasks = tasksForDate(date);
+            
+            const hasSwimming = item.workouts?.some((w: any) => w.type === "swimming");
+            const hasRunning = item.workouts?.some((w: any) => w.type === "running");
+
+            for (const task of tasks) {
+              if (task.type === "swim" && hasSwimming && !checked[task.id]) {
+                checked[task.id] = true;
+              }
+              if (task.type === "run" && hasRunning && !checked[task.id]) {
+                checked[task.id] = true;
+              }
+            }
+
+            updatedState.days = {
+              ...updatedState.days,
+              [date]: {
+                ...day,
+                checked,
+                health,
+              },
+            };
+            updatedCount++;
+          }
+
+          if (updatedCount > 0) {
+            import("sonner").then(({ toast }) => {
+              toast.success("Synchronisation Santé réussie", {
+                description: `${updatedCount} jour(s) synchronisé(s) depuis Raccourcis iOS.`,
+              });
+            });
+          }
+
+          return updatedState;
+        });
+
+        // Clear server sync queue
+        await fetch("/api/sync-health", {
+          method: "DELETE",
+          headers: {
+            "X-Health-Token": token,
+          },
+        });
+      } catch (error) {
+        console.error("Health sync error:", error);
+      }
+    };
+
+    // Run on load, and then every 20 seconds
+    runSync();
+    const interval = setInterval(runSync, 20000);
+    return () => clearInterval(interval);
+  }, [hydrated, state.healthToken]);
 
   const value: Ctx = useMemo(
     () => ({
@@ -169,6 +271,14 @@ export function ForgeProvider({ children }: { children: ReactNode }) {
           return {
             ...prev,
             days: { ...prev.days, [date]: { ...day, psycho: { ...day.psycho, ...psycho } } },
+          };
+        }),
+      setHealth: (date, health) =>
+        setState((prev) => {
+          const day = prev.days[date] ?? { checked: {} };
+          return {
+            ...prev,
+            days: { ...prev.days, [date]: { ...day, health: { ...day.health, ...health } } },
           };
         }),
       addPerf: (entry) =>

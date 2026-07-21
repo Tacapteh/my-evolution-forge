@@ -33,6 +33,18 @@ function SettingsPage() {
             <Label className="text-xs">Date cible (tests)</Label>
             <Input type="date" value={state.targetDate} onChange={(e) => setState({ ...state, targetDate: e.target.value })} />
           </div>
+          <div>
+            <Label className="text-xs">Token de synchronisation Santé (Raccourcis iOS)</Label>
+            <Input
+              type="text"
+              value={state.healthToken || ""}
+              onChange={(e) => setState({ ...state, healthToken: e.target.value })}
+              placeholder="my-super-secret-token"
+            />
+            <p className="text-[10px] text-muted-foreground mt-1">
+              Ce token sécurise l'API. Il doit correspondre au header <code className="text-primary">X-Health-Token</code> de votre Raccourci iOS.
+            </p>
+          </div>
         </Card>
 
         <Card className="card-forge p-5">

@@ -12,6 +12,8 @@ import {
   Footprints,
   Award,
   CheckCircle2,
+  Heart,
+  Activity,
 } from "lucide-react";
 import { useForge, todayISO, computeStreak, daysUntil, totalXP } from "@/lib/forge-store";
 import {
@@ -43,6 +45,7 @@ function Dashboard() {
   const streak = hydrated ? computeStreak(state) : 0;
   const dLeft = daysUntil(state.targetDate);
   const total = totalXP(state);
+  const healthData = state.days[iso]?.health;
 
   const [focus, setFocus] = useState(false);
 
@@ -146,7 +149,7 @@ function Dashboard() {
         </div>
 
         <div className="grid grid-cols-1 gap-4 md:gap-6 lg:grid-cols-3">
-          <Card className="card-forge p-5 lg:col-span-2">
+          <Card className="card-forge p-5">
             <SectionTitle
               action={
                 <Link
@@ -204,6 +207,78 @@ function Dashboard() {
                 unit="paliers"
                 icon={<Award className="h-3.5 w-3.5" />}
               />
+            </div>
+          </Card>
+
+          <Card className="card-forge p-5 flex flex-col justify-between">
+            <div>
+              <SectionTitle
+                action={
+                  <Badge variant="outline" className="border-primary/30 text-primary flex items-center gap-1 text-[10px] uppercase font-bold tracking-wider">
+                    <Heart className="h-3 w-3 text-red-500 animate-pulse" /> Live
+                  </Badge>
+                }
+              >
+                Santé Connectée
+              </SectionTitle>
+              
+              {healthData ? (
+                <div className="space-y-4 mt-4">
+                  <div className="flex items-center justify-between p-3 rounded-lg bg-primary/5 border border-primary/10">
+                    <div className="flex items-center gap-3">
+                      <Footprints className="h-5 w-5 text-primary" />
+                      <div>
+                        <div className="text-xs text-muted-foreground">Pas du jour</div>
+                        <div className="text-lg font-bold tabular-nums">{healthData.steps?.toLocaleString() ?? "0"}</div>
+                      </div>
+                    </div>
+                    {healthData.steps && healthData.steps >= 8000 ? (
+                      <Badge className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20 text-[10px] hover:bg-emerald-500/10">Objectif</Badge>
+                    ) : (
+                      <span className="text-[10px] text-muted-foreground">Cible: 8k</span>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-3 p-3 rounded-lg bg-card border border-border">
+                    <Heart className="h-5 w-5 text-red-500" />
+                    <div>
+                      <div className="text-xs text-muted-foreground">Fréquence cardiaque</div>
+                      <div className="text-lg font-bold tabular-nums">
+                        {healthData.avgHeartRate ? `${healthData.avgHeartRate} bpm` : "--"}
+                      </div>
+                    </div>
+                  </div>
+
+                  {healthData.workouts && healthData.workouts.length > 0 && (
+                    <div className="space-y-2 mt-2">
+                      <div className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Exercices synchronisés</div>
+                      <div className="space-y-1.5">
+                        {healthData.workouts.map((w: any, idx: number) => (
+                          <div key={idx} className="flex items-center justify-between text-xs p-2 rounded border border-border/40 bg-muted/20">
+                            <span className="capitalize font-medium">{w.type === "swimming" ? "Natation" : w.type === "running" ? "Course" : w.type}</span>
+                            <span className="text-muted-foreground">{w.durationMinutes} min {w.distanceKm ? `• ${w.distanceKm} km` : ""}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="py-6 text-center text-muted-foreground space-y-3 mt-4">
+                  <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
+                    <Activity className="h-6 w-6 text-primary" />
+                  </div>
+                  <div className="text-xs font-semibold">En attente de synchronisation...</div>
+                  <p className="text-[10px] text-muted-foreground leading-relaxed px-4">
+                    Utilisez un Raccourci iOS avec l'URL de votre site pour synchroniser automatiquement vos pas, votre rythme cardiaque et vos séances.
+                  </p>
+                </div>
+              )}
+            </div>
+            
+            <div className="border-t border-border/40 pt-3 mt-4 text-[10px] text-muted-foreground flex justify-between items-center">
+              <span>Endpoint: `/api/sync-health`</span>
+              <span className="font-semibold text-primary">Prêt</span>
             </div>
           </Card>
         </div>
