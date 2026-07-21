@@ -42,97 +42,166 @@ async function writeSyncData(data: any[]) {
   }
 }
 
-function normalizeWorkoutsServer(rawWorkouts: any[]): any[] {
-  if (!Array.isArray(rawWorkouts)) return [];
-  return rawWorkouts.map((w) => {
-    if (typeof w === "string") {
+function normalizeWorkoutsServer(rawWorkouts: any): any[] {
+  if (!rawWorkouts) return [];
+
+  const workoutList: any[] = [];
+
+  const addParsedItem = (item: any) => {
+    if (typeof item === "string") {
+      const matches = item.match(/\{[^{}]*\}/g);
+      if (matches && matches.length > 0) {
+        for (const m of matches) {
+          try {
+            workoutList.push(JSON.parse(m));
+          } catch (e) {
+            workoutList.push({ type: m });
+          }
+        }
+        return;
+      }
       try {
-        w = JSON.parse(w);
+        workoutList.push(JSON.parse(item));
       } catch (e) {
-        w = { type: w };
+        workoutList.push({ type: item });
+      }
+    } else if (Array.isArray(item)) {
+      for (const sub of item) addParsedItem(sub);
+    } else if (item && typeof item === "object") {
+      workoutList.push(item);
+    }
+  };
+
+  addParsedItem(rawWorkouts);
+
+  const results: any[] = [];
+
+  for (const w of workoutList) {
+    if (!w || typeof w !== "object") continue;
+
+    let calories: number | undefined = undefined;
+    const rawActiveCal = String(w.activeCalories ?? w.calories ?? "");
+    if (rawActiveCal) {
+      const numMatch = rawActiveCal.replace(",", ".").match(/(\d+(?:\.\d+)?)/);
+      if (numMatch) {
+        const val = Math.round(parseFloat(numMatch[1]));
+        if (val > 0) calories = val;
       }
     }
-    if (!w || typeof w !== "object") return { type: "Exercice" };
-    const rawType = String(
-      w.type ?? w.activityType ?? w.workoutActivityType ?? w.name ?? w.workoutType ?? w.title ?? "Exercice",
-    ).toLowerCase();
-    let type = "Exercice";
+
+    let rawType = String(
+      w.type ?? w.activityType ?? w.workoutActivityType ?? w.name ?? w.workoutType ?? w.title ?? "",
+    ).trim();
+
+    if (rawType.startsWith("{")) {
+      try {
+        const parsedType = JSON.parse(rawType);
+        if (parsedType && typeof parsedType === "object") {
+          if (parsedType.activeCalories && !calories) {
+            const numMatch = String(parsedType.activeCalories).replace(",", ".").match(/(\d+(?:\.\d+)?)/);
+            if (numMatch) calories = Math.round(parseFloat(numMatch[1]));
+          }
+          rawType = String(parsedType.type ?? parsedType.name ?? "");
+        }
+      } catch (e) {}
+    }
+
+    if (rawType.includes("kcal")) {
+      const kcalMatch = rawType.replace(",", ".").match(/(\d+(?:\.\d+)?)\s*kcal/i);
+      if (kcalMatch && !calories) {
+        const val = Math.round(parseFloat(kcalMatch[1]));
+        if (val > 0) calories = val;
+      }
+      rawType = "";
+    }
+
+    let type = "Natation";
+    const lowerType = rawType.toLowerCase();
+
     if (
-      rawType.includes("swim") ||
-      rawType.includes("natat") ||
-      rawType.includes("nage") ||
-      rawType.includes("hkworkoutactivitytypeswimming")
-    )
+      lowerType.includes("swim") ||
+      lowerType.includes("natat") ||
+      lowerType.includes("nage") ||
+      lowerType.includes("hkworkoutactivitytypeswimming")
+    ) {
       type = "Natation";
-    else if (
-      rawType.includes("run") ||
-      rawType.includes("cours") ||
-      rawType.includes("footing") ||
-      rawType.includes("hkworkoutactivitytyperunning")
-    )
+    } else if (
+      lowerType.includes("run") ||
+      lowerType.includes("cours") ||
+      lowerType.includes("footing") ||
+      lowerType.includes("hkworkoutactivitytyperunning")
+    ) {
       type = "Course";
-    else if (
-      rawType.includes("walk") ||
-      rawType.includes("march") ||
-      rawType.includes("hkworkoutactivitytypewalking")
-    )
+    } else if (
+      lowerType.includes("walk") ||
+      lowerType.includes("march") ||
+      lowerType.includes("hkworkoutactivitytypewalking")
+    ) {
       type = "Marche";
-    else if (
-      rawType.includes("cycle") ||
-      rawType.includes("velo") ||
-      rawType.includes("bike") ||
-      rawType.includes("hkworkoutactivitytypecycling")
-    )
+    } else if (
+      lowerType.includes("cycle") ||
+      lowerType.includes("velo") ||
+      lowerType.includes("bike") ||
+      lowerType.includes("hkworkoutactivitytypecycling")
+    ) {
       type = "Cyclisme";
-    else type = w.type ?? w.activityType ?? w.name ?? "Exercice";
+    } else if (rawType && !rawType.includes("{") && !rawType.includes("kcal")) {
+      type = rawType;
+    }
 
     let durationMinutes: number | undefined = undefined;
-    const rawDuration = Number(
+    const rawDur = Number(
       w.durationMinutes ?? w.duration ?? w.durationInMinutes ?? w.elapsedTime ?? w.totalDuration ?? 0,
     );
-    if (w.durationSec != null) {
+    if (w.durationSec != null && Number(w.durationSec) > 0) {
       durationMinutes = Math.round(Number(w.durationSec) / 60);
-    } else if (rawDuration > 0) {
-      durationMinutes = rawDuration > 300 ? Math.round(rawDuration / 60) : rawDuration;
+    } else if (rawDur > 0) {
+      durationMinutes = rawDur > 300 ? Math.round(rawDur / 60) : rawDur;
     }
 
     let distanceKm: number | undefined = undefined;
     let distanceMeters: number | undefined = undefined;
 
-    const rawDist = Number(
-      w.distanceMeters ?? w.distanceInMeters ?? w.distanceKm ?? w.distanceInKm ?? w.distance ?? w.totalDistance ?? 0,
-    );
+    const parseDistNum = (val: any): number | undefined => {
+      if (val == null) return undefined;
+      const str = String(val).trim();
+      if (str.includes("kcal") || isNaN(Number(str))) return undefined;
+      const num = Number(str);
+      return num > 0 ? num : undefined;
+    };
 
-    if (w.distanceMeters != null || w.distanceInMeters != null) {
-      const meters = Number(w.distanceMeters ?? w.distanceInMeters);
-      if (meters > 0) {
-        distanceMeters = meters;
-        distanceKm = Number((meters / 1000).toFixed(2));
-      }
-    } else if (w.distanceKm != null || w.distanceInKm != null) {
-      const km = Number(w.distanceKm ?? w.distanceInKm);
-      if (km > 0) {
-        distanceKm = km;
-        distanceMeters = Math.round(km * 1000);
-      }
-    } else if (rawDist > 0) {
-      if (rawDist > 50) {
-        distanceMeters = rawDist;
-        distanceKm = Number((rawDist / 1000).toFixed(2));
+    const dMeters = parseDistNum(w.distanceMeters ?? w.distanceInMeters);
+    const dKm = parseDistNum(w.distanceKm ?? w.distanceInKm);
+    const dGen = parseDistNum(w.distance ?? w.totalDistance);
+
+    if (dMeters) {
+      distanceMeters = dMeters;
+      distanceKm = Number((dMeters / 1000).toFixed(2));
+    } else if (dKm) {
+      distanceKm = dKm;
+      distanceMeters = Math.round(dKm * 1000);
+    } else if (dGen) {
+      if (dGen > 50) {
+        distanceMeters = dGen;
+        distanceKm = Number((dGen / 1000).toFixed(2));
       } else {
-        distanceKm = rawDist;
-        distanceMeters = Math.round(rawDist * 1000);
+        distanceKm = dGen;
+        distanceMeters = Math.round(dGen * 1000);
       }
     }
 
-    return {
+    if (!durationMinutes && !distanceKm && !calories) continue;
+
+    results.push({
       type,
       durationMinutes: durationMinutes && durationMinutes > 0 ? durationMinutes : undefined,
-      distanceKm: distanceKm && !isNaN(distanceKm) ? distanceKm : undefined,
-      distanceMeters: distanceMeters && !isNaN(distanceMeters) ? distanceMeters : undefined,
-      calories: w.calories != null ? Number(w.calories) : undefined,
-    };
-  });
+      distanceKm,
+      distanceMeters,
+      calories,
+    });
+  }
+
+  return results;
 }
 
 async function mergeHealthIntoServerStates(payload: any) {
