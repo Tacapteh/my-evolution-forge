@@ -367,7 +367,7 @@ export function ForgeProvider({ children }: { children: ReactNode }) {
       setState: setLocalState,
       hydrated,
       toggleTask: (date, taskId) =>
-        setState((prev) => {
+        setLocalState((prev) => {
           const day = prev.days[date] ?? { checked: {} };
           const checked = { ...day.checked, [taskId]: !day.checked[taskId] };
           const completed = tasksForDate(date).every((task) => checked[task.id]);
@@ -392,7 +392,7 @@ export function ForgeProvider({ children }: { children: ReactNode }) {
           };
         }),
       startSession: (date) =>
-        setState((prev) => {
+        setLocalState((prev) => {
           const day = prev.days[date] ?? { checked: {} };
           const startedAt = day.session?.startedAt ?? new Date().toISOString();
           return {
@@ -405,7 +405,7 @@ export function ForgeProvider({ children }: { children: ReactNode }) {
           };
         }),
       finishSession: (date) =>
-        setState((prev) => {
+        setLocalState((prev) => {
           const day = prev.days[date] ?? { checked: {} };
           const completedAt = new Date().toISOString();
           return {
@@ -418,7 +418,7 @@ export function ForgeProvider({ children }: { children: ReactNode }) {
           };
         }),
       setJournal: (date, journal) =>
-        setState((prev) => {
+        setLocalState((prev) => {
           const day = prev.days[date] ?? { checked: {} };
           return {
             ...prev,
@@ -426,7 +426,7 @@ export function ForgeProvider({ children }: { children: ReactNode }) {
           };
         }),
       setPsycho: (date, psycho) =>
-        setState((prev) => {
+        setLocalState((prev) => {
           const day = prev.days[date] ?? { checked: {} };
           return {
             ...prev,
@@ -434,7 +434,7 @@ export function ForgeProvider({ children }: { children: ReactNode }) {
           };
         }),
       setHealth: (date, health) =>
-        setState((prev) => {
+        setLocalState((prev) => {
           const day = prev.days[date] ?? { checked: {} };
           return {
             ...prev,
@@ -442,7 +442,7 @@ export function ForgeProvider({ children }: { children: ReactNode }) {
           };
         }),
       setMomentSwap: (date, moment, activityId) =>
-        setState((prev) => {
+        setLocalState((prev) => {
           const day = prev.days[date] ?? { checked: {} };
           const swaps = { ...day.swaps, [moment]: activityId };
           return {
@@ -454,7 +454,7 @@ export function ForgeProvider({ children }: { children: ReactNode }) {
           };
         }),
       addPerf: (entry) =>
-        setState((prev) => {
+        setLocalState((prev) => {
           const withEntry = [...prev.perf, { ...entry, id: crypto.randomUUID() }];
           const badges = new Set(prev.badges);
           if (entry.type === "pull" && entry.value >= 10) badges.add("pull10");
@@ -466,8 +466,8 @@ export function ForgeProvider({ children }: { children: ReactNode }) {
           return { ...prev, perf: withEntry, badges: [...badges] };
         }),
       removePerf: (id) =>
-        setState((prev) => ({ ...prev, perf: prev.perf.filter((p) => p.id !== id) })),
-      reset: () => setState(initial),
+        setLocalState((prev) => ({ ...prev, perf: prev.perf.filter((p) => p.id !== id) })),
+      reset: () => setLocalState(initial),
     }),
     [state, hydrated],
   );
