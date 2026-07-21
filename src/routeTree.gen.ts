@@ -9,8 +9,44 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as PsychotechniquesRouteImport } from './routes/psychotechniques'
+import { Route as ProgressionRouteImport } from './routes/progression'
+import { Route as ProgrammeRouteImport } from './routes/programme'
+import { Route as PerformancesRouteImport } from './routes/performances'
+import { Route as ParametresRouteImport } from './routes/parametres'
+import { Route as JournalRouteImport } from './routes/journal'
 import { Route as IndexRouteImport } from './routes/index'
 
+const PsychotechniquesRoute = PsychotechniquesRouteImport.update({
+  id: '/psychotechniques',
+  path: '/psychotechniques',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProgressionRoute = ProgressionRouteImport.update({
+  id: '/progression',
+  path: '/progression',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProgrammeRoute = ProgrammeRouteImport.update({
+  id: '/programme',
+  path: '/programme',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PerformancesRoute = PerformancesRouteImport.update({
+  id: '/performances',
+  path: '/performances',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ParametresRoute = ParametresRouteImport.update({
+  id: '/parametres',
+  path: '/parametres',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const JournalRoute = JournalRouteImport.update({
+  id: '/journal',
+  path: '/journal',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -19,28 +55,116 @@ const IndexRoute = IndexRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/journal': typeof JournalRoute
+  '/parametres': typeof ParametresRoute
+  '/performances': typeof PerformancesRoute
+  '/programme': typeof ProgrammeRoute
+  '/progression': typeof ProgressionRoute
+  '/psychotechniques': typeof PsychotechniquesRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/journal': typeof JournalRoute
+  '/parametres': typeof ParametresRoute
+  '/performances': typeof PerformancesRoute
+  '/programme': typeof ProgrammeRoute
+  '/progression': typeof ProgressionRoute
+  '/psychotechniques': typeof PsychotechniquesRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/journal': typeof JournalRoute
+  '/parametres': typeof ParametresRoute
+  '/performances': typeof PerformancesRoute
+  '/programme': typeof ProgrammeRoute
+  '/progression': typeof ProgressionRoute
+  '/psychotechniques': typeof PsychotechniquesRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/journal'
+    | '/parametres'
+    | '/performances'
+    | '/programme'
+    | '/progression'
+    | '/psychotechniques'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/journal'
+    | '/parametres'
+    | '/performances'
+    | '/programme'
+    | '/progression'
+    | '/psychotechniques'
+  id:
+    | '__root__'
+    | '/'
+    | '/journal'
+    | '/parametres'
+    | '/performances'
+    | '/programme'
+    | '/progression'
+    | '/psychotechniques'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  JournalRoute: typeof JournalRoute
+  ParametresRoute: typeof ParametresRoute
+  PerformancesRoute: typeof PerformancesRoute
+  ProgrammeRoute: typeof ProgrammeRoute
+  ProgressionRoute: typeof ProgressionRoute
+  PsychotechniquesRoute: typeof PsychotechniquesRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/psychotechniques': {
+      id: '/psychotechniques'
+      path: '/psychotechniques'
+      fullPath: '/psychotechniques'
+      preLoaderRoute: typeof PsychotechniquesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/progression': {
+      id: '/progression'
+      path: '/progression'
+      fullPath: '/progression'
+      preLoaderRoute: typeof ProgressionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/programme': {
+      id: '/programme'
+      path: '/programme'
+      fullPath: '/programme'
+      preLoaderRoute: typeof ProgrammeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/performances': {
+      id: '/performances'
+      path: '/performances'
+      fullPath: '/performances'
+      preLoaderRoute: typeof PerformancesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/parametres': {
+      id: '/parametres'
+      path: '/parametres'
+      fullPath: '/parametres'
+      preLoaderRoute: typeof ParametresRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/journal': {
+      id: '/journal'
+      path: '/journal'
+      fullPath: '/journal'
+      preLoaderRoute: typeof JournalRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -53,6 +177,12 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  JournalRoute: JournalRoute,
+  ParametresRoute: ParametresRoute,
+  PerformancesRoute: PerformancesRoute,
+  ProgrammeRoute: ProgrammeRoute,
+  ProgressionRoute: ProgressionRoute,
+  PsychotechniquesRoute: PsychotechniquesRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
