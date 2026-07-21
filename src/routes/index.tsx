@@ -352,7 +352,14 @@ function Dashboard() {
                         <Footprints className="h-5 w-5 text-primary" />
                         <div>
                           <div className="text-xs text-muted-foreground">Pas du jour</div>
-                          <div className="text-base font-bold tabular-nums">{healthData.steps?.toLocaleString() ?? "0"}</div>
+                          <div className="text-sm font-bold tabular-nums text-foreground mt-0.5">
+                            {healthData.steps?.toLocaleString() ?? "0"} pas{" "}
+                            {healthData.steps && healthData.steps > 0 && (
+                              <span className="text-xs text-primary font-semibold">
+                                ({((healthData.steps * 0.74) / 1000).toFixed(1)} km)
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -361,7 +368,7 @@ function Dashboard() {
                       <Heart className="h-5 w-5 text-red-500" />
                       <div>
                         <div className="text-xs text-muted-foreground">Fréquence cardiaque</div>
-                        <div className="text-base font-bold tabular-nums">
+                        <div className="text-sm font-bold tabular-nums mt-0.5">
                           {healthData.avgHeartRate ? `${healthData.avgHeartRate} bpm` : "--"}
                         </div>
                       </div>
@@ -386,11 +393,18 @@ function Dashboard() {
                             const isCycle = typeStr.includes("velo") || typeStr.includes("cycle") || typeStr.includes("bike");
                             const displayType = w.type || "Natation";
 
-                            let distLabel = "";
-                            if (w.distanceMeters && w.distanceMeters > 0) {
-                              distLabel = isSwim || w.distanceMeters < 1000 ? `${w.distanceMeters}m` : `${(w.distanceMeters / 1000).toFixed(1)} km`;
-                            } else if (w.distanceKm && w.distanceKm > 0) {
-                              distLabel = isSwim || w.distanceKm < 1 ? `${Math.round(w.distanceKm * 1000)}m` : `${w.distanceKm} km`;
+                            const durationMin = w.durationMinutes ?? 30;
+
+                            const meters = w.distanceMeters ?? (w.distanceKm ? Math.round(w.distanceKm * 1000) : null);
+                            const km = w.distanceKm ?? (w.distanceMeters ? Number((w.distanceMeters / 1000).toFixed(1)) : null);
+
+                            let distanceStr = "";
+                            if (meters && km) {
+                              distanceStr = `${meters}m (${km} km)`;
+                            } else if (meters) {
+                              distanceStr = `${meters}m`;
+                            } else if (km) {
+                              distanceStr = `${km} km`;
                             }
 
                             return (
@@ -418,19 +432,14 @@ function Dashboard() {
                                         Apple Health
                                       </Badge>
                                     </div>
-                                    <div className="text-[10px] text-muted-foreground mt-0.5 font-medium">
-                                      {w.durationMinutes != null && w.durationMinutes > 0 && (
+                                    <p className="text-[11px] text-muted-foreground mt-0.5 font-medium">
+                                      Durée: <span className="font-semibold text-foreground">{durationMin} min</span>
+                                      {distanceStr && (
                                         <>
-                                          Durée: <span className="font-semibold text-foreground">{w.durationMinutes} min</span>
+                                          {" • "}Distance: <span className="font-semibold text-foreground">{distanceStr}</span>
                                         </>
                                       )}
-                                      {w.durationMinutes != null && w.durationMinutes > 0 && distLabel && <> • </>}
-                                      {distLabel && (
-                                        <>
-                                          Distance: <span className="font-semibold text-foreground">{distLabel}</span>
-                                        </>
-                                      )}
-                                    </div>
+                                    </p>
                                   </div>
                                 </div>
                                 {w.calories != null && w.calories > 0 && (
