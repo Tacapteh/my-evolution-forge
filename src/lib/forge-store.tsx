@@ -297,6 +297,23 @@ export function ForgeProvider({ children }: { children: ReactNode }) {
           }
 
           if (updatedCount > 0) {
+            updatedState = {
+              ...updatedState,
+              updatedAt: new Date().toISOString(),
+            };
+            try {
+              localStorage.setItem(KEY, JSON.stringify(updatedState));
+            } catch (e) {}
+
+            fetch("/api/sync-state", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "X-Sync-Token": token,
+              },
+              body: JSON.stringify(updatedState),
+            }).catch(() => {});
+
             import("sonner").then(({ toast }) => {
               toast.success("Synchronisation Santé réussie", {
                 description: `${updatedCount} jour(s) synchronisé(s) depuis Raccourcis iOS.`,
