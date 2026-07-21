@@ -184,11 +184,16 @@ export function createTrainingEngine(
           detail = `Pyramide d'effort (Pic à 95% = ${c3}s) • Repos 60s`;
         }
       } else if (task.type === "run") {
-        const isThursdayLucTest = dayIndex === 3; // Jeudi = Test Luc Léger Hebdomadaire
-        if (isThursdayLucTest) {
-          label = "⚠️ TEST MAX LUC LÉGER (Hebdomadaire)";
+        const isThursday = dayIndex === 3;
+        if (isThursday && isTestMaxDay) {
+          label = "⚠️ TEST MAX LUC LÉGER (Bi-hebdomadaire)";
           detail = `Test navette 20m avec bande sonore du jeudi • Saisis ton Palier atteint (Actuel: Palier ${userMaxLuc} / Obj: Palier 12)`;
           steps = ["Tracer 20m avec balises", "Suivre les bips de la bande sonore Luc Léger", "Arrêt au 2ème manquement consécutif", "Saisir le Palier dans l'application"];
+        } else if (isThursday) {
+          const targetPalier = Math.min(12, +(userMaxLuc + 0.5).toFixed(1));
+          label = `Entraînement Luc Léger — Allure Palier ${targetPalier}`;
+          detail = `Séance spécifique Luc Léger (Navettes 20m) • Palier cible ${targetPalier} (Basé sur max Palier ${userMaxLuc})`;
+          steps = ["Échauffement 10 min", `Navettes 20m au rythme Palier ${targetPalier}`, "5 min récupération active"];
         } else if (dayIndex === 1) {
           const targetPalier = Math.min(12, +(userMaxLuc + 0.5).toFixed(1));
           label = `Fractionné VMA 30/30 — 12 reps à l'allure Palier ${targetPalier}`;
