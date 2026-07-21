@@ -34,6 +34,7 @@ export interface DayRecord {
       type: string;
       durationMinutes: number;
       distanceKm?: number;
+      distanceMeters?: number;
       calories?: number;
     }>;
   };
@@ -262,21 +263,23 @@ export function ForgeProvider({ children }: { children: ReactNode }) {
 
             const steps = item.health?.steps ?? item.steps ?? item.stepCount ?? day.health?.steps;
             const avgHeartRate = item.health?.avgHeartRate ?? item.avgHeartRate ?? item.heartRate ?? day.health?.avgHeartRate;
-            const workouts = item.workouts ?? item.health?.workouts ?? day.health?.workouts;
+            const rawWorkouts = item.workouts ?? item.health?.workouts ?? day.health?.workouts ?? [];
+            const normalizedWorkoutsList = normalizeWorkouts(rawWorkouts);
+            const mergedWorkouts = normalizedWorkoutsList.length > 0 ? normalizedWorkoutsList : day.health?.workouts ?? [];
 
             const health = {
               ...day.health,
               steps: steps != null ? Number(steps) : undefined,
               avgHeartRate: avgHeartRate != null ? Number(avgHeartRate) : undefined,
-              workouts: Array.isArray(workouts) ? workouts : day.health?.workouts ?? [],
+              workouts: mergedWorkouts,
             };
 
             // Check workouts and auto-toggle corresponding tasks
             const checked = { ...day.checked };
             const tasks = tasksForDate(date);
-            
-            const hasSwimming = health.workouts?.some((w: any) => w.type === "swimming" || w.type === "swim");
-            const hasRunning = health.workouts?.some((w: any) => w.type === "running" || w.type === "run");
+
+            const hasSwimming = health.workouts?.some((w: any) => String(w.type).toLowerCase().includes("natat") || String(w.type).toLowerCase().includes("swim"));
+            const hasRunning = health.workouts?.some((w: any) => String(w.type).toLowerCase().includes("cours") || String(w.type).toLowerCase().includes("run"));
 
             for (const task of tasks) {
               if (task.type === "swim" && hasSwimming && !checked[task.id]) {
@@ -516,6 +519,79 @@ export function normalizeDateISO(inputDate?: any): string {
   }
 
   return todayISO();
+}
+
+export function normalizeWorkouts(rawWorkouts: any[]): Array<{
+  type: string;
+  durationMinutes: number;
+  distanceKm?: number;
+  distanceMeters?: number;
+  calories?: number;
+}> {
+  if (!Array.isArray(rawWorkouts)) return [];
+
+  return rawWorkouts.map((w) => {
+    if (typeof w === "string") {
+      try {
+        w = JSON.parse(w);
+      } catch (e) {
+        w = { type: w };
+      }
+    }
+    if (!w || typeof w !== "object") return { type: "Exercice", durationMinutes: 30 };
+
+    const rawType = String(w.type ?? w.activityType ?? w.name ?? w.workoutType ?? "Exercice").trim().toLowerCase();
+
+    let type = "Exercice";
+    if (rawType.includes("swim") || rawType.includes("natat") || rawType.includes("nage")) {
+      type = "Natation";
+    } else if (rawType.includes("run") || rawType.includes("cours") || rawType.includes("footing")) {
+      type = "Course";
+    } else if (rawType.includes("walk") || rawType.includes("march")) {
+      type = "Marche";
+    } else if (rawType.includes("cycle") || rawType.includes("velo") || rawType.includes("bike")) {
+      type = "Cyclisme";
+    } else {
+      type = w.type ?? w.name ?? "Exercice";
+    }
+
+    // Duration (minutes)
+    let durationMinutes = Number(w.durationMinutes ?? w.duration ?? w.durationInMinutes ?? w.elapsedTime ?? 0);
+    if (w.durationSec != null) durationMinutes = Math.round(Number(w.durationSec) / 60);
+    if (durationMinutes > 300) durationMinutes = Math.round(durationMinutes / 60);
+
+    // Distance
+    let distanceKm: number | undefined = undefined;
+    let distanceMeters: number | undefined = undefined;
+
+    if (w.distanceMeters != null) {
+      distanceMeters = Number(w.distanceMeters);
+      distanceKm = Number((distanceMeters / 1000).toFixed(2));
+    } else if (w.distanceInMeters != null) {
+      distanceMeters = Number(w.distanceInMeters);
+      distanceKm = Number((distanceMeters / 1000).toFixed(2));
+    } else if (w.distanceKm != null) {
+      distanceKm = Number(w.distanceKm);
+      distanceMeters = Math.round(distanceKm * 1000);
+    } else if (w.distance != null) {
+      const dist = Number(w.distance);
+      if (dist > 50) {
+        distanceMeters = dist;
+        distanceKm = Number((dist / 1000).toFixed(2));
+      } else {
+        distanceKm = dist;
+        distanceMeters = Math.round(dist * 1000);
+      }
+    }
+
+    return {
+      type,
+      durationMinutes: durationMinutes > 0 ? durationMinutes : 30,
+      distanceKm: distanceKm && !isNaN(distanceKm) ? distanceKm : undefined,
+      distanceMeters: distanceMeters && !isNaN(distanceMeters) ? distanceMeters : undefined,
+      calories: w.calories != null ? Number(w.calories) : undefined,
+    };
+  });
 }
 
 export function dowMon(d: Date) {

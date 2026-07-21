@@ -42,6 +42,61 @@ async function writeSyncData(data: any[]) {
   }
 }
 
+function normalizeWorkoutsServer(rawWorkouts: any[]): any[] {
+  if (!Array.isArray(rawWorkouts)) return [];
+  return rawWorkouts.map((w) => {
+    if (typeof w === "string") {
+      try {
+        w = JSON.parse(w);
+      } catch (e) {
+        w = { type: w };
+      }
+    }
+    if (!w || typeof w !== "object") return { type: "Exercice", durationMinutes: 30 };
+    const rawType = String(w.type ?? w.activityType ?? w.name ?? w.workoutType ?? "Exercice").toLowerCase();
+    let type = "Exercice";
+    if (rawType.includes("swim") || rawType.includes("natat") || rawType.includes("nage")) type = "Natation";
+    else if (rawType.includes("run") || rawType.includes("cours")) type = "Course";
+    else if (rawType.includes("walk") || rawType.includes("march")) type = "Marche";
+    else if (rawType.includes("cycle") || rawType.includes("velo")) type = "Cyclisme";
+    else type = w.type ?? w.name ?? "Exercice";
+
+    let durationMinutes = Number(w.durationMinutes ?? w.duration ?? w.durationInMinutes ?? w.elapsedTime ?? 0);
+    if (w.durationSec != null) durationMinutes = Math.round(Number(w.durationSec) / 60);
+
+    let distanceKm: number | undefined = undefined;
+    let distanceMeters: number | undefined = undefined;
+
+    if (w.distanceMeters != null) {
+      distanceMeters = Number(w.distanceMeters);
+      distanceKm = Number((distanceMeters / 1000).toFixed(2));
+    } else if (w.distanceInMeters != null) {
+      distanceMeters = Number(w.distanceInMeters);
+      distanceKm = Number((distanceMeters / 1000).toFixed(2));
+    } else if (w.distanceKm != null) {
+      distanceKm = Number(w.distanceKm);
+      distanceMeters = Math.round(distanceKm * 1000);
+    } else if (w.distance != null) {
+      const dist = Number(w.distance);
+      if (dist > 50) {
+        distanceMeters = dist;
+        distanceKm = Number((dist / 1000).toFixed(2));
+      } else {
+        distanceKm = dist;
+        distanceMeters = Math.round(dist * 1000);
+      }
+    }
+
+    return {
+      type,
+      durationMinutes: durationMinutes > 0 ? durationMinutes : 30,
+      distanceKm: distanceKm && !isNaN(distanceKm) ? distanceKm : undefined,
+      distanceMeters: distanceMeters && !isNaN(distanceMeters) ? distanceMeters : undefined,
+      calories: w.calories != null ? Number(w.calories) : undefined,
+    };
+  });
+}
+
 async function mergeHealthIntoServerStates(payload: any) {
   try {
     const todayISO = new Date().toISOString().slice(0, 10);
@@ -50,7 +105,8 @@ async function mergeHealthIntoServerStates(payload: any) {
 
     const steps = payload.health?.steps ?? payload.steps ?? payload.stepCount;
     const avgHeartRate = payload.health?.avgHeartRate ?? payload.avgHeartRate ?? payload.heartRate;
-    const workouts = payload.workouts ?? payload.health?.workouts ?? [];
+    const rawWorkouts = payload.workouts ?? payload.health?.workouts ?? [];
+    const normalizedWorkouts = normalizeWorkoutsServer(rawWorkouts);
 
     const dirsToSearch = [SYNC_DIR, "/tmp"];
     for (const dir of dirsToSearch) {
@@ -69,7 +125,7 @@ async function mergeHealthIntoServerStates(payload: any) {
                   ...day.health,
                   steps: steps != null ? Number(steps) : day.health?.steps,
                   avgHeartRate: avgHeartRate != null ? Number(avgHeartRate) : day.health?.avgHeartRate,
-                  workouts: Array.isArray(workouts) && workouts.length ? workouts : day.health?.workouts ?? [],
+                  workouts: normalizedWorkouts.length ? normalizedWorkouts : day.health?.workouts ?? [],
                 };
                 state.days[date] = day;
                 state.updatedAt = new Date().toISOString();

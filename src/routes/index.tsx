@@ -16,6 +16,8 @@ import {
   Heart,
   Activity,
   Plus,
+  Waves,
+  Sparkles,
 } from "lucide-react";
 import { useForge, todayISO, computeStreak, daysUntil, totalXP } from "@/lib/forge-store";
 import {
@@ -117,18 +119,31 @@ function Dashboard() {
     const hrInput = window.prompt("Saisir votre fréquence cardiaque moyenne en bpm (ex: 68) :", String(healthData?.avgHeartRate ?? 68));
     if (hrInput === null) return;
 
+    const addWorkout = window.confirm("Souhaitez-vous inclure une séance de Natation (1000m, 45 min) à la synchro ?");
+
     const steps = parseInt(stepsInput, 10);
     const hr = parseInt(hrInput, 10);
+
+    const workouts = [...(healthData?.workouts ?? [])];
+    if (addWorkout) {
+      workouts.unshift({
+        type: "Natation",
+        durationMinutes: 45,
+        distanceMeters: 1000,
+        distanceKm: 1.0,
+        calories: 320,
+      });
+    }
 
     const updatedHealth = {
       steps: !isNaN(steps) ? steps : healthData?.steps,
       avgHeartRate: !isNaN(hr) ? hr : healthData?.avgHeartRate,
-      workouts: healthData?.workouts ?? [],
+      workouts,
     };
 
     setHealth(iso, updatedHealth);
     toast.success("Données Santé enregistrées !", {
-      description: `${steps} pas • FC: ${hr} bpm`,
+      description: `${steps} pas • FC: ${hr} bpm ${addWorkout ? "• Natation 1000m (45 min)" : ""}`,
     });
   };
 
@@ -307,15 +322,50 @@ function Dashboard() {
                   </div>
 
                   {healthData.workouts && healthData.workouts.length > 0 && (
-                    <div className="space-y-2 mt-2">
-                      <div className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Exercices synchronisés</div>
-                      <div className="space-y-1.5">
-                        {healthData.workouts.map((w: any, idx: number) => (
-                          <div key={idx} className="flex items-center justify-between text-xs p-2 rounded border border-border/40 bg-muted/20">
-                            <span className="capitalize font-medium">{w.type === "swimming" ? "Natation" : w.type === "running" ? "Course" : w.type}</span>
-                            <span className="text-muted-foreground">{w.durationMinutes} min {w.distanceKm ? `• ${w.distanceKm} km` : ""}</span>
-                          </div>
-                        ))}
+                    <div className="space-y-2 mt-3 pt-3 border-t border-border/40">
+                      <div className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                        <Sparkles className="h-3.5 w-3.5 text-primary" />
+                        Exercices synchronisés ({healthData.workouts.length})
+                      </div>
+                      <div className="space-y-2">
+                        {healthData.workouts.map((w: any, idx: number) => {
+                          const isSwim = String(w.type).toLowerCase().includes("natat") || String(w.type).toLowerCase().includes("swim") || String(w.type).toLowerCase().includes("nage");
+                          const isRun = String(w.type).toLowerCase().includes("cours") || String(w.type).toLowerCase().includes("run");
+
+                          let distLabel = "";
+                          if (w.distanceMeters) {
+                            distLabel = w.distanceMeters >= 1000 && w.distanceMeters % 1000 === 0
+                              ? `${w.distanceMeters}m (${(w.distanceMeters / 1000).toFixed(1)} km)`
+                              : `${w.distanceMeters}m`;
+                          } else if (w.distanceKm) {
+                            distLabel = w.distanceKm < 2 ? `${Math.round(w.distanceKm * 1000)}m` : `${w.distanceKm} km`;
+                          }
+
+                          return (
+                            <div key={idx} className="flex items-center justify-between p-2.5 rounded-lg border border-primary/20 bg-primary/5">
+                              <div className="flex items-center gap-2.5">
+                                <div className="w-8 h-8 rounded-md bg-primary/10 flex items-center justify-center text-primary">
+                                  {isSwim ? <Waves className="h-4 w-4" /> : isRun ? <Footprints className="h-4 w-4" /> : <Dumbbell className="h-4 w-4" />}
+                                </div>
+                                <div>
+                                  <div className="text-xs font-bold capitalize flex items-center gap-1.5">
+                                    {w.type}
+                                    <Badge variant="outline" className="text-[9px] py-0 px-1.5 border-primary/30 text-primary">Apple Health</Badge>
+                                  </div>
+                                  <div className="text-[10px] text-muted-foreground">
+                                    Durée: <span className="font-semibold text-foreground">{w.durationMinutes} min</span>
+                                    {distLabel && <> • Distance: <span className="font-semibold text-foreground">{distLabel}</span></>}
+                                  </div>
+                                </div>
+                              </div>
+                              {w.calories && (
+                                <span className="text-[10px] font-semibold text-amber-500 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">
+                                  {w.calories} kcal
+                                </span>
+                              )}
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
                   )}
