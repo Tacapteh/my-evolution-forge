@@ -27,21 +27,21 @@ export function createTrainingEngine(
     const dayIndex = (date.getDay() + 6) % 7;
     const diffDays = Math.floor((date.getTime() - TRAINING_START.getTime()) / 86400000);
     const weekIndex = Math.max(0, Math.min(TRAINING_WEEKS.length - 1, Math.floor(diffDays / 7)));
-    const week = TRAINING_WEEKS[weekIndex];
+    const week = TRAINING_WEEKS[weekIndex] ?? TRAINING_WEEKS[0];
     return { week, dayIndex };
   };
 
   const getProgramDefinition = (dateISO: string) => {
     const { week, dayIndex } = getTrainingWeek(dateISO);
-    return week.days[dayIndex];
+    return week.days[dayIndex] ?? week.days[0];
   };
 
   const buildMission = (dateISO: string): TrainingMission => {
     const { week, dayIndex } = getTrainingWeek(dateISO);
-    const definition = week.days[dayIndex];
-    const rawTasks = (definition.tasks ?? []).length
+    const definition = week.days[dayIndex] ?? week.days[0];
+    const rawTasks = (definition?.tasks ?? []).length
       ? definition.tasks ?? []
-      : (definition.sessions ?? []).flatMap((session) => session.exercises);
+      : (definition?.sessions ?? []).flatMap((session) => session.exercises);
     const tasks = rawTasks.map((task, index) => ({
       ...task,
       moment: task.moment ?? inferMoment(task.type, index),

@@ -109,7 +109,16 @@ export function ForgeProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     try {
       const raw = localStorage.getItem(KEY);
-      if (raw) setState({ ...initial, ...JSON.parse(raw) });
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        setState({
+          ...initial,
+          ...parsed,
+          days: parsed.days && typeof parsed.days === "object" ? parsed.days : {},
+          perf: Array.isArray(parsed.perf) ? parsed.perf : [],
+          badges: Array.isArray(parsed.badges) ? parsed.badges : [],
+        });
+      }
     } catch {
       // Local storage can be unavailable in restricted browser contexts.
     }
@@ -152,6 +161,10 @@ export function ForgeProvider({ children }: { children: ReactNode }) {
           }
           return;
         }
+
+        const contentType = response.headers.get("content-type") || "";
+        if (!contentType.includes("application/json")) return;
+
         const serverState = await response.json();
         if (serverState && serverState.updatedAt) {
           const serverTime = new Date(serverState.updatedAt).getTime();
@@ -159,7 +172,13 @@ export function ForgeProvider({ children }: { children: ReactNode }) {
 
           if (serverTime > localTime) {
             // Server has newer state, replace client state
-            setState(serverState);
+            setState({
+              ...initial,
+              ...serverState,
+              days: serverState.days && typeof serverState.days === "object" ? serverState.days : {},
+              perf: Array.isArray(serverState.perf) ? serverState.perf : [],
+              badges: Array.isArray(serverState.badges) ? serverState.badges : [],
+            });
             import("sonner").then(({ toast }) => {
               toast.info("Données synchronisées", {
                 description: "Votre progression a été mise à jour depuis le cloud.",
@@ -223,6 +242,8 @@ export function ForgeProvider({ children }: { children: ReactNode }) {
           },
         });
         if (!response.ok) return;
+        const contentType = response.headers.get("content-type") || "";
+        if (!contentType.includes("application/json")) return;
         const syncItems = await response.json();
         if (!Array.isArray(syncItems) || syncItems.length === 0) return;
 
@@ -431,11 +452,13 @@ export function tasksForDate(dateISO: string): TaskTemplate[] {
   const dayIndex = (date.getDay() + 6) % 7;
   const diffDays = Math.floor((date.getTime() - TRAINING_START.getTime()) / 86400000);
   const weekIndex = Math.max(0, Math.min(TRAINING_WEEKS.length - 1, Math.floor(diffDays / 7)));
-  const week = TRAINING_WEEKS[weekIndex];
-  const definition = week.days[dayIndex];
+  const week = TRAINING_WEEKS[weekIndex] ?? TRAINING_WEEKS[0];
+  if (!week || !week.days) return [];
+  const definition = week.days[dayIndex] ?? week.days[0];
+  if (!definition) return [];
   const rawTasks = (definition.tasks ?? []).length
     ? definition.tasks ?? []
-    : (definition.sessions ?? []).flatMap((session) => session.exercises);
+    : (definition.sessions ?? []).flatMap((session) => session?.exercises ?? []);
   return rawTasks.map((t, idx) => ({
     ...t,
     type: t.type as any,
@@ -449,7 +472,8 @@ export function dayTemplate(dateISO: string) {
   const dayIndex = (date.getDay() + 6) % 7;
   const diffDays = Math.floor((date.getTime() - TRAINING_START.getTime()) / 86400000);
   const weekIndex = Math.max(0, Math.min(TRAINING_WEEKS.length - 1, Math.floor(diffDays / 7)));
-  return TRAINING_WEEKS[weekIndex].days[dayIndex];
+  const week = TRAINING_WEEKS[weekIndex] ?? TRAINING_WEEKS[0];
+  return week?.days[dayIndex] ?? week?.days[0];
 }
 
 export function daysUntil(targetISO: string) {
