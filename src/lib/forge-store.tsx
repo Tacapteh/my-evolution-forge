@@ -314,10 +314,15 @@ export function ForgeProvider({ children }: { children: ReactNode }) {
       }
     };
 
-    // Run on load, and then every 20 seconds
     runSync();
-    const interval = setInterval(runSync, 20000);
-    return () => clearInterval(interval);
+    const interval = setInterval(runSync, 4000);
+    window.addEventListener("focus", runSync);
+    window.addEventListener("visibilitychange", runSync);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener("focus", runSync);
+      window.removeEventListener("visibilitychange", runSync);
+    };
   }, [hydrated, state.healthToken]);
 
   const value: Ctx = useMemo(

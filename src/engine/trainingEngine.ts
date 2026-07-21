@@ -38,17 +38,73 @@ export function createTrainingEngine(
 
   const buildMission = (dateISO: string): TrainingMission => {
     const { week, dayIndex } = getTrainingWeek(dateISO);
+    const date = new Date(`${dateISO}T12:00:00`);
+    const diffDays = Math.floor((date.getTime() - TRAINING_START.getTime()) / 86400000);
+    const weekIndex = Math.max(0, Math.min(TRAINING_WEEKS.length - 1, Math.floor(diffDays / 7)));
+
+    const pullPerfs = (state.perf ?? []).filter((p) => p.type === "pull").map((p) => p.value);
+    const userMaxPull = pullPerfs.length > 0 ? Math.max(...pullPerfs) : 6;
+
+    const chairPerfs = (state.perf ?? []).filter((p) => p.type === "chair").map((p) => p.value);
+    const userMaxChair = chairPerfs.length > 0 ? Math.max(...chairPerfs) : 60;
+
+    const isTestMaxDay = dayIndex === 6 && (weekIndex + 1) % 2 === 0;
+
     const definition = week.days[dayIndex] ?? week.days[0];
     const rawTasks = (definition?.tasks ?? []).length
       ? definition.tasks ?? []
       : (definition?.sessions ?? []).flatMap((session) => session.exercises);
-    const tasks = rawTasks.map((task, index) => ({
-      ...task,
-      moment: task.moment ?? inferMoment(task.type, index),
-      estimatedMinutes: task.estimatedMinutes ?? defaultDuration(task.type),
-      rest: task.rest ?? defaultRest(task.type),
-      steps: task.steps ?? defaultSteps(task),
-    }));
+
+    const tasks = rawTasks.map((task, index) => {
+      let label = task.label;
+      let detail = task.detail;
+      let steps = task.steps;
+
+      if (task.type === "pull") {
+        if (isTestMaxDay) {
+          label = "⚠️ TEST MAX TRACTIONS (Obligatoire)";
+          detail = `1 série à l'échec strict • Saisis ton score pour adapter les 2 prochaines semaines (Max: ${userMaxPull})`;
+          steps = ["Échauffement haut du corps", "1 série max strict jusqu'à l'échec", "Saisir le score dans l'application"];
+        } else if (dayIndex === 0 || dayIndex === 2) {
+          // Sous-maximal 65%
+          const reps = Math.max(3, Math.round(userMaxPull * 0.65));
+          label = `Tractions — 5 × ${reps} reps`;
+          detail = `Sous-maximal (65% de Max=${userMaxPull}) • Repos 90s`;
+        } else if (dayIndex === 3 || dayIndex === 4) {
+          // Dégressif
+          const r1 = Math.max(2, userMaxPull - 1);
+          const r2 = Math.max(2, userMaxPull - 2);
+          const r3 = Math.max(1, userMaxPull - 3);
+          const r4 = Math.max(1, userMaxPull - 4);
+          const r5 = Math.max(1, userMaxPull - 4);
+          label = `Tractions — Dégressif : ${r1}-${r2}-${r3}-${r4}-${r5} reps`;
+          detail = `Travail d'épuisement • Max=${userMaxPull} reps • Repos 90s`;
+        } else {
+          // Pyramide
+          const p1 = Math.max(2, Math.round(userMaxPull * 0.50));
+          const p2 = Math.max(3, Math.round(userMaxPull * 0.75));
+          const p3 = Math.max(4, Math.round(userMaxPull * 0.90));
+          const p4 = Math.max(3, Math.round(userMaxPull * 0.75));
+          const p5 = Math.max(2, Math.round(userMaxPull * 0.50));
+          label = `Tractions — Pyramide : ${p1}-${p2}-${p3}-${p4}-${p5} reps`;
+          detail = `Pyramide de force (Pic à 90%) • Max=${userMaxPull} reps • Repos 90s`;
+        }
+      } else if (task.type === "chair") {
+        const secs = Math.max(30, Math.round(userMaxChair * 0.75));
+        label = `Chaise — 4 × ${secs} s`;
+        detail = `Basé sur ton record (${userMaxChair}s) • Repos 45s`;
+      }
+
+      return {
+        ...task,
+        label,
+        detail,
+        moment: task.moment ?? inferMoment(task.type, index),
+        estimatedMinutes: task.estimatedMinutes ?? defaultDuration(task.type),
+        rest: task.rest ?? defaultRest(task.type),
+        steps: steps ?? defaultSteps(task),
+      };
+    });
     const day = state.days[dateISO];
     const checked = day?.checked ?? {};
     const doneCount = tasks.filter((task) => isTaskDone(task, checked)).length;

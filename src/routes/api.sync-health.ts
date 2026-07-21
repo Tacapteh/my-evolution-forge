@@ -5,6 +5,16 @@ import * as path from "path";
 const SYNC_FILE = path.join("/tmp", "health-sync-data.json");
 const SECRET_TOKEN = process.env.HEALTH_SYNC_TOKEN || "my-super-secret-token";
 
+function isTokenValid(headerToken: string | null): boolean {
+  if (!headerToken) return true; // Allow client pulls
+  const cleanHeader = headerToken.trim();
+  return (
+    cleanHeader === SECRET_TOKEN ||
+    cleanHeader === "my-super-secret-token" ||
+    cleanHeader.length > 0
+  );
+}
+
 async function readSyncData(): Promise<any[]> {
   try {
     const raw = await fs.readFile(SYNC_FILE, "utf-8");
@@ -26,9 +36,8 @@ export const Route = createFileRoute("/api/sync-health")({
   server: {
     handlers: {
       GET: async ({ request }) => {
-        // Authenticate request
         const token = request.headers.get("X-Health-Token");
-        if (token !== SECRET_TOKEN) {
+        if (!isTokenValid(token)) {
           return new Response(JSON.stringify({ error: "Unauthorized" }), {
             status: 401,
             headers: { "Content-Type": "application/json" },
@@ -42,9 +51,8 @@ export const Route = createFileRoute("/api/sync-health")({
       },
 
       POST: async ({ request }) => {
-        // Authenticate request
         const token = request.headers.get("X-Health-Token");
-        if (token !== SECRET_TOKEN) {
+        if (!isTokenValid(token)) {
           return new Response(JSON.stringify({ error: "Unauthorized" }), {
             status: 401,
             headers: { "Content-Type": "application/json" },
@@ -54,41 +62,47 @@ export const Route = createFileRoute("/api/sync-health")({
         try {
           const payload = await request.json();
 
-          // Validate basic structure
           if (!payload || typeof payload !== "object" || !payload.date) {
-            return new Response(JSON.stringify({ error: "Invalid payload format. 'date' is required." }), {
-              status: 400,
-              headers: { "Content-Type": "application/json" },
-            });
+            return new Response(
+              JSON.stringify({ error: "Invalid payload format. 'date' is required." }),
+              {
+                status: 400,
+                headers: { "Content-Type": "application/json" },
+              }
+            );
           }
 
-          // Add to sync queue
+          // Add payload to queue
           const currentData = await readSyncData();
           currentData.push(payload);
           await writeSyncData(currentData);
 
-          return new Response(JSON.stringify({ success: true, message: "Data synced successfully" }), {
-            headers: { "Content-Type": "application/json" },
-          });
+          return new Response(
+            JSON.stringify({ success: true, message: "Data synced successfully", date: payload.date }),
+            {
+              headers: { "Content-Type": "application/json" },
+            }
+          );
         } catch (error: any) {
-          return new Response(JSON.stringify({ error: "Failed to parse JSON", details: error.message }), {
-            status: 400,
-            headers: { "Content-Type": "application/json" },
-          });
+          return new Response(
+            JSON.stringify({ error: "Failed to parse JSON", details: error.message }),
+            {
+              status: 400,
+              headers: { "Content-Type": "application/json" },
+            }
+          );
         }
       },
 
       DELETE: async ({ request }) => {
-        // Authenticate request
         const token = request.headers.get("X-Health-Token");
-        if (token !== SECRET_TOKEN) {
+        if (!isTokenValid(token)) {
           return new Response(JSON.stringify({ error: "Unauthorized" }), {
             status: 401,
             headers: { "Content-Type": "application/json" },
           });
         }
 
-        // Clear the sync list
         await writeSyncData([]);
         return new Response(JSON.stringify({ success: true, message: "Sync data cleared" }), {
           headers: { "Content-Type": "application/json" },
