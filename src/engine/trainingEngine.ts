@@ -307,13 +307,13 @@ export function createTrainingEngine(
       title: definition.title ?? `${definition.name} - ${definition.objective}`,
       objective: definition.objective,
       priority: definition.priority ?? "Normale",
-      tasks,
+      tasks: finalTasks,
       doneCount,
       remainingCount,
       totalCount,
       completionPct,
-      xp: tasks.reduce((sum, task) => sum + (isTaskDone(task, checked) ? task.xp : 0), 0),
-      estimatedMinutes: tasks.reduce((sum, task) => sum + task.estimatedMinutes, 0),
+      xp: finalTasks.reduce((sum, task) => sum + (isTaskDone(task, checked) ? task.xp : 0), 0),
+      estimatedMinutes: finalTasks.reduce((sum, task) => sum + task.estimatedMinutes, 0),
       status,
       psychotechnique: psychoTask
         ? {
