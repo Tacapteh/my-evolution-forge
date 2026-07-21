@@ -62,12 +62,52 @@ const TASK_ICONS = {
 };
 
 function ProgrammePage() {
-  const { state, hydrated, toggleTask, startSession, addPerf, setMomentSwap } = useForge();
+  const { state, hydrated, toggleTask, startSession, addPerf, setMomentSwap, setTaskRealization } = useForge();
   const today = todayISO();
   const [viewMode, setViewMode] = useState<"today" | "week">("today");
   const [anchor, setAnchor] = useState(() => new Date());
   const [focusOpen, setFocusOpen] = useState(false);
   const [focusISO, setFocusISO] = useState(today);
+
+  const handleLogDistance = (task: any, dateISO: string) => {
+    const targetDist = task.targetDistance ?? 5;
+    const unit = task.unit ?? "km";
+    const promptMsg =
+      `Saisissez la distance réellement effectuée pour "${task.label}" :\n` +
+      `Objectif cible : ${targetDist} ${unit}\n\n` +
+      `Distance réalisée (${unit}) :`;
+
+    const input = window.prompt(promptMsg, String(task.actualDistance ?? targetDist));
+    if (input === null) return;
+
+    const actual = parseFloat(input.replace(",", "."));
+    if (isNaN(actual) || actual < 0) return;
+
+    const penalty = actual < targetDist;
+    const baseXP = task.xp ?? 35;
+    const xpAwarded = penalty ? Math.max(5, Math.round(baseXP * (actual / targetDist))) : baseXP;
+
+    setTaskRealization(dateISO, task.id, {
+      actual,
+      target: targetDist,
+      unit,
+      penalty,
+      xpAwarded,
+    });
+
+    if (penalty) {
+      const gap = +(targetDist - actual).toFixed(1);
+      toast.error(`⚠️ Pénalité appliquée pour ${task.label}`, {
+        description: `Distance effectuée (${actual} ${unit}) inférieure à la cible (${targetDist} ${unit}). Écart: -${gap} ${unit}. Gain réduit à ${xpAwarded} XP.`,
+        duration: 5000,
+      });
+    } else {
+      toast.success(`✅ Objectif distance validé !`, {
+        description: `${actual} ${unit} réalisés sur ${targetDist} ${unit} cible. +${xpAwarded} XP enregistrés.`,
+        duration: 4000,
+      });
+    }
+  };
 
   const handleSwapMoment = (date: string, moment: string) => {
     const choice = window.prompt(
@@ -341,39 +381,95 @@ function ProgrammePage() {
                       <ul className="space-y-2">
                         {tasks.map((task) => {
                           const isDone = !!todayChecked[task.id];
+                          const hasDistTarget = task.targetDistance != null;
+
                           return (
                             <li
                               key={task.id}
                               className={cn(
-                                "flex items-start gap-3 p-3 rounded-lg border transition-all",
-                                isDone
+                                "flex flex-col gap-2 p-3 rounded-lg border transition-all",
+                                task.isPenalized
+                                  ? "bg-red-500/10 border-red-500/30 text-foreground"
+                                  : isDone
                                   ? "bg-primary/10 border-primary/30 text-muted-foreground"
                                   : "bg-card border-border/60 hover:border-primary/40"
                               )}
                             >
-                              <Checkbox
-                                id={`today-${task.id}`}
-                                checked={isDone}
-                                onCheckedChange={() => handleToggleForISO(task.id, today)}
-                                className="mt-0.5"
-                              />
-                              <div className="flex-1 min-w-0">
-                                <label
-                                  htmlFor={`today-${task.id}`}
-                                  className={cn(
-                                    "text-sm font-semibold block cursor-pointer select-none",
-                                    isDone ? "line-through text-muted-foreground/70" : "text-foreground"
+                              <div className="flex items-start justify-between gap-3">
+                                <div className="flex items-start gap-3 flex-1 min-w-0">
+                                  <Checkbox
+                                    id={`today-${task.id}`}
+                                    checked={isDone}
+                                    onCheckedChange={() => handleToggleForISO(task.id, today)}
+                                    className="mt-0.5"
+                                  />
+                                  <div className="flex-1 min-w-0">
+                                    <label
+                                      htmlFor={`today-${task.id}`}
+                                      className={cn(
+                                        "text-sm font-semibold block cursor-pointer select-none",
+                                        isDone ? "line-through text-muted-foreground/70" : "text-foreground"
+                                      )}
+                                    >
+                                      {task.label}
+                                    </label>
+                                    {task.detail && (
+                                      <span className="text-xs text-muted-foreground mt-0.5 block">
+                                        {task.detail}
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+
+                                <div className="flex items-center gap-2 shrink-0">
+                                  {hasDistTarget && (
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      className={cn(
+                                        "h-6 text-[10px] px-2 gap-1 border-primary/30",
+                                        task.isPenalized
+                                          ? "border-red-500/50 bg-red-500/20 text-red-300 hover:bg-red-500/30"
+                                          : task.actualDistance != null
+                                          ? "border-emerald-500/50 bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30"
+                                          : "text-primary hover:bg-primary/10"
+                                      )}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleLogDistance(task, today);
+                                      }}
+                                      title="Saisir la distance réellement effectuée"
+                                    >
+                                      <Footprints className="h-3 w-3" />
+                                      {task.actualDistance != null
+                                        ? `${task.actualDistance}/${task.targetDistance} ${task.unit}`
+                                        : `Cible: ${task.targetDistance} ${task.unit}`}
+                                    </Button>
                                   )}
-                                >
-                                  {task.label}
-                                </label>
-                                {task.detail && (
-                                  <span className="text-xs text-muted-foreground mt-0.5 block">
-                                    {task.detail}
+
+                                  <span
+                                    className={cn(
+                                      "text-xs font-bold shrink-0",
+                                      task.isPenalized ? "text-red-400" : "text-primary"
+                                    )}
+                                  >
+                                    +{task.xp} XP
                                   </span>
-                                )}
+                                </div>
                               </div>
-                              <span className="text-xs font-bold text-primary shrink-0">+{task.xp} XP</span>
+
+                              {/* Affichage Pénalité ou Validation Distance */}
+                              {task.isPenalized && (
+                                <div className="text-[11px] font-bold text-red-400 bg-red-500/15 border border-red-500/30 px-2.5 py-1 rounded-md flex items-center justify-between">
+                                  <span>⚠️ PÉNALITÉ : {task.actualDistance}/{task.targetDistance} {task.unit} ({task.penaltyText || "Malus d'XP appliqué"})</span>
+                                </div>
+                              )}
+                              {!task.isPenalized && task.actualDistance != null && (
+                                <div className="text-[11px] font-bold text-emerald-400 bg-emerald-500/15 border border-emerald-500/30 px-2.5 py-1 rounded-md flex items-center gap-1.5">
+                                  <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />
+                                  <span>Objectif atteint : {task.actualDistance} {task.unit} / {task.targetDistance} {task.unit}</span>
+                                </div>
+                              )}
                             </li>
                           );
                         })}
@@ -519,44 +615,86 @@ function ProgrammePage() {
                             <ul className="space-y-1.5">
                               {tasks.map((task) => {
                                 const isDone = !!checked[task.id];
+                                const hasDistTarget = task.targetDistance != null;
+
                                 return (
                                   <li
                                     key={task.id}
                                     className={cn(
-                                      "group flex items-start gap-2.5 rounded-lg px-2.5 py-1.5 border border-transparent transition-all duration-200",
-                                      isDone
-                                        ? "bg-primary/5 text-muted-foreground"
-                                        : "hover:bg-muted/40 hover:border-border/60"
+                                      "group flex flex-col gap-1.5 rounded-lg px-2.5 py-1.5 border transition-all duration-200",
+                                      task.isPenalized
+                                        ? "bg-red-500/10 border-red-500/30 text-foreground"
+                                        : isDone
+                                        ? "bg-primary/5 border-transparent text-muted-foreground"
+                                        : "border-transparent hover:bg-muted/40 hover:border-border/60"
                                     )}
                                   >
-                                    <Checkbox
-                                      id={`week-${day.iso}-${task.id}`}
-                                      checked={isDone}
-                                      onCheckedChange={() => handleToggleForISO(task.id, day.iso)}
-                                      className="mt-0.5"
-                                    />
-                                    <div className="min-w-0 flex-1">
-                                      <label
-                                        htmlFor={`week-${day.iso}-${task.id}`}
-                                        className={cn(
-                                          "text-xs leading-relaxed font-medium block cursor-pointer select-none",
-                                          isDone ? "line-through text-muted-foreground/70" : "text-foreground"
+                                    <div className="flex items-start justify-between gap-2">
+                                      <div className="flex items-start gap-2.5 flex-1 min-w-0">
+                                        <Checkbox
+                                          id={`week-${day.iso}-${task.id}`}
+                                          checked={isDone}
+                                          onCheckedChange={() => handleToggleForISO(task.id, day.iso)}
+                                          className="mt-0.5"
+                                        />
+                                        <div className="min-w-0 flex-1">
+                                          <label
+                                            htmlFor={`week-${day.iso}-${task.id}`}
+                                            className={cn(
+                                              "text-xs leading-relaxed font-medium block cursor-pointer select-none",
+                                              isDone ? "line-through text-muted-foreground/70" : "text-foreground"
+                                            )}
+                                          >
+                                            {task.label}
+                                          </label>
+                                          {task.detail && (
+                                            <span className="text-[10px] text-muted-foreground block line-clamp-1">
+                                              {task.detail}
+                                            </span>
+                                          )}
+                                        </div>
+                                      </div>
+
+                                      <div className="flex items-center gap-1.5 shrink-0">
+                                        {hasDistTarget && (
+                                          <Button
+                                            variant="outline"
+                                            size="sm"
+                                            className={cn(
+                                              "h-5 text-[9px] px-1.5 gap-0.5 border-primary/30",
+                                              task.isPenalized
+                                                ? "border-red-500/50 bg-red-500/20 text-red-300 hover:bg-red-500/30"
+                                                : task.actualDistance != null
+                                                ? "border-emerald-500/50 bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30"
+                                                : "text-primary hover:bg-primary/10"
+                                            )}
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              handleLogDistance(task, day.iso);
+                                            }}
+                                            title="Saisir la distance réalisée"
+                                          >
+                                            <Footprints className="h-2.5 w-2.5" />
+                                            {task.actualDistance != null
+                                              ? `${task.actualDistance}/${task.targetDistance}${task.unit}`
+                                              : `${task.targetDistance}${task.unit}`}
+                                          </Button>
                                         )}
-                                      >
-                                        {task.label}
-                                      </label>
-                                      {task.detail && (
-                                        <span className="text-[10px] text-muted-foreground block line-clamp-1">
-                                          {task.detail}
+
+                                        <span className={cn(
+                                          "text-[10px] font-bold tabular-nums shrink-0 self-center",
+                                          task.isPenalized ? "text-red-400" : isDone ? "text-primary/70" : "text-primary"
+                                        )}>
+                                          +{task.xp} XP
                                         </span>
-                                      )}
+                                      </div>
                                     </div>
-                                    <span className={cn(
-                                      "text-[10px] font-bold tabular-nums shrink-0 self-center",
-                                      isDone ? "text-primary/70" : "text-primary"
-                                    )}>
-                                      +{task.xp} XP
-                                    </span>
+
+                                    {task.isPenalized && (
+                                      <div className="text-[9px] font-bold text-red-400 bg-red-500/15 border border-red-500/30 px-2 py-0.5 rounded flex items-center justify-between">
+                                        <span>⚠️ Pénalité: {task.actualDistance}/{task.targetDistance} {task.unit} ({task.penaltyText || "Malus XP"})</span>
+                                      </div>
+                                    )}
                                   </li>
                                 );
                               })}

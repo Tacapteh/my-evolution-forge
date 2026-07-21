@@ -7,8 +7,17 @@ const TRAINING_WEEKS = militarySeptemberProgram.weeks;
 
 // --- Types
 
+export interface TaskRealization {
+  actual: number;
+  target: number;
+  unit: "m" | "km";
+  penalty: boolean;
+  xpAwarded: number;
+}
+
 export interface DayRecord {
   checked: Record<string, boolean>; // taskId -> done
+  taskRealizations?: Record<string, TaskRealization>; // taskId -> realization
   session?: {
     startedAt?: string;
     completedAt?: string;
@@ -89,6 +98,7 @@ interface Ctx {
   setPsycho: (date: string, psycho: DayRecord["psycho"]) => void;
   setHealth: (date: string, health: DayRecord["health"]) => void;
   setMomentSwap: (date: string, moment: string, activityId: string) => void;
+  setTaskRealization: (date: string, taskId: string, realization: TaskRealization) => void;
   addPerf: (entry: Omit<PerfEntry, "id">) => void;
   removePerf: (id: string) => void;
   reset: () => void;
@@ -453,6 +463,23 @@ export function ForgeProvider({ children }: { children: ReactNode }) {
             days: {
               ...prev.days,
               [date]: { ...day, swaps },
+            },
+          };
+        }),
+      setTaskRealization: (date, taskId, realization) =>
+        setLocalState((prev) => {
+          const day = prev.days[date] ?? { checked: {} };
+          const taskRealizations = { ...day.taskRealizations, [taskId]: realization };
+          const checked = { ...day.checked, [taskId]: true };
+          return {
+            ...prev,
+            days: {
+              ...prev.days,
+              [date]: {
+                ...day,
+                checked,
+                taskRealizations,
+              },
             },
           };
         }),

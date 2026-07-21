@@ -60,14 +60,39 @@ export const ACTIVITY_PRESETS: Record<string, { id: string; label: string; detai
   },
   repos: {
     id: "repos",
-    label: "Récupération active & Étirements",
-    detail: "Mobilité, hydratation et récupération musculaire",
+    label: "Récupération active & Étirements musculaires",
+    detail: "Mobilité, relaxation et récupération musculaire",
     type: "stretch",
     estimatedMinutes: 20,
-    xp: 10,
-    steps: ["Hydratation complète", "15 min d'étirements doux", "Sommeil réparateur"],
+    xp: 15,
+    steps: ["10 min étirements doux", "5 min automassages", "5 min exercices de respiration"],
   },
 };
+
+export function extractTargetDistance(task: { label: string; detail?: string; type: string }): { targetValue: number; unit: "m" | "km" } | null {
+  const str = `${task.label} ${task.detail ?? ""}`;
+
+  const multMatch = str.match(/(\d+)\s*[\timesx×]\s*(\d+)\s*m/i);
+  if (multMatch) {
+    return { targetValue: parseInt(multMatch[1], 10) * parseInt(multMatch[2], 10), unit: "m" };
+  }
+
+  const kmMatch = str.match(/(\d+(?:[\.,]\d+)?)\s*km\b/i);
+  if (kmMatch) {
+    return { targetValue: parseFloat(kmMatch[1].replace(",", ".")), unit: "km" };
+  }
+
+  const metersMatch = str.match(/(\d+)\s*m\b/i);
+  if (metersMatch && !str.includes("20m")) {
+    const mVal = parseInt(metersMatch[1], 10);
+    if (mVal >= 100) return { targetValue: mVal, unit: "m" };
+  }
+
+  if (task.type === "swim") return { targetValue: 1000, unit: "m" };
+  if (task.type === "run") return { targetValue: 5, unit: "km" };
+
+  return null;
+}
 
 const TRAINING_WEEKS = militarySeptemberProgram.weeks;
 const TRAINING_START = new Date("2026-07-20T12:00:00");
@@ -239,7 +264,7 @@ export function createTrainingEngine(
 
     // Appliquer les réagencements / modifications d'activités personnalisés
     const swaps = state.days[dateISO]?.swaps ?? {};
-    const finalTasks: any[] = [];
+    let finalTasks: any[] = [];
     const processedMoments = new Set<string>();
 
     for (const t of tasks) {
@@ -286,11 +311,49 @@ export function createTrainingEngine(
         });
       }
     }
-
     const momentOrder: Record<string, number> = { morning: 1, afternoon: 2, evening: 3, psychotechniques: 4 };
     finalTasks.sort((a, b) => (momentOrder[a.moment] ?? 5) - (momentOrder[b.moment] ?? 5));
     const day = state.days[dateISO];
     const checked = day?.checked ?? {};
+    const taskRealizations = day?.taskRealizations ?? {};
+
+    // Appliquer les réalisations de distance et les pénalités
+    finalTasks = finalTasks.map((t) => {
+      const targetDistInfo = extractTargetDistance(t);
+      const realization = taskRealizations[t.id];
+
+      let baseXP = t.xp ?? 35;
+      let isPenalized = false;
+      let actualDistance = realization?.actual;
+      let targetDistance = realization?.target ?? targetDistInfo?.targetValue;
+      let unit = realization?.unit ?? targetDistInfo?.unit ?? "km";
+      let penaltyText = "";
+      let xpAwarded = baseXP;
+
+      if (realization) {
+        isPenalized = realization.penalty;
+        xpAwarded = realization.xpAwarded;
+      } else if (targetDistInfo) {
+        targetDistance = targetDistInfo.targetValue;
+        unit = targetDistInfo.unit;
+      }
+
+      if (isPenalized && targetDistance != null && actualDistance != null) {
+        const gap = +(targetDistance - actualDistance).toFixed(1);
+        penaltyText = `⚠️ PÉNALITÉ : ${gap > 0 ? gap : 0} ${unit} manquants (XP réduit à ${xpAwarded} XP)`;
+      }
+
+      return {
+        ...t,
+        targetDistance,
+        actualDistance,
+        unit,
+        isPenalized,
+        penaltyText,
+        xp: xpAwarded,
+      };
+    });
+
     const doneCount = finalTasks.filter((task) => isTaskDone(task, checked)).length;
     const totalCount = finalTasks.length;
     const completionPct = totalCount ? Math.round((doneCount / totalCount) * 100) : 0;
