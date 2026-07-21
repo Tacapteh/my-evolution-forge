@@ -133,15 +133,41 @@ function ProgrammePage() {
 
       if (task.label.includes("TEST MAX")) {
         setTimeout(() => {
-          const input = window.prompt("Bravo pour ton Test Max ! Combien de tractions as-tu réalisées ?", "8");
-          if (input) {
-            const val = parseInt(input, 10);
-            if (!isNaN(val) && val > 0) {
-              addPerf({ type: "pull", value: val, date: iso });
-              toast.success(`Nouveau Max enregistré : ${val} tractions !`, {
-                description: "Tes séances pour les 2 prochaines semaines ont été adaptées.",
-                duration: 4000,
-              });
+          if (task.label.includes("TRACTIONS")) {
+            const input = window.prompt("Bravo pour ton Test Max Tractions ! Combien de tractions as-tu réalisées ?", "8");
+            if (input) {
+              const val = parseInt(input, 10);
+              if (!isNaN(val) && val > 0) {
+                addPerf({ type: "pull", value: val, date: iso });
+                toast.success(`Nouveau Max enregistré : ${val} tractions !`, {
+                  description: "Tes séances de tractions pour les 2 prochaines semaines ont été adaptées.",
+                  duration: 4000,
+                });
+              }
+            }
+          } else if (task.label.includes("CHAISE")) {
+            const input = window.prompt("Bravo pour ton Test Max Chaise ! Combien de secondes as-tu tenues à 90° ?", "90");
+            if (input) {
+              const val = parseInt(input, 10);
+              if (!isNaN(val) && val > 0) {
+                addPerf({ type: "chair", value: val, date: iso });
+                toast.success(`Nouveau Record Chaise enregistré : ${val}s !`, {
+                  description: "Tes séries de chaise pour les 2 prochaines semaines ont été adaptées.",
+                  duration: 4000,
+                });
+              }
+            }
+          } else if (task.label.includes("LUC LÉGER")) {
+            const input = window.prompt("Bravo pour ton Test Luc Léger ! Quel Palier as-tu atteint (ex: 8.5) ?", "8.0");
+            if (input) {
+              const val = parseFloat(input);
+              if (!isNaN(val) && val > 0) {
+                addPerf({ type: "luc", value: val, date: iso });
+                toast.success(`Nouveau Palier Luc Léger enregistré : Palier ${val} !`, {
+                  description: "Tes allures de fractionné VMA pour les 2 prochaines semaines ont été recalculées.",
+                  duration: 4000,
+                });
+              }
             }
           }
         }, 100);
@@ -181,9 +207,15 @@ function ProgrammePage() {
             </button>
           </div>
 
-          <div className="flex items-center gap-3 text-xs text-muted-foreground">
-            <Badge variant="outline" className="border-primary/40 text-primary px-3 py-1">
-              <Award className="mr-1.5 h-3.5 w-3.5" /> Max Tractions : {Math.max(6, ...(state.perf?.filter(p => p.type === "pull").map(p => p.value) ?? []))} reps
+          <div className="flex flex-wrap items-center gap-2 text-xs">
+            <Badge variant="outline" className="border-primary/40 text-primary px-2.5 py-1">
+              <Dumbbell className="mr-1.5 h-3.5 w-3.5" /> Tractions : {Math.max(6, ...(state.perf?.filter(p => p.type === "pull").map(p => p.value) ?? []))} reps
+            </Badge>
+            <Badge variant="outline" className="border-primary/40 text-primary px-2.5 py-1">
+              <Timer className="mr-1.5 h-3.5 w-3.5" /> Chaise : {Math.max(60, ...(state.perf?.filter(p => p.type === "chair").map(p => p.value) ?? []))}s
+            </Badge>
+            <Badge variant="outline" className="border-primary/40 text-primary px-2.5 py-1">
+              <Footprints className="mr-1.5 h-3.5 w-3.5" /> Luc Léger : Palier {Math.max(7.0, ...(state.perf?.filter(p => p.type === "luc").map(p => p.value) ?? []))}
             </Badge>
           </div>
         </div>

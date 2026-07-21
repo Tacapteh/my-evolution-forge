@@ -48,6 +48,9 @@ export function createTrainingEngine(
     const chairPerfs = (state.perf ?? []).filter((p) => p.type === "chair").map((p) => p.value);
     const userMaxChair = chairPerfs.length > 0 ? Math.max(...chairPerfs) : 60;
 
+    const lucPerfs = (state.perf ?? []).filter((p) => p.type === "luc").map((p) => p.value);
+    const userMaxLuc = lucPerfs.length > 0 ? Math.max(...lucPerfs) : 7.0;
+
     const isTestMaxDay = dayIndex === 6 && (weekIndex + 1) % 2 === 0;
 
     const definition = week.days[dayIndex] ?? week.days[0];
@@ -63,7 +66,7 @@ export function createTrainingEngine(
       if (task.type === "pull") {
         if (isTestMaxDay) {
           label = "⚠️ TEST MAX TRACTIONS (Obligatoire)";
-          detail = `1 série à l'échec strict • Saisis ton score pour adapter les 2 prochaines semaines (Max: ${userMaxPull})`;
+          detail = `1 série à l'échec strict • Saisis ton score pour adapter les 2 prochaines semaines (Max: ${userMaxPull} / Obj: 17-20)`;
           steps = ["Échauffement haut du corps", "1 série max strict jusqu'à l'échec", "Saisir le score dans l'application"];
         } else if (dayIndex === 0 || dayIndex === 2) {
           // Sous-maximal 65%
@@ -90,9 +93,48 @@ export function createTrainingEngine(
           detail = `Pyramide de force (Pic à 90%) • Max=${userMaxPull} reps • Repos 90s`;
         }
       } else if (task.type === "chair") {
-        const secs = Math.max(30, Math.round(userMaxChair * 0.75));
-        label = `Chaise — 4 × ${secs} s`;
-        detail = `Basé sur ton record (${userMaxChair}s) • Repos 45s`;
+        if (isTestMaxDay) {
+          label = "⚠️ TEST MAX CHAISE (Obligatoire)";
+          detail = `1 série max à 90° jusqu'à l'échec • Saisis ton temps pour adapter les 2 prochaines semaines (Record: ${userMaxChair}s / Obj: 168s)`;
+          steps = ["Dos collé au mur à 90°", "Chronométrer jusqu'à l'échec strict", "Saisir le temps en secondes dans l'application"];
+        } else if (dayIndex === 0 || dayIndex === 2) {
+          const secs = Math.max(30, Math.round(userMaxChair * 0.75));
+          label = `Chaise — 4 × ${secs}s (75% du Max)`;
+          detail = `Basé sur ton record (${userMaxChair}s) • Repos 60s`;
+        } else if (dayIndex === 3 || dayIndex === 4) {
+          const s1 = Math.max(20, userMaxChair - 10);
+          const s2 = Math.max(15, userMaxChair - 20);
+          const s3 = Math.max(15, userMaxChair - 30);
+          const s4 = Math.max(10, userMaxChair - 40);
+          label = `Chaise — Dégressif : ${s1}s - ${s2}s - ${s3}s - ${s4}s`;
+          detail = `Épuisement isométrique • Record: ${userMaxChair}s • Repos 60s`;
+        } else {
+          const c1 = Math.max(20, Math.round(userMaxChair * 0.60));
+          const c2 = Math.max(30, Math.round(userMaxChair * 0.85));
+          const c3 = Math.max(35, Math.round(userMaxChair * 0.95));
+          const c4 = Math.max(30, Math.round(userMaxChair * 0.85));
+          const c5 = Math.max(20, Math.round(userMaxChair * 0.60));
+          label = `Chaise — Pyramide : ${c1}s - ${c2}s - ${c3}s - ${c4}s - ${c5}s`;
+          detail = `Pyramide d'effort (Pic à 95% = ${c3}s) • Repos 60s`;
+        }
+      } else if (task.type === "run") {
+        if (isTestMaxDay) {
+          label = "⚠️ TEST MAX LUC LÉGER (Obligatoire)";
+          detail = `Test navette 20m avec bande sonore • Saisis ton Palier atteint (Actuel: Palier ${userMaxLuc} / Obj: Palier 12)`;
+          steps = ["Tracer 20m avec balises", "Suivre les bips de la bande sonore Luc Léger", "Arrêt au 2ème manquement consécutif", "Saisir le Palier dans l'application"];
+        } else if (dayIndex === 1 || dayIndex === 3) {
+          const targetPalier = Math.min(12, +(userMaxLuc + 0.5).toFixed(1));
+          label = `Fractionné VMA 30/30 — 12 reps à l'allure Palier ${targetPalier}`;
+          detail = `Allure sur-optimisée (+0.5 palier vs max ${userMaxLuc}) • 30s effort / 30s trotté`;
+        } else if (dayIndex === 5) {
+          const pMax = Math.min(12, +(userMaxLuc + 1.0).toFixed(1));
+          label = `Fractionné Pyramidal — 1'-2'-3'-2'-1' (Allure Palier ${userMaxLuc} à ${pMax})`;
+          detail = `Montée progressive d'intensité VMA • Repos = Temps d'effort`;
+        } else {
+          const endurancePalier = Math.max(5.0, +(userMaxLuc * 0.75).toFixed(1));
+          label = `Endurance Fondamentale — 45 min à l'allure Palier ${endurancePalier}`;
+          detail = `Aisance respiratoire (75% VMA) • Base cardiorespiratoire`;
+        }
       }
 
       return {
