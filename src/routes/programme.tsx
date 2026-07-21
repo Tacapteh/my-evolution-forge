@@ -67,28 +67,17 @@ function ProgrammePage() {
   const [focusOpen, setFocusOpen] = useState(false);
   const [focusISO, setFocusISO] = useState(today);
 
-  if (!hydrated) {
-    return (
-      <div className="min-h-screen bg-background text-foreground flex items-center justify-center">
-        <div className="flex flex-col items-center gap-3">
-          <Sparkles className="h-10 w-10 text-primary animate-pulse" />
-          <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Chargement du planning...</span>
-        </div>
-      </div>
-    );
-  }
-
   const engine = useMemo(
     () => createTrainingEngine(state, { toggleTask }, { todayISO: today }),
     [state, toggleTask, today],
   );
 
   const week = useMemo(() => engine.getCurrentWeek(toISO(anchor)), [anchor, engine]);
-  
+
   const weekMissions = useMemo(() => {
-    return week.map((day) => {
+    return (week || []).map((day) => {
       const mission = engine.getMission(day.iso);
-      const checked = state.days[day.iso]?.checked ?? {};
+      const checked = state.days?.[day.iso]?.checked ?? {};
       return {
         day,
         mission,
@@ -98,23 +87,7 @@ function ProgrammePage() {
   }, [week, engine, state.days]);
 
   const focusMission = useMemo(() => engine.getMission(focusISO), [engine, focusISO]);
-  const focusChecked = state.days[focusISO]?.checked ?? {};
-
-  const weekLabel = `${formatShortDate(week[0].iso)} - ${formatShortDate(week[6].iso)}`;
-
-  const handleToggleForISO = (taskId: string, iso: string) => {
-    const dayMission = engine.getMission(iso);
-    const task = dayMission.tasks.find((item) => item.id === taskId);
-    const dayChecked = state.days[iso]?.checked ?? {};
-    const wasDone = !!dayChecked[taskId];
-    engine.completeExercise(taskId, iso);
-    if (task && !wasDone) {
-      toast.success(`+${task.xp} XP`, {
-        description: task.label,
-        duration: 2000,
-      });
-    }
-  };
+  const focusChecked = state.days?.[focusISO]?.checked ?? {};
 
   // Progression globale de la semaine
   const weekProgress = useMemo(() => {
@@ -126,6 +99,19 @@ function ProgrammePage() {
     });
     return totalTasks ? Math.round((completedTasks / totalTasks) * 100) : 0;
   }, [weekMissions]);
+
+  if (!hydrated) {
+    return (
+      <div className="min-h-screen bg-background text-foreground flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <Sparkles className="h-10 w-10 text-primary animate-pulse" />
+          <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Chargement du planning...</span>
+        </div>
+      </div>
+    );
+  }
+
+  const weekLabel = `${formatShortDate(week[0].iso)} - ${formatShortDate(week[6].iso)}`;
 
   return (
     <div className="min-h-screen bg-background text-foreground pb-12">

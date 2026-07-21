@@ -48,6 +48,15 @@ function Dashboard() {
   const healthData = state.days[iso]?.health;
 
   const [focus, setFocus] = useState(false);
+  const [celebrate, setCelebrate] = useState(false);
+
+  useEffect(() => {
+    if (hydrated && tasks.length && done === tasks.length) {
+      setCelebrate(true);
+      const t = setTimeout(() => setCelebrate(false), 2400);
+      return () => clearTimeout(t);
+    }
+  }, [done, tasks.length, hydrated]);
 
   if (!hydrated) {
     return (
@@ -59,31 +68,6 @@ function Dashboard() {
       </div>
     );
   }
-
-  const weekDone = engine.getWeeklyCompletion(iso).completedDays;
-
-  const sessionsDone = Object.values(state.days || {}).filter((d) =>
-    d && d.checked && Object.values(d.checked).some(Boolean),
-  ).length;
-  const perfList = state.perf || [];
-  const bestPull = Math.max(0, ...perfList.filter((p) => p.type === "pull").map((p) => p.value));
-  const bestChair = Math.max(
-    0,
-    ...perfList.filter((p) => p.type === "chair").map((p) => p.value),
-  );
-  const totalRun = perfList
-    .filter((p) => p.type === "run5" || p.type === "run10")
-    .reduce((s, p) => s + p.value, 0);
-  const bestLuc = Math.max(0, ...perfList.filter((p) => p.type === "luc").map((p) => p.value));
-
-  const [celebrate, setCelebrate] = useState(false);
-  useEffect(() => {
-    if (hydrated && tasks.length && done === tasks.length) {
-      setCelebrate(true);
-      const t = setTimeout(() => setCelebrate(false), 2400);
-      return () => clearTimeout(t);
-    }
-  }, [done, tasks.length, hydrated]);
 
   const handleToggle = (id: string) => {
     const task = tasks.find((item) => item.id === id);
