@@ -79,10 +79,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   head: () => ({
     meta: [
       { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1" },
+      { name: "viewport", content: "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" },
       { title: "FORGE — Construis la meilleure version de toi-même" },
       { name: "description", content: "FORGE : compagnon quotidien de préparation physique et mentale. Suivi de programme, progression et gamification." },
-      { name: "theme-color", content: "#232323" },
+      { name: "theme-color", content: "#09090b" },
+      { name: "apple-mobile-web-app-capable", content: "yes" },
+      { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
+      { name: "apple-mobile-web-app-title", content: "FORGE" },
       { property: "og:title", content: "FORGE — Construis la meilleure version de toi-même" },
       { property: "og:description", content: "Compagnon quotidien de préparation physique et mentale." },
       { property: "og:type", content: "website" },
@@ -90,7 +93,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     ],
     links: [
       { rel: "stylesheet", href: appCss },
-      { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
+      { rel: "icon", href: "/favicon.svg", type: "image/svg+xml" },
+      { rel: "icon", href: "/favicon.png", type: "image/png" },
+      { rel: "apple-touch-icon", href: "/apple-touch-icon.png" },
+      { rel: "manifest", href: "/manifest.json" },
     ],
   }),
   shellComponent: RootShell,
