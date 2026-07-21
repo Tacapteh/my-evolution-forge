@@ -69,6 +69,21 @@ function Dashboard() {
     );
   }
 
+  const weekDone = engine.getWeeklyCompletion(iso).completedDays;
+  const sessionsDone = Object.values(state.days || {}).filter((d) =>
+    d && d.checked && Object.values(d.checked).some(Boolean),
+  ).length;
+  const perfList = state.perf || [];
+  const bestPull = Math.max(0, ...perfList.filter((p) => p.type === "pull").map((p) => p.value));
+  const bestChair = Math.max(
+    0,
+    ...perfList.filter((p) => p.type === "chair").map((p) => p.value),
+  );
+  const totalRun = perfList
+    .filter((p) => p.type === "run5" || p.type === "run10")
+    .reduce((s, p) => s + p.value, 0);
+  const bestLuc = Math.max(0, ...perfList.filter((p) => p.type === "luc").map((p) => p.value));
+
   const handleToggle = (id: string) => {
     const task = tasks.find((item) => item.id === id);
     const wasDone = !!checked[id];
