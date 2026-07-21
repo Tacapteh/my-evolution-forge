@@ -16,6 +16,7 @@ import { Route as PerformancesRouteImport } from './routes/performances'
 import { Route as ParametresRouteImport } from './routes/parametres'
 import { Route as JournalRouteImport } from './routes/journal'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ApiSyncStateRouteImport } from './routes/api.sync-state'
 import { Route as ApiSyncHealthRouteImport } from './routes/api.sync-health'
 
 const PsychotechniquesRoute = PsychotechniquesRouteImport.update({
@@ -53,6 +54,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiSyncStateRoute = ApiSyncStateRouteImport.update({
+  id: '/api/sync-state',
+  path: '/api/sync-state',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiSyncHealthRoute = ApiSyncHealthRouteImport.update({
   id: '/api/sync-health',
   path: '/api/sync-health',
@@ -68,6 +74,7 @@ export interface FileRoutesByFullPath {
   '/progression': typeof ProgressionRoute
   '/psychotechniques': typeof PsychotechniquesRoute
   '/api/sync-health': typeof ApiSyncHealthRoute
+  '/api/sync-state': typeof ApiSyncStateRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -78,6 +85,7 @@ export interface FileRoutesByTo {
   '/progression': typeof ProgressionRoute
   '/psychotechniques': typeof PsychotechniquesRoute
   '/api/sync-health': typeof ApiSyncHealthRoute
+  '/api/sync-state': typeof ApiSyncStateRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -89,6 +97,7 @@ export interface FileRoutesById {
   '/progression': typeof ProgressionRoute
   '/psychotechniques': typeof PsychotechniquesRoute
   '/api/sync-health': typeof ApiSyncHealthRoute
+  '/api/sync-state': typeof ApiSyncStateRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -101,6 +110,7 @@ export interface FileRouteTypes {
     | '/progression'
     | '/psychotechniques'
     | '/api/sync-health'
+    | '/api/sync-state'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -111,6 +121,7 @@ export interface FileRouteTypes {
     | '/progression'
     | '/psychotechniques'
     | '/api/sync-health'
+    | '/api/sync-state'
   id:
     | '__root__'
     | '/'
@@ -121,6 +132,7 @@ export interface FileRouteTypes {
     | '/progression'
     | '/psychotechniques'
     | '/api/sync-health'
+    | '/api/sync-state'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -132,6 +144,7 @@ export interface RootRouteChildren {
   ProgressionRoute: typeof ProgressionRoute
   PsychotechniquesRoute: typeof PsychotechniquesRoute
   ApiSyncHealthRoute: typeof ApiSyncHealthRoute
+  ApiSyncStateRoute: typeof ApiSyncStateRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -185,6 +198,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/sync-state': {
+      id: '/api/sync-state'
+      path: '/api/sync-state'
+      fullPath: '/api/sync-state'
+      preLoaderRoute: typeof ApiSyncStateRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/sync-health': {
       id: '/api/sync-health'
       path: '/api/sync-health'
@@ -204,6 +224,7 @@ const rootRouteChildren: RootRouteChildren = {
   ProgressionRoute: ProgressionRoute,
   PsychotechniquesRoute: PsychotechniquesRoute,
   ApiSyncHealthRoute: ApiSyncHealthRoute,
+  ApiSyncStateRoute: ApiSyncStateRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

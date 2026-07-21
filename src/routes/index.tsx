@@ -49,6 +49,17 @@ function Dashboard() {
 
   const [focus, setFocus] = useState(false);
 
+  if (!hydrated) {
+    return (
+      <div className="min-h-screen bg-background text-foreground flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <Activity className="h-10 w-10 text-primary animate-pulse" />
+          <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Chargement de FORGE...</span>
+        </div>
+      </div>
+    );
+  }
+
   const weekDone = engine.getWeeklyCompletion(iso).completedDays;
 
   const sessionsDone = Object.values(state.days).filter((d) =>

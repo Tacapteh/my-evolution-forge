@@ -61,11 +61,22 @@ const TASK_ICONS = {
 };
 
 function ProgrammePage() {
-  const { state, toggleTask, startSession } = useForge();
+  const { state, hydrated, toggleTask, startSession } = useForge();
   const today = todayISO();
   const [anchor, setAnchor] = useState(() => new Date());
   const [focusOpen, setFocusOpen] = useState(false);
   const [focusISO, setFocusISO] = useState(today);
+
+  if (!hydrated) {
+    return (
+      <div className="min-h-screen bg-background text-foreground flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <Sparkles className="h-10 w-10 text-primary animate-pulse" />
+          <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Chargement du planning...</span>
+        </div>
+      </div>
+    );
+  }
 
   const engine = useMemo(
     () => createTrainingEngine(state, { toggleTask }, { todayISO: today }),

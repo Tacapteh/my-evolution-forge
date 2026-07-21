@@ -57,6 +57,7 @@ export interface ForgeState {
     startedAt: string;
   };
   healthToken?: string;
+  updatedAt?: string;
 }
 
 const KEY = "forge.state.v1";
@@ -68,6 +69,7 @@ const initial: ForgeState = {
   perf: [],
   badges: [],
   healthToken: "my-super-secret-token",
+  updatedAt: new Date("2026-07-20T12:00:00").toISOString(),
 };
 
 // --- Context
@@ -93,6 +95,17 @@ export function ForgeProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<ForgeState>(initial);
   const [hydrated, setHydrated] = useState(false);
 
+  const setLocalState = (s: ForgeState | ((prev: ForgeState) => ForgeState)) => {
+    setState((prev) => {
+      const next = typeof s === "function" ? s(prev) : s;
+      const timestamp = next.updatedAt !== prev.updatedAt ? next.updatedAt : new Date().toISOString();
+      return {
+        ...next,
+        updatedAt: timestamp,
+      };
+    });
+  };
+
   useEffect(() => {
     try {
       const raw = localStorage.getItem(KEY);
@@ -110,6 +123,91 @@ export function ForgeProvider({ children }: { children: ReactNode }) {
     } catch {
       // Persistence is best-effort; the UI remains usable without it.
     }
+  }, [state, hydrated]);
+
+  // Cloud Sync: Pull from server on mount
+  useEffect(() => {
+    if (!hydrated) return;
+
+    const token = state.healthToken || "my-super-secret-token";
+
+    const pullState = async () => {
+      try {
+        const response = await fetch("/api/sync-state", {
+          headers: {
+            "X-Sync-Token": token,
+          },
+        });
+        if (!response.ok) {
+          if (response.status === 404) {
+            // Push our initial state if server has none
+            await fetch("/api/sync-state", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "X-Sync-Token": token,
+              },
+              body: JSON.stringify(state),
+            });
+          }
+          return;
+        }
+        const serverState = await response.json();
+        if (serverState && serverState.updatedAt) {
+          const serverTime = new Date(serverState.updatedAt).getTime();
+          const localTime = new Date(state.updatedAt || 0).getTime();
+
+          if (serverTime > localTime) {
+            // Server has newer state, replace client state
+            setState(serverState);
+            import("sonner").then(({ toast }) => {
+              toast.info("Données synchronisées", {
+                description: "Votre progression a été mise à jour depuis le cloud.",
+              });
+            });
+          } else if (localTime > serverTime) {
+            // Client has newer state, push immediately
+            await fetch("/api/sync-state", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "X-Sync-Token": token,
+              },
+              body: JSON.stringify(state),
+            });
+          }
+        }
+      } catch (e) {
+        console.error("Cloud sync pull failed:", e);
+      }
+    };
+
+    pullState();
+  }, [hydrated, state.healthToken]);
+
+  // Cloud Sync: Push to server on state changes
+  useEffect(() => {
+    if (!hydrated) return;
+
+    const token = state.healthToken || "my-super-secret-token";
+
+    const pushState = async () => {
+      try {
+        await fetch("/api/sync-state", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Sync-Token": token,
+          },
+          body: JSON.stringify(state),
+        });
+      } catch (e) {
+        console.error("Cloud sync push failed:", e);
+      }
+    };
+
+    const timeout = setTimeout(pushState, 1500);
+    return () => clearTimeout(timeout);
   }, [state, hydrated]);
 
   useEffect(() => {
@@ -204,7 +302,7 @@ export function ForgeProvider({ children }: { children: ReactNode }) {
   const value: Ctx = useMemo(
     () => ({
       state,
-      setState,
+      setState: setLocalState,
       hydrated,
       toggleTask: (date, taskId) =>
         setState((prev) => {
