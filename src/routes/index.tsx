@@ -123,13 +123,6 @@ function Dashboard() {
         {/* Side column */}
         <div className="space-y-4 md:space-y-6">
           <Card className="card-forge p-5">
-            <div className="flex items-start gap-3">
-              <Quote className="h-4 w-4 text-primary shrink-0 mt-0.5" />
-              <p className="text-sm text-balance leading-relaxed">{quote}</p>
-            </div>
-          </Card>
-
-          <Card className="card-forge p-5">
             <div className="text-[11px] uppercase tracking-wider text-muted-foreground mb-3">Objectifs</div>
             <div className="space-y-3">
               <GoalRow label="Tractions" current={bestPull} target={17} unit="reps" />
