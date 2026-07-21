@@ -6,7 +6,7 @@ import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import { Flame, Target, Sparkles, Trophy, ArrowRight, Quote } from "lucide-react";
+import { Flame, Target, Sparkles, Trophy, ArrowRight } from "lucide-react";
 import {
   useForge,
   todayISO,
@@ -36,7 +36,7 @@ function Dashboard() {
   const xpToday = xpForDate(state, iso);
   const streak = hydrated ? computeStreak(state) : 0;
   const dLeft = daysUntil(state.targetDate);
-  const quote = useMemo(() => QUOTES[new Date().getDate() % QUOTES.length], []);
+  
   const total = totalXP(state);
   const overallProgress = Math.min(100, Math.round((total / 5000) * 100));
 
