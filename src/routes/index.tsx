@@ -329,32 +329,98 @@ function Dashboard() {
                       </div>
                       <div className="space-y-2">
                         {healthData.workouts.map((w: any, idx: number) => {
-                          const isSwim = String(w.type).toLowerCase().includes("natat") || String(w.type).toLowerCase().includes("swim") || String(w.type).toLowerCase().includes("nage");
-                          const isRun = String(w.type).toLowerCase().includes("cours") || String(w.type).toLowerCase().includes("run");
+                          const rawTypeStr = String(
+                            w.type ?? w.activityType ?? w.workoutActivityType ?? w.name ?? w.workoutType ?? w.title ?? "",
+                          ).toLowerCase();
+                          const isSwim =
+                            rawTypeStr.includes("natat") ||
+                            rawTypeStr.includes("swim") ||
+                            rawTypeStr.includes("nage") ||
+                            rawTypeStr.includes("hkworkoutactivitytypeswimming");
+                          const isRun =
+                            rawTypeStr.includes("cours") ||
+                            rawTypeStr.includes("run") ||
+                            rawTypeStr.includes("footing") ||
+                            rawTypeStr.includes("hkworkoutactivitytyperunning");
+                          const isCycle =
+                            rawTypeStr.includes("velo") ||
+                            rawTypeStr.includes("cycle") ||
+                            rawTypeStr.includes("bike") ||
+                            rawTypeStr.includes("hkworkoutactivitytypecycling");
+
+                          const displayType = isSwim
+                            ? "Natation"
+                            : isRun
+                            ? "Course"
+                            : isCycle
+                            ? "Cyclisme"
+                            : w.type ?? w.name ?? "Exercice";
+
+                          const durationMin =
+                            w.durationMinutes ??
+                            (w.durationSec
+                              ? Math.round(Number(w.durationSec) / 60)
+                              : w.duration
+                              ? Number(w.duration) > 300
+                                ? Math.round(Number(w.duration) / 60)
+                                : Number(w.duration)
+                              : undefined);
 
                           let distLabel = "";
-                          if (w.distanceMeters) {
-                            distLabel = w.distanceMeters >= 1000 && w.distanceMeters % 1000 === 0
-                              ? `${w.distanceMeters}m (${(w.distanceMeters / 1000).toFixed(1)} km)`
-                              : `${w.distanceMeters}m`;
-                          } else if (w.distanceKm) {
-                            distLabel = w.distanceKm < 2 ? `${Math.round(w.distanceKm * 1000)}m` : `${w.distanceKm} km`;
+                          const rawMeters = Number(w.distanceMeters ?? w.distanceInMeters ?? 0);
+                          const rawKm = Number(w.distanceKm ?? w.distanceInKm ?? 0);
+                          const rawGenericDist = Number(w.distance ?? w.totalDistance ?? 0);
+
+                          if (rawMeters > 0) {
+                            distLabel = `${rawMeters}m`;
+                          } else if (rawKm > 0) {
+                            distLabel = rawKm < 3 ? `${Math.round(rawKm * 1000)}m` : `${rawKm} km`;
+                          } else if (rawGenericDist > 0) {
+                            distLabel =
+                              rawGenericDist > 50
+                                ? `${Math.round(rawGenericDist)}m`
+                                : rawGenericDist < 3
+                                ? `${Math.round(rawGenericDist * 1000)}m`
+                                : `${rawGenericDist} km`;
                           }
 
                           return (
-                            <div key={idx} className="flex items-center justify-between p-2.5 rounded-lg border border-primary/20 bg-primary/5">
+                            <div
+                              key={idx}
+                              className="flex items-center justify-between p-2.5 rounded-lg border border-primary/20 bg-primary/5"
+                            >
                               <div className="flex items-center gap-2.5">
                                 <div className="w-8 h-8 rounded-md bg-primary/10 flex items-center justify-center text-primary">
-                                  {isSwim ? <Waves className="h-4 w-4" /> : isRun ? <Footprints className="h-4 w-4" /> : <Dumbbell className="h-4 w-4" />}
+                                  {isSwim ? (
+                                    <Waves className="h-4 w-4 text-cyan-400" />
+                                  ) : isRun ? (
+                                    <Footprints className="h-4 w-4 text-emerald-400" />
+                                  ) : (
+                                    <Dumbbell className="h-4 w-4 text-primary" />
+                                  )}
                                 </div>
                                 <div>
-                                  <div className="text-xs font-bold capitalize flex items-center gap-1.5">
-                                    {w.type}
-                                    <Badge variant="outline" className="text-[9px] py-0 px-1.5 border-primary/30 text-primary">Apple Health</Badge>
+                                  <div className="text-xs font-bold flex items-center gap-1.5">
+                                    <span className="text-foreground">{displayType}</span>
+                                    <Badge
+                                      variant="outline"
+                                      className="text-[9px] py-0 px-1.5 border-primary/30 text-primary"
+                                    >
+                                      Apple Health
+                                    </Badge>
                                   </div>
-                                  <div className="text-[10px] text-muted-foreground">
-                                    Durée: <span className="font-semibold text-foreground">{w.durationMinutes} min</span>
-                                    {distLabel && <> • Distance: <span className="font-semibold text-foreground">{distLabel}</span></>}
+                                  <div className="text-[10px] text-muted-foreground mt-0.5">
+                                    {durationMin != null && durationMin > 0 && (
+                                      <>
+                                        Durée: <span className="font-semibold text-foreground">{durationMin} min</span>
+                                      </>
+                                    )}
+                                    {durationMin != null && durationMin > 0 && distLabel && <> • </>}
+                                    {distLabel && (
+                                      <>
+                                        Distance: <span className="font-semibold text-foreground">{distLabel}</span>
+                                      </>
+                                    )}
                                   </div>
                                 </div>
                               </div>
