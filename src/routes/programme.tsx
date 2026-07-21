@@ -61,12 +61,44 @@ const TASK_ICONS = {
 };
 
 function ProgrammePage() {
-  const { state, hydrated, toggleTask, startSession, addPerf } = useForge();
+  const { state, hydrated, toggleTask, startSession, addPerf, setMomentSwap } = useForge();
   const today = todayISO();
   const [viewMode, setViewMode] = useState<"today" | "week">("today");
   const [anchor, setAnchor] = useState(() => new Date());
   const [focusOpen, setFocusOpen] = useState(false);
   const [focusISO, setFocusISO] = useState(today);
+
+  const handleSwapMoment = (date: string, moment: string) => {
+    const choice = window.prompt(
+      `Changer l'activité du ${MOMENT_LABELS[moment as keyof typeof MOMENT_LABELS]} :\n` +
+        "1: 🏊 Natation (1000m continu & éducatifs)\n" +
+        "2: 🏃 Course à pied (Endurance fondamentale)\n" +
+        "3: ⚡ Fractionné 30/30 (VMA)\n" +
+        "4: 🏋️ Tractions (Haut du corps)\n" +
+        "5: 🪑 Chaise & Gainage\n" +
+        "6: 🧠 Psychotechniques (Calcul mental & Logique)\n" +
+        "7: 🧘 Récupération & Étirements\n\n" +
+        "Saisissez le numéro (1 à 7) :",
+      "1",
+    );
+    if (!choice) return;
+    const map: Record<string, string> = {
+      "1": "natation",
+      "2": "course",
+      "3": "fractionne",
+      "4": "tractions",
+      "5": "chaise",
+      "6": "psycho",
+      "7": "repos",
+    };
+    const key = map[choice.trim()];
+    if (key) {
+      setMomentSwap(date, moment, key);
+      toast.success("Activité réagencée !", {
+        description: `Le bloc ${MOMENT_LABELS[moment as keyof typeof MOMENT_LABELS]} a été modifié.`,
+      });
+    }
+  };
 
   const engine = useMemo(
     () => createTrainingEngine(state, { toggleTask }, { todayISO: today }),
@@ -269,9 +301,20 @@ function ProgrammePage() {
 
                   return (
                     <div key={momentKey} className="rounded-xl border border-border/60 bg-muted/20 p-4 space-y-3">
-                      <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-muted-foreground pb-2 border-b border-border/40">
-                        <Icon className="h-4 w-4 text-primary" />
-                        <span>{label}</span>
+                      <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-muted-foreground pb-2 border-b border-border/40">
+                        <div className="flex items-center gap-2">
+                          <Icon className="h-4 w-4 text-primary" />
+                          <span>{label}</span>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-6 text-[10px] px-2 text-muted-foreground hover:text-primary gap-1"
+                          onClick={() => handleSwapMoment(today, momentKey)}
+                          title="Changer l'activité de ce moment"
+                        >
+                          <RotateCcw className="h-3 w-3" /> Réagencer
+                        </Button>
                       </div>
                       <ul className="space-y-2">
                         {tasks.map((task) => {
@@ -418,9 +461,20 @@ function ProgrammePage() {
 
                         return (
                           <div key={key} className="space-y-2">
-                            <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                              <Icon className="h-3 w-3 text-primary" />
-                              <span>{label}</span>
+                            <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                              <div className="flex items-center gap-1.5">
+                                <Icon className="h-3 w-3 text-primary" />
+                                <span>{label}</span>
+                              </div>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-5 text-[9px] px-1.5 text-muted-foreground hover:text-primary gap-1"
+                                onClick={() => handleSwapMoment(day.iso, key)}
+                                title="Changer l'activité de ce moment"
+                              >
+                                <RotateCcw className="h-2.5 w-2.5" /> Réagencer
+                              </Button>
                             </div>
 
                             <ul className="space-y-1.5">

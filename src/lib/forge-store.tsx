@@ -37,6 +37,7 @@ export interface DayRecord {
       calories?: number;
     }>;
   };
+  swaps?: Record<string, string>;
 }
 
 export interface PerfEntry {
@@ -83,6 +84,7 @@ interface Ctx {
   setJournal: (date: string, journal: DayRecord["journal"]) => void;
   setPsycho: (date: string, psycho: DayRecord["psycho"]) => void;
   setHealth: (date: string, health: DayRecord["health"]) => void;
+  setMomentSwap: (date: string, moment: string, activityId: string) => void;
   addPerf: (entry: Omit<PerfEntry, "id">) => void;
   removePerf: (id: string) => void;
   reset: () => void;
@@ -253,8 +255,8 @@ export function ForgeProvider({ children }: { children: ReactNode }) {
           let updatedCount = 0;
 
           for (const item of syncItems) {
-            const rawDate = item.date ? String(item.date).trim() : todayISO();
-            const date = rawDate.length >= 10 ? rawDate.slice(0, 10) : todayISO();
+            const date = normalizeDateISO(item.date);
+            const currentToday = todayISO();
 
             const day = updatedState.days[date] ?? { checked: {} };
 
@@ -285,12 +287,21 @@ export function ForgeProvider({ children }: { children: ReactNode }) {
               }
             }
 
+            const todayDay = updatedState.days[currentToday] ?? { checked: {} };
+
             updatedState.days = {
               ...updatedState.days,
               [date]: {
                 ...day,
                 checked,
                 health,
+              },
+              [currentToday]: {
+                ...todayDay,
+                health: {
+                  ...todayDay.health,
+                  ...health,
+                },
               },
             };
             updatedCount++;
@@ -427,6 +438,18 @@ export function ForgeProvider({ children }: { children: ReactNode }) {
             days: { ...prev.days, [date]: { ...day, health: { ...day.health, ...health } } },
           };
         }),
+      setMomentSwap: (date, moment, activityId) =>
+        setLocalState((prev) => {
+          const day = prev.days[date] ?? { checked: {} };
+          const swaps = { ...day.swaps, [moment]: activityId };
+          return {
+            ...prev,
+            days: {
+              ...prev.days,
+              [date]: { ...day, swaps },
+            },
+          };
+        }),
       addPerf: (entry) =>
         setState((prev) => {
           const withEntry = [...prev.perf, { ...entry, id: crypto.randomUUID() }];
@@ -466,6 +489,33 @@ export function toISO(d: Date) {
 
 export function todayISO() {
   return toISO(new Date());
+}
+
+export function normalizeDateISO(inputDate?: any): string {
+  if (!inputDate) return todayISO();
+  const str = String(inputDate).trim();
+
+  // If already YYYY-MM-DD...
+  if (/^\d{4}-\d{2}-\d{2}/.test(str)) {
+    return str.slice(0, 10);
+  }
+
+  // If French format DD/MM/YYYY or DD-MM-YYYY
+  const frMatch = str.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
+  if (frMatch) {
+    const day = frMatch[1].padStart(2, "0");
+    const month = frMatch[2].padStart(2, "0");
+    const year = frMatch[3];
+    return `${year}-${month}-${day}`;
+  }
+
+  // Fallback: parse with Date constructor
+  const d = new Date(str);
+  if (!isNaN(d.getTime())) {
+    return toISO(d);
+  }
+
+  return todayISO();
 }
 
 export function dowMon(d: Date) {

@@ -34,7 +34,7 @@ export const Route = createFileRoute("/")({
 });
 
 function Dashboard() {
-  const { state, hydrated, toggleTask, startSession } = useForge();
+  const { state, hydrated, toggleTask, startSession, setHealth } = useForge();
   const iso = todayISO();
   const engine = useMemo(() => createTrainingEngine(state, { toggleTask }, { todayISO: iso }), [iso, state, toggleTask]);
   const mission = engine.getTodayProgram();
@@ -45,7 +45,20 @@ function Dashboard() {
   const streak = hydrated ? computeStreak(state) : 0;
   const dLeft = daysUntil(state.targetDate);
   const total = totalXP(state);
-  const healthData = state.days[iso]?.health;
+  const rawHealth = state.days[iso]?.health;
+  const latestHealthFromState = Object.values(state.days || {})
+    .map((d) => d?.health)
+    .filter((h) => h && (h.steps != null || h.avgHeartRate != null || (h.workouts && h.workouts.length > 0)))
+    .pop();
+
+  const healthData =
+    rawHealth &&
+    (rawHealth.steps != null ||
+      rawHealth.avgHeartRate != null ||
+      (rawHealth.workouts && rawHealth.workouts.length > 0))
+      ? rawHealth
+      : latestHealthFromState;
+
   const hasHealthData =
     healthData &&
     (healthData.steps != null ||
@@ -94,6 +107,27 @@ function Dashboard() {
     const wasDone = !!checked[id];
     engine.completeExercise(id, iso);
     if (task && !wasDone) toast.success(`+${task.xp} XP`, { description: task.label });
+  };
+
+  const handleManualHealthInput = () => {
+    const stepsInput = window.prompt("Saisir votre nombre de pas du jour (ex: 8500) :", String(healthData?.steps ?? 8500));
+    if (stepsInput === null) return;
+    const hrInput = window.prompt("Saisir votre fréquence cardiaque moyenne en bpm (ex: 68) :", String(healthData?.avgHeartRate ?? 68));
+    if (hrInput === null) return;
+
+    const steps = parseInt(stepsInput, 10);
+    const hr = parseInt(hrInput, 10);
+
+    const updatedHealth = {
+      steps: !isNaN(steps) ? steps : healthData?.steps,
+      avgHeartRate: !isNaN(hr) ? hr : healthData?.avgHeartRate,
+      workouts: healthData?.workouts ?? [],
+    };
+
+    setHealth(iso, updatedHealth);
+    toast.success("Données Santé enregistrées !", {
+      description: `${steps} pas • FC: ${hr} bpm`,
+    });
   };
 
   return (
@@ -230,9 +264,14 @@ function Dashboard() {
             <div>
               <SectionTitle
                 action={
-                  <Badge variant="outline" className="border-primary/30 text-primary flex items-center gap-1 text-[10px] uppercase font-bold tracking-wider">
-                    <Heart className="h-3 w-3 text-red-500 animate-pulse" /> Live
-                  </Badge>
+                  <div className="flex items-center gap-2">
+                    <Button variant="ghost" size="sm" className="h-6 text-[10px] px-2 text-muted-foreground hover:text-foreground gap-1" onClick={handleManualHealthInput}>
+                      <Plus className="h-3 w-3" /> Saisie
+                    </Button>
+                    <Badge variant="outline" className="border-primary/30 text-primary flex items-center gap-1 text-[10px] uppercase font-bold tracking-wider">
+                      <Heart className="h-3 w-3 text-red-500 animate-pulse" /> Live
+                    </Badge>
+                  </div>
                 }
               >
                 Santé Connectée

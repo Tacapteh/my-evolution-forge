@@ -3,6 +3,72 @@ import type { ForgeState } from "../lib/forge-store";
 import { militarySeptemberProgram } from "../data/programs/military-september";
 import type { TrainingMission, TrainingProgress, TrainingWeeklyCompletion, TrainingDaySummary } from "../types/training";
 
+export const ACTIVITY_PRESETS: Record<string, { id: string; label: string; detail: string; type: "swim" | "run" | "pull" | "chair" | "stretch" | "psycho"; estimatedMinutes: number; xp: number; steps: string[] }> = {
+  natation: {
+    id: "natation",
+    label: "Natation — 1000m continu & éducatifs aquatiques",
+    detail: "Travail d'aisance aquatique et endurance respiratoire",
+    type: "swim",
+    estimatedMinutes: 45,
+    xp: 25,
+    steps: ["Échauffement 200m coulée", "800m nage libre / brasse", "Récupération 100m"],
+  },
+  course: {
+    id: "course",
+    label: "Course à pied — Endurance fondamentale",
+    detail: "45 min à 75% VMA en aisance respiratoire",
+    type: "run",
+    estimatedMinutes: 45,
+    xp: 25,
+    steps: ["Échauffement 5 min", "40 min course continue", "Retour au calme 5 min"],
+  },
+  fractionne: {
+    id: "fractionne",
+    label: "Course — Fractionné court 30/30",
+    detail: "12 répétitions (30s rapide / 30s trotté)",
+    type: "run",
+    estimatedMinutes: 35,
+    xp: 30,
+    steps: ["10 min footing d'échauffement", "12 x (30s VMA / 30s marche)", "5 min retour au calme"],
+  },
+  tractions: {
+    id: "tractions",
+    label: "Tractions & Haut du corps — Séries adaptatives",
+    detail: "Renforcement musculaire du dos et des bras",
+    type: "pull",
+    estimatedMinutes: 30,
+    xp: 20,
+    steps: ["Échauffement épaules", "5 séries adaptées à votre max", "Étirements"],
+  },
+  chaise: {
+    id: "chaise",
+    label: "Chaise & Gainage — Séries isométriques",
+    detail: "Renforcement des quadriceps et de la ceinture abdominale",
+    type: "chair",
+    estimatedMinutes: 25,
+    xp: 20,
+    steps: ["Échauffement genoux/cuisses", "4 séries de chaise à 90°", "Gainage 3x1 min"],
+  },
+  psycho: {
+    id: "psycho",
+    label: "Psychotechniques — Calcul mental & Logique",
+    detail: "Entraînement aux tests d'aptitude militaire",
+    type: "psycho",
+    estimatedMinutes: 20,
+    xp: 15,
+    steps: ["Série de calcul rapide", "Tests de suites numériques", "Test d'attention"],
+  },
+  repos: {
+    id: "repos",
+    label: "Récupération active & Étirements",
+    detail: "Mobilité, hydratation et récupération musculaire",
+    type: "stretch",
+    estimatedMinutes: 20,
+    xp: 10,
+    steps: ["Hydratation complète", "15 min d'étirements doux", "Sommeil réparateur"],
+  },
+};
+
 const TRAINING_WEEKS = militarySeptemberProgram.weeks;
 const TRAINING_START = new Date("2026-07-20T12:00:00");
 const DAY_LABELS = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
@@ -118,11 +184,12 @@ export function createTrainingEngine(
           detail = `Pyramide d'effort (Pic à 95% = ${c3}s) • Repos 60s`;
         }
       } else if (task.type === "run") {
-        if (isTestMaxDay) {
-          label = "⚠️ TEST MAX LUC LÉGER (Obligatoire)";
-          detail = `Test navette 20m avec bande sonore • Saisis ton Palier atteint (Actuel: Palier ${userMaxLuc} / Obj: Palier 12)`;
+        const isThursdayLucTest = dayIndex === 3; // Jeudi = Test Luc Léger Hebdomadaire
+        if (isThursdayLucTest) {
+          label = "⚠️ TEST MAX LUC LÉGER (Hebdomadaire)";
+          detail = `Test navette 20m avec bande sonore du jeudi • Saisis ton Palier atteint (Actuel: Palier ${userMaxLuc} / Obj: Palier 12)`;
           steps = ["Tracer 20m avec balises", "Suivre les bips de la bande sonore Luc Léger", "Arrêt au 2ème manquement consécutif", "Saisir le Palier dans l'application"];
-        } else if (dayIndex === 1 || dayIndex === 3) {
+        } else if (dayIndex === 1) {
           const targetPalier = Math.min(12, +(userMaxLuc + 0.5).toFixed(1));
           label = `Fractionné VMA 30/30 — 12 reps à l'allure Palier ${targetPalier}`;
           detail = `Allure sur-optimisée (+0.5 palier vs max ${userMaxLuc}) • 30s effort / 30s trotté`;
@@ -146,6 +213,27 @@ export function createTrainingEngine(
         rest: task.rest ?? defaultRest(task.type),
         steps: steps ?? defaultSteps(task),
       };
+    });
+
+    // Appliquer les réagencements / swaps d'activités personnalisés pour cette journée
+    const swaps = state.days[dateISO]?.swaps ?? {};
+    const finalTasks = tasks.map((t) => {
+      const moment = t.moment;
+      const swapId = swaps[moment];
+      if (swapId && ACTIVITY_PRESETS[swapId]) {
+        const preset = ACTIVITY_PRESETS[swapId];
+        return {
+          ...t,
+          id: `${t.id}-swapped-${swapId}`,
+          label: preset.label,
+          detail: preset.detail,
+          type: preset.type,
+          estimatedMinutes: preset.estimatedMinutes,
+          xp: preset.xp,
+          steps: preset.steps,
+        };
+      }
+      return t;
     });
     const day = state.days[dateISO];
     const checked = day?.checked ?? {};
