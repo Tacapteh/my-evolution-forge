@@ -1,12 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "@tanstack/react-router";
 import { PageHeader } from "@/components/forge/AppShell";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import { Flame, Target, Sparkles, Trophy, ArrowRight, Quote } from "lucide-react";
+import { Flame, Target, Sparkles, Trophy, ArrowRight } from "lucide-react";
 import {
   useForge,
   todayISO,
@@ -17,7 +17,7 @@ import {
   daysUntil,
   totalXP,
 } from "@/lib/forge-store";
-import { QUOTES, GOALS } from "@/lib/forge-data";
+import { GOALS } from "@/lib/forge-data";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/")({
@@ -36,7 +36,7 @@ function Dashboard() {
   const xpToday = xpForDate(state, iso);
   const streak = hydrated ? computeStreak(state) : 0;
   const dLeft = daysUntil(state.targetDate);
-  const quote = useMemo(() => QUOTES[new Date().getDate() % QUOTES.length], []);
+  
   const total = totalXP(state);
   const overallProgress = Math.min(100, Math.round((total / 5000) * 100));
 
@@ -122,13 +122,6 @@ function Dashboard() {
 
         {/* Side column */}
         <div className="space-y-4 md:space-y-6">
-          <Card className="card-forge p-5">
-            <div className="flex items-start gap-3">
-              <Quote className="h-4 w-4 text-primary shrink-0 mt-0.5" />
-              <p className="text-sm text-balance leading-relaxed">{quote}</p>
-            </div>
-          </Card>
-
           <Card className="card-forge p-5">
             <div className="text-[11px] uppercase tracking-wider text-muted-foreground mb-3">Objectifs</div>
             <div className="space-y-3">
