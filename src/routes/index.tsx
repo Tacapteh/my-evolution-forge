@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { PageHeader } from "@/components/forge/AppShell";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Flame,
   Target,
@@ -14,6 +15,7 @@ import {
   CheckCircle2,
   Heart,
   Activity,
+  Plus,
 } from "lucide-react";
 import { useForge, todayISO, computeStreak, daysUntil, totalXP } from "@/lib/forge-store";
 import {
