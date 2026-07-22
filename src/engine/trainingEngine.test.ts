@@ -53,7 +53,7 @@ describe("training engine", () => {
     expect(mission.tasks[0].label).toBe("Natation — 45 min");
     expect(mission.tasks[0].detail).toBe("Piscine + échauffement");
     expect(mission.tasks[0].estimatedMinutes).toBe(45);
-    expect(mission.tasks[1].label).toBe("Tractions — 5×4");
+    expect(mission.tasks[1].label).toContain("Tractions — Pyramide");
   });
 
   test("can complete an exercise through the engine", () => {

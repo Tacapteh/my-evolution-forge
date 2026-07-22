@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { PageHeader } from "@/components/forge/AppShell";
 import { FocusSessionPanel, ProgramHeader } from "@/components/forge/program-components";
+import { ExerciseSwapModal } from "@/components/forge/ExerciseSwapModal";
 import { useForge, todayISO, toISO } from "@/lib/forge-store";
 import { createTrainingEngine } from "@/engine/trainingEngine";
 import { toast } from "sonner";
@@ -28,6 +29,7 @@ import {
   CheckCircle2,
   Calendar,
   Award,
+  PlusCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -69,6 +71,13 @@ function ProgrammePage() {
   const [focusOpen, setFocusOpen] = useState(false);
   const [focusISO, setFocusISO] = useState(today);
 
+  const [swapModalState, setSwapModalState] = useState<{
+    open: boolean;
+    dateISO: string;
+    moment: string;
+    task?: any;
+  }>({ open: false, dateISO: "", moment: "" });
+
   const handleLogDistance = (task: any, dateISO: string) => {
     const targetDist = task.targetDistance ?? 5;
     const unit = task.unit ?? "km";
@@ -109,36 +118,24 @@ function ProgrammePage() {
     }
   };
 
-  const handleSwapMoment = (date: string, moment: string) => {
-    const choice = window.prompt(
-      `Modifier l'activité du ${MOMENT_LABELS[moment as keyof typeof MOMENT_LABELS]} :\n` +
-        "1: 🏊 Natation (1000m continu & éducatifs)\n" +
-        "2: 🏃 Course à pied (Endurance fondamentale)\n" +
-        "3: ⚡ Fractionné 30/30 (VMA)\n" +
-        "4: 🏋️ Tractions (Haut du corps)\n" +
-        "5: 🪑 Chaise & Gainage\n" +
-        "6: 🧠 Psychotechniques (Calcul mental & Logique)\n" +
-        "7: 🧘 Récupération & Étirements\n\n" +
-        "Saisissez le numéro (1 à 7) :",
-      "1",
-    );
-    if (!choice) return;
-    const map: Record<string, string> = {
-      "1": "natation",
-      "2": "course",
-      "3": "fractionne",
-      "4": "tractions",
-      "5": "chaise",
-      "6": "psycho",
-      "7": "repos",
-    };
-    const key = map[choice.trim()];
-    if (key) {
-      setMomentSwap(date, moment, key);
-      toast.success("Activité modifiée !", {
-        description: `Le bloc ${MOMENT_LABELS[moment as keyof typeof MOMENT_LABELS]} a été mis à jour.`,
-      });
-    }
+  const handleSwapMoment = (date: string, moment: string, task?: any) => {
+    setSwapModalState({ open: true, dateISO: date, moment, task });
+  };
+
+  const handleSelectSwap = (swapId: string) => {
+    if (!swapModalState.dateISO || !swapModalState.moment) return;
+    setMomentSwap(swapModalState.dateISO, swapModalState.moment, swapId);
+    toast.success("Exercice remplacé avec succès !", {
+      description: `L'alternative préserve strictement l'intention de la séance et s'adapte à vos Max.`,
+    });
+  };
+
+  const handleResetSwap = () => {
+    if (!swapModalState.dateISO || !swapModalState.moment) return;
+    setMomentSwap(swapModalState.dateISO, swapModalState.moment, "");
+    toast.info("Exercice d'origine restauré.", {
+      description: `La programmation initiale a été rétablie pour ce moment.`,
+    });
   };
 
   const engine = useMemo(
@@ -751,6 +748,20 @@ function ProgrammePage() {
         checked={focusChecked}
         onToggle={(taskId) => handleToggleForISO(taskId, focusISO)}
         onClose={() => setFocusOpen(false)}
+      />
+
+      <ExerciseSwapModal
+        open={swapModalState.open}
+        onClose={() => setSwapModalState((prev) => ({ ...prev, open: false }))}
+        dateISO={swapModalState.dateISO}
+        moment={swapModalState.moment}
+        momentLabel={MOMENT_LABELS[swapModalState.moment as keyof typeof MOMENT_LABELS] ?? swapModalState.moment}
+        currentTask={swapModalState.task}
+        userMaxPull={Math.max(6, ...(state.perf?.filter((p) => p.type === "pull").map((p) => p.value) ?? []))}
+        userMaxChair={Math.max(60, ...(state.perf?.filter((p) => p.type === "chair").map((p) => p.value) ?? []))}
+        userMaxPush={Math.max(15, ...(state.perf?.filter((p: any) => p.type === "push").map((p: any) => p.value) ?? []))}
+        onSelectAlternative={handleSelectSwap}
+        onReset={handleResetSwap}
       />
     </div>
   );

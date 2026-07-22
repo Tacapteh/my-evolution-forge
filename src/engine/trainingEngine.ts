@@ -3,7 +3,7 @@ import type { ForgeState } from "../lib/forge-store";
 import { militarySeptemberProgram } from "../data/programs/military-september";
 import type { TrainingMission, TrainingProgress, TrainingWeeklyCompletion, TrainingDaySummary } from "../types/training";
 
-export const ACTIVITY_PRESETS: Record<string, { id: string; label: string; detail: string; type: "swim" | "run" | "pull" | "chair" | "stretch" | "psycho"; estimatedMinutes: number; xp: number; steps: string[] }> = {
+export const ACTIVITY_PRESETS: Record<string, { id: string; label: string; detail: string; type: "swim" | "run" | "pull" | "chair" | "stretch" | "psycho" | "custom"; estimatedMinutes: number; xp: number; steps: string[] }> = {
   natation: {
     id: "natation",
     label: "Natation — 1000m continu & éducatifs aquatiques",
@@ -33,21 +33,75 @@ export const ACTIVITY_PRESETS: Record<string, { id: string; label: string; detai
   },
   tractions: {
     id: "tractions",
-    label: "Tractions & Haut du corps — Séries adaptatives",
+    label: "Tractions — Séries adaptatives",
     detail: "Renforcement musculaire du dos et des bras",
     type: "pull",
     estimatedMinutes: 30,
     xp: 20,
-    steps: ["Échauffement épaules", "5 séries adaptées à votre max", "Étirements"],
+    steps: ["Échauffement épaules", "Séries adaptées à votre max • Repos strict 90s", "Étirements"],
+  },
+  pompes_militaires: {
+    id: "pompes_militaires",
+    label: "Pompes Militaires — Renforcement Pectoraux & Triceps",
+    detail: "Tempo 2010 (2s descente, 0s pause, 1s montée, 0s pause) • Repos strict : 90s • Consignes : Coudes à 45°, corps gainé, poitrine effleurant le sol",
+    type: "pull",
+    estimatedMinutes: 25,
+    xp: 20,
+    steps: ["Consignes : Coudes à 45°, corps parfaitement gainé, poitrine sol à chaque rep", "Exécution Tempo 2010", "Repos strict : 90s entre les séries"],
+  },
+  pompes_diamant: {
+    id: "pompes_diamant",
+    label: "Pompes Diamant — Triceps & Sternum",
+    detail: "Tempo 2010 • Repos strict : 90s • Consignes : Mains jointes en diamant sous le sternum, coudes serrés",
+    type: "pull",
+    estimatedMinutes: 25,
+    xp: 20,
+    steps: ["Consignes : Mains jointes en diamant sous le sternum, coudes serrés le long du corps", "Exécution Tempo 2010", "Repos strict : 90s"],
+  },
+  pompes_declinees: {
+    id: "pompes_declinees",
+    label: "Pompes Déclinées sur chaise — Haut de Poitrine & Épaules",
+    detail: "Tempo 2010 • Repos strict : 90s • Consignes : Pieds surélevés sur chaise/banc, corps aligné",
+    type: "pull",
+    estimatedMinutes: 25,
+    xp: 20,
+    steps: ["Consignes : Pieds surélevés sur chaise, corps aligné sans creuser le dos", "Exécution Tempo 2010", "Repos strict : 90s"],
+  },
+  tractions_australiennes: {
+    id: "tractions_australiennes",
+    label: "Tractions Australiennes — Tirage Horizontal",
+    detail: "Tempo 2010 • Repos strict : 90s • Tirage au poids du corps jusqu'à la poitrine",
+    type: "pull",
+    estimatedMinutes: 25,
+    xp: 20,
+    steps: ["Corps suspendu sous barre basse", "Tirage poitrine contre la barre Tempo 2010", "Repos strict : 90s"],
+  },
+  squat_iso: {
+    id: "squat_iso",
+    label: "Squat Isométrique — Cuisses au mur (90°)",
+    detail: "Tempo Isométrie 1000 (maintien statique à 90°) • Repos strict : 60s",
+    type: "chair",
+    estimatedMinutes: 20,
+    xp: 20,
+    steps: ["Dos plaqué au mur, cuisses parallèles au sol (90°)", "Maintien statique continu", "Repos strict : 60s"],
+  },
+  gainage_planche: {
+    id: "gainage_planche",
+    label: "Gainage Abdominal Planche",
+    detail: "Tempo Isométrie 1000 • Repos strict : 60s • Coudes sous épaules, corps droit",
+    type: "chair",
+    estimatedMinutes: 20,
+    xp: 20,
+    steps: ["Coudes sous les épaules, corps parfaitement aligné", "Verrouillage abdominal et fessiers", "Repos strict : 60s"],
   },
   chaise: {
     id: "chaise",
     label: "Chaise & Gainage — Séries isométriques",
-    detail: "Renforcement des quadriceps et de la ceinture abdominale",
+    detail: "Renforcement des quadriceps • Tempo Isométrie 1000 • Repos strict : 60s",
     type: "chair",
     estimatedMinutes: 25,
     xp: 20,
-    steps: ["Échauffement genoux/cuisses", "4 séries de chaise à 90°", "Gainage 3x1 min"],
+    steps: ["Échauffement genoux/cuisses", "Séries de chaise à 90°", "Repos strict : 60s"],
   },
   psycho: {
     id: "psycho",
@@ -136,6 +190,9 @@ export function createTrainingEngine(
     const pullPerfs = (state.perf ?? []).filter((p) => p.type === "pull").map((p) => p.value);
     const userMaxPull = pullPerfs.length > 0 ? Math.max(...pullPerfs) : 6;
 
+    const pushPerfs = (state.perf ?? []).filter((p: any) => p.type === "push").map((p: any) => p.value);
+    const userMaxPush = pushPerfs.length > 0 ? Math.max(...pushPerfs) : Math.max(15, Math.round(userMaxPull * 2.5));
+
     const chairPerfs = (state.perf ?? []).filter((p) => p.type === "chair").map((p) => p.value);
     const userMaxChair = chairPerfs.length > 0 ? Math.max(...chairPerfs) : 60;
 
@@ -156,62 +213,107 @@ export function createTrainingEngine(
 
       if (task.type === "pull") {
         if (isTestMaxDay) {
-          label = "⚠️ TEST MAX TRACTIONS (Obligatoire)";
-          detail = `1 série à l'échec strict • Saisis ton score pour adapter les 2 prochaines semaines (Max: ${userMaxPull} / Obj: 17-20)`;
-          steps = ["Échauffement haut du corps", "1 série max strict jusqu'à l'échec", "Saisir le score dans l'application"];
-        } else if (dayIndex === 0 || dayIndex === 2) {
-          // Sous-maximal 65%
+          label = "⚠️ TEST MAX TRACTIONS (Obligatoire — Cycle 2 semaines)";
+          detail = `1 série à l'échec strict • Tempo 2010 • Repos strict 120s • Saisis ton score pour adapter les 2 prochaines semaines (Max: ${userMaxPull} / Obj: 17-20)`;
+          steps = ["Échauffement haut du corps et mobilité des épaules", "1 série unique à l'échec strict (Tempo 2010)", "Saisir le score dans l'application"];
+        } else if (dayIndex === 0) {
+          // Lundi : Pyramide (1-2-3-4-5-4-3-2-1)
+          const peak = Math.max(4, Math.min(10, Math.round(userMaxPull * 0.85)));
+          const p1 = 1;
+          const p2 = Math.max(2, Math.round(peak * 0.4));
+          const p3 = Math.max(3, Math.round(peak * 0.7));
+          const p4 = peak;
+          label = `Tractions — Pyramide : ${p1}-${p2}-${p3}-${p4}-${p3}-${p2}-${p1} reps`;
+          detail = `Format Pyramidal (Pic à ${p4} reps) • Tempo 2010 (2s descente, 0s pause, 1s montée, 0s pause) • Repos strict : 90s`;
+          steps = [
+            "Échauffement épaules et mobilité des coudes",
+            `Enchaîner la pyramide : ${p1}-${p2}-${p3}-${p4}-${p3}-${p2}-${p1} reps`,
+            "Tempo 2010 : 2s descente freinée, 1s montée explosive",
+            "Repos strict : 90s entre chaque palier",
+          ];
+        } else if (dayIndex === 1) {
+          // Mardi : Séries réparties (65% Max)
           const reps = Math.max(3, Math.round(userMaxPull * 0.65));
-          label = `Tractions — 5 × ${reps} reps`;
-          detail = `Sous-maximal (65% de Max=${userMaxPull}) • Repos 90s`;
-        } else if (dayIndex === 3 || dayIndex === 4) {
-          // Dégressif
-          const r1 = Math.max(2, userMaxPull - 1);
-          const r2 = Math.max(2, userMaxPull - 2);
-          const r3 = Math.max(1, userMaxPull - 3);
-          const r4 = Math.max(1, userMaxPull - 4);
+          label = `Tractions — Séries réparties : 5 × ${reps} reps`;
+          detail = `5 séries sous-maximales (65% Max=${userMaxPull}) • Tempo 2010 • Repos strict : 90s`;
+          steps = [
+            "Échauffement haut du corps",
+            `5 séries de ${reps} tractions propres`,
+            "Tempo 2010 : 2s descente, 1s montée",
+            "Repos strict : 90s entre les séries",
+          ];
+        } else if (dayIndex === 2) {
+          // Mercredi : Dégressif
+          const r1 = Math.max(3, userMaxPull);
+          const r2 = Math.max(2, userMaxPull - 1);
+          const r3 = Math.max(2, userMaxPull - 2);
+          const r4 = Math.max(1, userMaxPull - 3);
           const r5 = Math.max(1, userMaxPull - 4);
           label = `Tractions — Dégressif : ${r1}-${r2}-${r3}-${r4}-${r5} reps`;
-          detail = `Travail d'épuisement • Max=${userMaxPull} reps • Repos 90s`;
+          detail = `Format Dégressif d'épuisement (Max=${userMaxPull}) • Tempo 2010 • Repos strict : 90s`;
+          steps = [
+            "Échauffement dos & biceps",
+            `Enchaîner : ${r1}-${r2}-${r3}-${r4}-${r5} reps`,
+            "Tempo 2010 : poussée explosive, retour contrôlé 2s",
+            "Repos strict : 90s après chaque série",
+          ];
         } else {
-          // Pyramide
-          const p1 = Math.max(2, Math.round(userMaxPull * 0.50));
-          const p2 = Math.max(3, Math.round(userMaxPull * 0.75));
-          const p3 = Math.max(4, Math.round(userMaxPull * 0.90));
-          const p4 = Math.max(3, Math.round(userMaxPull * 0.75));
-          const p5 = Math.max(2, Math.round(userMaxPull * 0.50));
-          label = `Tractions — Pyramide : ${p1}-${p2}-${p3}-${p4}-${p5} reps`;
-          detail = `Pyramide de force (Pic à 90%) • Max=${userMaxPull} reps • Repos 90s`;
+          // Samedi (dayIndex 5) / Autres : Sous-maximal (60% Max)
+          const reps = Math.max(3, Math.round(userMaxPull * 0.60));
+          label = `Tractions — Sous-maximal : 5 × ${reps} reps`;
+          detail = `Format Sous-maximal d'entretien (60% Max=${userMaxPull}) • Tempo 2010 • Repos strict : 90s`;
+          steps = [
+            "Échauffement propre",
+            `5 séries de ${reps} tractions sans échec`,
+            "Tempo 2010 : forme irréprochable",
+            "Repos strict : 90s entre les séries",
+          ];
         }
       } else if (task.type === "chair") {
         if (isTestMaxDay) {
-          label = "⚠️ TEST MAX CHAISE (Obligatoire)";
-          detail = `1 série max à 90° jusqu'à l'échec • Saisis ton temps pour adapter les 2 prochaines semaines (Record: ${userMaxChair}s / Obj: 168s)`;
+          label = "⚠️ TEST MAX CHAISE (Obligatoire — Cycle 2 semaines)";
+          detail = `1 série max à 90° jusqu'à l'échec strict • Tempo Isométrie 1000 • Repos 120s • (Record: ${userMaxChair}s / Obj: 168s)`;
           steps = ["Dos collé au mur à 90°", "Chronométrer jusqu'à l'échec strict", "Saisir le temps en secondes dans l'application"];
         } else if (dayIndex === 0 || dayIndex === 2) {
           const secs = Math.max(30, Math.round(userMaxChair * 0.75));
-          label = `Chaise — 4 × ${secs}s (75% du Max)`;
-          detail = `Basé sur ton record (${userMaxChair}s) • Repos 60s`;
-        } else if (dayIndex === 3 || dayIndex === 4) {
-          const s1 = Math.max(20, userMaxChair - 10);
-          const s2 = Math.max(15, userMaxChair - 20);
+          label = `Chaise — Séries réparties : 4 × ${secs}s (75% Max)`;
+          detail = `4 séries isométriques à 90° • Tempo Isométrie 1000 • Repos strict : 60s`;
+          steps = [
+            "Dos bien à plat contre le mur, genoux à 90° exacts",
+            `4 séries de ${secs} secondes de maintien`,
+            "Tempo Isométrie 1000 : maintien continu",
+            "Repos strict : 60s entre les séries",
+          ];
+        } else if (dayIndex === 1 || dayIndex === 5) {
+          const c1 = Math.max(20, Math.round(userMaxChair * 0.60));
+          const c2 = Math.max(30, Math.round(userMaxChair * 0.80));
+          const c3 = Math.max(35, Math.round(userMaxChair * 0.95));
+          label = `Chaise — Pyramide : ${c1}s - ${c2}s - ${c3}s - ${c2}s - ${c1}s`;
+          detail = `Format Pyramidal (Pic à ${c3}s) • Tempo Isométrie 1000 • Repos strict : 60s`;
+          steps = [
+            "Placement à 90° contre le mur",
+            `Séries pyramidales : ${c1}s - ${c2}s - ${c3}s - ${c2}s - ${c1}s`,
+            "Tempo Isométrie 1000 : verrouillage postural",
+            "Repos strict : 60s entre chaque palier",
+          ];
+        } else {
+          const s1 = Math.max(25, userMaxChair - 10);
+          const s2 = Math.max(20, userMaxChair - 20);
           const s3 = Math.max(15, userMaxChair - 30);
           const s4 = Math.max(10, userMaxChair - 40);
           label = `Chaise — Dégressif : ${s1}s - ${s2}s - ${s3}s - ${s4}s`;
-          detail = `Épuisement isométrique • Record: ${userMaxChair}s • Repos 60s`;
-        } else {
-          const c1 = Math.max(20, Math.round(userMaxChair * 0.60));
-          const c2 = Math.max(30, Math.round(userMaxChair * 0.85));
-          const c3 = Math.max(35, Math.round(userMaxChair * 0.95));
-          const c4 = Math.max(30, Math.round(userMaxChair * 0.85));
-          const c5 = Math.max(20, Math.round(userMaxChair * 0.60));
-          label = `Chaise — Pyramide : ${c1}s - ${c2}s - ${c3}s - ${c4}s - ${c5}s`;
-          detail = `Pyramide d'effort (Pic à 95% = ${c3}s) • Repos 60s`;
+          detail = `Format Dégressif d'épuisement isométrique • Tempo Isométrie 1000 • Repos strict : 60s`;
+          steps = [
+            "Posture 90° contre le mur",
+            `Enchaîner : ${s1}s - ${s2}s - ${s3}s - ${s4}s`,
+            "Tempo Isométrie 1000 : maintien continu",
+            "Repos strict : 60s après chaque série",
+          ];
         }
       } else if (task.type === "run") {
         const isThursday = dayIndex === 3;
         if (isThursday && isTestMaxDay) {
-          label = "⚠️ TEST MAX LUC LÉGER (Bi-hebdomadaire)";
+          label = "⚠️ TEST MAX LUC LÉGER (Bi-hebdomadaire — Cycle 2 semaines)";
           detail = `Test navette 20m avec bande sonore du jeudi • Saisis ton Palier atteint (Actuel: Palier ${userMaxLuc} / Obj: Palier 12)`;
           steps = ["Tracer 20m avec balises", "Suivre les bips de la bande sonore Luc Léger", "Arrêt au 2ème manquement consécutif", "Saisir le Palier dans l'application"];
         } else if (isThursday) {
@@ -262,7 +364,7 @@ export function createTrainingEngine(
       return t;
     });
 
-    // Appliquer les réagencements / modifications d'activités personnalisés
+    // Appliquer les réagencements / modifications d'activités personnalisés (Intention héritée)
     const swaps = state.days[dateISO]?.swaps ?? {};
     let finalTasks: any[] = [];
     const processedMoments = new Set<string>();
@@ -273,18 +375,9 @@ export function createTrainingEngine(
       if (swapId && ACTIVITY_PRESETS[swapId]) {
         if (!processedMoments.has(moment)) {
           processedMoments.add(moment);
-          const preset = ACTIVITY_PRESETS[swapId];
-          finalTasks.push({
-            ...t,
-            id: `swapped-${dateISO}-${moment}-${swapId}`,
-            moment,
-            label: preset.label,
-            detail: preset.detail,
-            type: preset.type,
-            estimatedMinutes: preset.estimatedMinutes,
-            xp: preset.xp,
-            steps: preset.steps,
-          });
+          finalTasks.push(
+            resolveSmartSwappedTask(t, dateISO, moment, swapId, userMaxPull, userMaxChair, userMaxPush)
+          );
         }
       } else {
         finalTasks.push(t);
@@ -503,6 +596,125 @@ function defaultSteps(task: { type: string; label: string }) {
     case "psycho": return ["Timer 20 min", task.label, "Noter le score"];
     default: return [task.label];
   }
+}
+
+function resolveSmartSwappedTask(
+  t: any,
+  dateISO: string,
+  moment: string,
+  swapId: string,
+  userMaxPull: number,
+  userMaxChair: number,
+  userMaxPush: number,
+) {
+  const preset = ACTIVITY_PRESETS[swapId];
+  if (!preset) return t;
+
+  const originalLabel = t.label ?? "";
+  const isPyramid = originalLabel.toLowerCase().includes("pyramide");
+  const isDegressive = originalLabel.toLowerCase().includes("dégressif") || originalLabel.toLowerCase().includes("degressif");
+
+  let label = preset.label;
+  let detail = preset.detail;
+  let steps = preset.steps;
+
+  if (swapId === "pompes_militaires" || swapId === "pompes_diamant" || swapId === "pompes_declinees" || swapId === "tractions_australiennes") {
+    const pPushMax = userMaxPush;
+    const peak = Math.max(6, Math.round(pPushMax * 0.40));
+    const p1 = Math.max(1, Math.round(peak * 0.25));
+    const p2 = Math.max(2, Math.round(peak * 0.50));
+    const p3 = Math.max(4, Math.round(peak * 0.75));
+    const p4 = peak;
+    const pyramidStr = `${p1}-${p2}-${p3}-${p4}-${p3}-${p2}-${p1}`;
+
+    const submaxReps = Math.max(6, Math.round(pPushMax * 0.65));
+    const degressiveStr = `${Math.round(pPushMax * 0.65)}-${Math.round(pPushMax * 0.55)}-${Math.round(pPushMax * 0.45)}-${Math.round(pPushMax * 0.35)}-${Math.round(pPushMax * 0.25)}`;
+
+    const formConsignesMap: Record<string, string> = {
+      pompes_militaires: "Coudes à 45°, corps parfaitement gainé, poitrine effleurant le sol",
+      pompes_diamant: "Mains jointes en diamant sous le sternum, coudes serrés le long du corps",
+      pompes_declinees: "Pieds surélevés sur chaise/banc, corps aligné sans creuser le dos",
+      tractions_australiennes: "Corps suspendu sous barre basse, tirage poitrine contre la barre",
+    };
+
+    const nameMap: Record<string, string> = {
+      pompes_militaires: "Pompes Militaires",
+      pompes_diamant: "Pompes Diamant",
+      pompes_declinees: "Pompes Déclinées (chaise)",
+      tractions_australiennes: "Tractions Australiennes",
+    };
+
+    const exerciseName = nameMap[swapId] ?? "Pompes";
+    const consignes = formConsignesMap[swapId] ?? "Forme stricte";
+
+    if (isPyramid) {
+      label = `${exerciseName} — Pyramide : ${pyramidStr} reps`;
+      detail = `Format Pyramidal (Pic à ${p4} reps) • Tempo 2010 (2s descente, 0s pause, 1s montée, 0s pause) • Repos strict : 90s • Consignes : ${consignes}`;
+      steps = [
+        `Consignes : ${consignes}`,
+        `Pyramide de reps : ${pyramidStr}`,
+        "Tempo 2010 : poussée explosive, 2s descente contrôlée",
+        "Repos strict : 90s entre les paliers",
+      ];
+    } else if (isDegressive) {
+      label = `${exerciseName} — Dégressif : ${degressiveStr} reps`;
+      detail = `Format Dégressif d'épuisement • Tempo 2010 • Repos strict : 90s • Consignes : ${consignes}`;
+      steps = [
+        `Consignes : ${consignes}`,
+        `Séries dégressives : ${degressiveStr} reps`,
+        "Tempo 2010",
+        "Repos strict : 90s après chaque série",
+      ];
+    } else {
+      label = `${exerciseName} — Séries réparties : 5 × ${submaxReps} reps`;
+      detail = `5 séries (65% Max=${pPushMax}) • Tempo 2010 • Repos strict : 90s • Consignes : ${consignes}`;
+      steps = [
+        `Consignes : ${consignes}`,
+        `5 séries de ${submaxReps} répétitions`,
+        "Tempo 2010 : régularité et contrôle",
+        "Repos strict : 90s entre les séries",
+      ];
+    }
+  } else if (swapId === "squat_iso" || swapId === "gainage_planche") {
+    const chairMax = userMaxChair;
+    const submaxSecs = Math.max(30, Math.round(chairMax * 0.70));
+    const c1 = Math.max(15, Math.round(chairMax * 0.45));
+    const c2 = Math.max(25, Math.round(chairMax * 0.70));
+    const c3 = Math.max(35, Math.round(chairMax * 0.90));
+    const pyramidStr = `${c1}s - ${c2}s - ${c3}s - ${c2}s - ${c1}s`;
+    const degressiveStr = `${Math.round(chairMax * 0.8)}s - ${Math.round(chairMax * 0.65)}s - ${Math.round(chairMax * 0.5)}s - ${Math.round(chairMax * 0.35)}s`;
+
+    const isoName = swapId === "gainage_planche" ? "Gainage Abdominal Planche" : "Squat Isométrique (Mur)";
+    const isoConsignes = swapId === "gainage_planche"
+      ? "Coudes sous épaules, corps parfaitement aligné, fessiers & abdos contractés"
+      : "Dos plaqué au mur, cuisses parallèles au sol à 90° exacts";
+
+    if (isPyramid) {
+      label = `${isoName} — Pyramide : ${pyramidStr}`;
+      detail = `Format Pyramidal (Pic à ${c3}s) • Tempo Isométrie 1000 • Repos strict : 60s • Consignes : ${isoConsignes}`;
+      steps = [`Consignes : ${isoConsignes}`, `Pyramide statique : ${pyramidStr}`, "Tempo Isométrie 1000", "Repos strict : 60s entre les paliers"];
+    } else if (isDegressive) {
+      label = `${isoName} — Dégressif : ${degressiveStr}`;
+      detail = `Format Dégressif d'épuisement • Tempo Isométrie 1000 • Repos strict : 60s • Consignes : ${isoConsignes}`;
+      steps = [`Consignes : ${isoConsignes}`, `Enchaîner : ${degressiveStr}`, "Tempo Isométrie 1000", "Repos strict : 60s"];
+    } else {
+      label = `${isoName} — Séries réparties : 4 × ${submaxSecs}s`;
+      detail = `4 séries (70% Max=${chairMax}s) • Tempo Isométrie 1000 • Repos strict : 60s • Consignes : ${isoConsignes}`;
+      steps = [`Consignes : ${isoConsignes}`, `4 séries de ${submaxSecs} secondes`, "Tempo Isométrie 1000", "Repos strict : 60s entre les séries"];
+    }
+  }
+
+  return {
+    ...t,
+    id: `swapped-${dateISO}-${moment}-${swapId}`,
+    moment,
+    label,
+    detail,
+    type: preset.type,
+    estimatedMinutes: preset.estimatedMinutes,
+    xp: preset.xp,
+    steps,
+  };
 }
 
 function buildSummary(doneCount: number, totalCount: number, remainingCount: number) {
