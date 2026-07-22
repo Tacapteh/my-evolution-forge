@@ -570,6 +570,9 @@ function ProgrammePage() {
                     {/* Liste des exercices par moment */}
                     <div className="p-5 space-y-4 flex-1">
                       {moments.map(({ key, tasks }) => {
+                        const Icon = MOMENT_ICONS[key];
+                        const label = MOMENT_LABELS[key];
+
                         if (tasks.length === 0) {
                           return (
                             <div key={key} className="flex items-center justify-between text-[10px] text-muted-foreground/60 py-1 border-b border-border/20 last:border-0">
@@ -588,8 +591,6 @@ function ProgrammePage() {
                             </div>
                           );
                         }
-                        const Icon = MOMENT_ICONS[key];
-                        const label = MOMENT_LABELS[key];
 
                         return (
                           <div key={key} className="space-y-2">
