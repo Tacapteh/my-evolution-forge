@@ -10,6 +10,7 @@ import { LineChart, Line, ResponsiveContainer, XAxis, YAxis, Tooltip } from "rec
 import { useForge, todayISO } from "@/lib/forge-store";
 import { Trash2 } from "lucide-react";
 import { BADGES, unlockBadges } from "@/lib/forge-store";
+import { AppleHealthDataCard } from "@/components/forge/AppleHealthDataCard";
 
 export const Route = createFileRoute("/performances")({
   component: PerformancesPage,
@@ -43,9 +44,12 @@ function PerformancesPage() {
 
   return (
     <div>
-      <PageHeader title="Performances" subtitle="Historique des records et courbes d'évolution." />
+      <PageHeader title="Performances" subtitle="Historique des records, données réelles et courbes d'évolution." />
 
       <div className="px-4 md:px-8 pb-10 space-y-6">
+        {/* Apple Health Real Data Card */}
+        <AppleHealthDataCard />
+
         {/* Add form */}
         <Card className="card-forge p-5">
           <div className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_1fr_auto] gap-3 items-end">

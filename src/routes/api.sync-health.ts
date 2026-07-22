@@ -177,13 +177,18 @@ function normalizeWorkoutsServer(rawWorkouts: any): any[] {
         w.distanceInMeters ??
         w.swimmingDistance ??
         w.swimmingDistanceMeters ??
+        w.distanceSwimming ??
+        w.distanceSwimmingMeters ??
+        w.HKQuantityTypeIdentifierDistanceSwimming ??
+        w.HKQuantityTypeIdentifierDistanceSwimmingMeters ??
         w.distanceWalkingRunningMeters,
     );
     const dKm = parseDistNum(
       w.distanceKm ??
         w.distanceInKm ??
-        w.distanceWalkingRunning ??
-        w.swimmingDistanceKm,
+        w.swimmingDistanceKm ??
+        w.distanceSwimmingKm ??
+        w.distanceWalkingRunning,
     );
     const dGen = parseDistNum(w.distance ?? w.totalDistance);
 

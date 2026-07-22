@@ -6,6 +6,7 @@ import { useForge, todayISO } from "@/lib/forge-store";
 import { buildDayMission, buildHistoryItems } from "@/lib/forge-program";
 import { DailyProgressBar, SessionHistoryItem } from "@/components/forge/program-components";
 import { Dumbbell, Timer, Footprints, Waves, Brain, Award } from "lucide-react";
+import { AppleHealthDataCard } from "@/components/forge/AppleHealthDataCard";
 
 export const Route = createFileRoute("/progression")({
   component: ProgressionPage,
@@ -34,7 +35,7 @@ function ProgressionPage() {
 
   return (
     <div>
-      <PageHeader title="Progression" subtitle="Journee en cours, regularite et objectifs." />
+      <PageHeader title="Progression" subtitle="Journee en cours, regularite, données réelles et objectifs." />
 
       <div className="space-y-6 px-4 pb-10 md:px-8">
         <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_380px]">
@@ -47,6 +48,9 @@ function ProgressionPage() {
             <div className="mt-1 text-sm text-muted-foreground">{mission.summary}</div>
           </Card>
         </div>
+
+        {/* Section compacte Données Réelles Apple Santé */}
+        <AppleHealthDataCard />
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {cards.map((card) => {

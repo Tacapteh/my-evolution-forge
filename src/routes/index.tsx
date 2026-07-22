@@ -18,8 +18,10 @@ import {
   Plus,
   Waves,
   Sparkles,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
-import { useForge, todayISO, computeStreak, daysUntil, totalXP, normalizeWorkouts } from "@/lib/forge-store";
+import { useForge, todayISO, toISO, computeStreak, daysUntil, totalXP, normalizeWorkouts } from "@/lib/forge-store";
 import {
   StatCard,
   XPCard,
@@ -40,6 +42,17 @@ export const Route = createFileRoute("/")({
 function Dashboard() {
   const { state, hydrated, toggleTask, startSession, setHealth } = useForge();
   const iso = todayISO();
+  const [healthISO, setHealthISO] = useState(iso);
+
+  const shiftHealthDate = (days: number) => {
+    const d = new Date(`${healthISO}T12:00:00`);
+    d.setDate(d.getDate() + days);
+    const nextISO = toISO(d);
+    if (nextISO <= iso) {
+      setHealthISO(nextISO);
+    }
+  };
+
   const engine = useMemo(() => createTrainingEngine(state, { toggleTask }, { todayISO: iso }), [iso, state, toggleTask]);
   const mission = engine.getTodayProgram();
   const tasks = mission.tasks;
@@ -49,7 +62,8 @@ function Dashboard() {
   const streak = hydrated ? computeStreak(state) : 0;
   const dLeft = daysUntil(state.targetDate);
   const total = totalXP(state);
-  const rawHealth = state.days[iso]?.health;
+
+  const rawHealth = state.days[healthISO]?.health;
   const latestHealthFromState = Object.values(state.days || {})
     .map((d) => d?.health)
     .filter((h) => h && (h.steps != null || h.avgHeartRate != null || h.activeCalories != null || h.exerciseMinutes != null || (h.workouts && h.workouts.length > 0)))
@@ -63,7 +77,7 @@ function Dashboard() {
       rawHealth.exerciseMinutes != null ||
       (rawHealth.workouts && rawHealth.workouts.length > 0))
       ? rawHealth
-      : latestHealthFromState;
+      : healthISO === iso ? latestHealthFromState : null;
 
   const hasHealthData =
     healthData &&
@@ -284,20 +298,54 @@ function Dashboard() {
 
           <Card className="card-forge p-5 flex flex-col justify-between">
             <div>
-              <SectionTitle
-                action={
-                  <div className="flex items-center gap-2">
-                    <Button variant="ghost" size="sm" className="h-6 text-[10px] px-2 text-muted-foreground hover:text-foreground gap-1" onClick={handleManualHealthInput}>
-                      <Plus className="h-3 w-3" /> Saisie
-                    </Button>
-                    <Badge variant="outline" className="border-primary/30 text-primary flex items-center gap-1 text-[10px] uppercase font-bold tracking-wider">
-                      <Heart className="h-3 w-3 text-red-500 animate-pulse" /> Live
-                    </Badge>
-                  </div>
-                }
-              >
-                Santé Connectée
-              </SectionTitle>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 mb-2 border-b border-border/40">
+                <SectionTitle
+                  action={
+                    <div className="flex items-center gap-2">
+                      <Button variant="ghost" size="sm" className="h-6 text-[10px] px-2 text-muted-foreground hover:text-foreground gap-1" onClick={handleManualHealthInput}>
+                        <Plus className="h-3 w-3" /> Saisie
+                      </Button>
+                      <Badge variant="outline" className="border-primary/30 text-primary flex items-center gap-1 text-[10px] uppercase font-bold tracking-wider">
+                        <Heart className="h-3 w-3 text-red-500 animate-pulse" /> Live
+                      </Badge>
+                    </div>
+                  }
+                >
+                  Santé Connectée
+                </SectionTitle>
+
+                {/* Navigation temporelle Apple Santé */}
+                <div className="flex items-center gap-1 bg-muted/40 p-1 rounded-lg border border-border/40 shrink-0 self-start sm:self-auto">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6 text-muted-foreground hover:text-foreground"
+                    onClick={() => shiftHealthDate(-1)}
+                    title="Jour précédent"
+                  >
+                    <ChevronLeft className="h-3.5 w-3.5" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 text-[10px] px-2 font-semibold text-foreground hover:text-primary"
+                    onClick={() => setHealthISO(iso)}
+                    title="Revenir à aujourd'hui"
+                  >
+                    {healthISO === iso ? "Aujourd'hui" : new Date(`${healthISO}T12:00:00`).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6 text-muted-foreground hover:text-foreground disabled:opacity-30"
+                    disabled={healthISO >= iso}
+                    onClick={() => shiftHealthDate(1)}
+                    title="Jour suivant"
+                  >
+                    <ChevronRight className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              </div>
               
               {hasHealthData ? (
                 <div className="space-y-4 mt-4">
