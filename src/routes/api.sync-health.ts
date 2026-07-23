@@ -44,7 +44,26 @@ async function readSyncData(): Promise<any[]> {
     }
   }
 
-  return map.size > 0 ? Array.from(map.values()) : memQueue;
+  const rawList = map.size > 0 ? Array.from(map.values()) : memQueue;
+
+  return rawList.map((item) => {
+    const workouts = item.workouts ?? item.health?.workouts ?? [];
+    return {
+      date: item.date ?? new Date().toISOString().slice(0, 10),
+      steps: item.steps ?? item.health?.steps,
+      avgHeartRate: item.avgHeartRate ?? item.health?.avgHeartRate,
+      activeCalories: item.activeCalories ?? item.health?.activeCalories,
+      exerciseMinutes: item.exerciseMinutes ?? item.health?.exerciseMinutes,
+      workouts: workouts,
+      health: item.health ?? {
+        steps: item.steps,
+        avgHeartRate: item.avgHeartRate,
+        activeCalories: item.activeCalories,
+        exerciseMinutes: item.exerciseMinutes,
+        workouts: workouts,
+      },
+    };
+  });
 }
 
 async function writeSyncData(data: any[]) {
@@ -95,7 +114,7 @@ function normalizeWorkoutsServer(rawWorkouts: any): any[] {
     if (!w || typeof w !== "object") continue;
 
     let calories: number | undefined = undefined;
-    const rawActiveCal = String(w.activeCalories ?? w.calories ?? "");
+    const rawActiveCal = String(w.activeCalories ?? w.calories ?? w.activeEnergyBurned ?? "");
     if (rawActiveCal) {
       const numMatch = rawActiveCal.replace(",", ".").match(/(\d+(?:\.\d+)?)/);
       if (numMatch) {
@@ -223,10 +242,8 @@ function normalizeWorkoutsServer(rawWorkouts: any): any[] {
       }
     }
 
-    if (!type) continue;
-
     results.push({
-      type,
+      type: type || "Natation",
       durationMinutes: durationMinutes && durationMinutes > 0 ? durationMinutes : undefined,
       distanceKm,
       distanceMeters,
