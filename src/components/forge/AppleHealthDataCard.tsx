@@ -264,8 +264,8 @@ export function AppleHealthDataCard({ className }: { className?: string }) {
                   <div className="flex flex-wrap gap-1.5 shrink-0">
                     {d.workouts.map((w: any, idx: number) => {
                       const tStr = String(w.type || "").toLowerCase();
-                      const isSwim = tStr.includes("natat") || tStr.includes("swim");
-                      const isRun = tStr.includes("cours") || tStr.includes("run");
+                      const isSwim = tStr.includes("natat") || tStr.includes("swim") || tStr.includes("nage") || w.type === "Natation";
+                      const isRun = tStr.includes("cours") || tStr.includes("run") || tStr.includes("footing");
 
                       const distStr = w.distanceMeters
                         ? isSwim || w.distanceMeters < 1000
@@ -274,6 +274,10 @@ export function AppleHealthDataCard({ className }: { className?: string }) {
                         : w.distanceKm
                         ? `${w.distanceKm}km`
                         : "";
+                      const durStr = w.durationMinutes ? `${w.durationMinutes} min` : "";
+                      const calStr = w.calories ? `${w.calories} kcal` : "";
+
+                      const subInfo = [durStr, distStr, calStr].filter(Boolean).join(" • ");
 
                       return (
                         <span
@@ -287,7 +291,7 @@ export function AppleHealthDataCard({ className }: { className?: string }) {
                           ) : (
                             <Dumbbell className="h-3 w-3 text-primary" />
                           )}
-                          {w.type || "Séance"} {distStr && `• ${distStr}`}
+                          {w.type || "Natation"} {subInfo && `• ${subInfo}`}
                         </span>
                       );
                     })}

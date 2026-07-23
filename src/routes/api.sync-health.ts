@@ -19,17 +19,32 @@ async function ensureDir() {
 }
 
 async function readSyncData(): Promise<any[]> {
-  await ensureDir();
   const fileItems: any[] = [];
   try {
+    await ensureDir();
     const raw = await fs.readFile(SYNC_FILE, "utf-8");
     const parsed = JSON.parse(raw);
     if (Array.isArray(parsed)) fileItems.push(...parsed);
   } catch (error) {}
 
-  // Combine memory queue + file items
-  const combined = [...globalThis.__HEALTH_SYNC_QUEUE__, ...fileItems];
-  return combined;
+  const memQueue = globalThis.__HEALTH_SYNC_QUEUE__ || [];
+
+  const map = new Map<string, any>();
+  for (const item of fileItems) {
+    if (item && typeof item === "object") {
+      const key = item.date ? String(item.date).slice(0, 10) : JSON.stringify(item);
+      map.set(key, item);
+    }
+  }
+  for (const item of memQueue) {
+    if (item && typeof item === "object") {
+      const key = item.date ? String(item.date).slice(0, 10) : JSON.stringify(item);
+      const existing = map.get(key) || {};
+      map.set(key, { ...existing, ...item });
+    }
+  }
+
+  return map.size > 0 ? Array.from(map.values()) : memQueue;
 }
 
 async function writeSyncData(data: any[]) {
@@ -312,12 +327,32 @@ export const Route = createFileRoute("/api/sync-health")({
           const rawWorkouts = payload.workouts ?? payload.health?.workouts ?? [];
           const normalizedWorkouts = normalizeWorkoutsServer(rawWorkouts);
           payload.workouts = normalizedWorkouts;
-          if (payload.health && typeof payload.health === "object") {
-            payload.health.workouts = normalizedWorkouts;
+          if (!payload.health || typeof payload.health !== "object") {
+            payload.health = {};
           }
+          payload.health.workouts = normalizedWorkouts;
 
-          // Add payload to memory queue & disk
-          globalThis.__HEALTH_SYNC_QUEUE__.push(payload);
+          // Push/update in memory queue
+          const queue = globalThis.__HEALTH_SYNC_QUEUE__ || [];
+          const dateKey = payload.date ? String(payload.date).slice(0, 10) : new Date().toISOString().slice(0, 10);
+          const existingIdx = queue.findIndex((q: any) => q && q.date && String(q.date).slice(0, 10) === dateKey);
+
+          if (existingIdx >= 0) {
+            queue[existingIdx] = {
+              ...queue[existingIdx],
+              ...payload,
+              workouts: normalizedWorkouts,
+              health: {
+                ...(queue[existingIdx].health || {}),
+                ...payload.health,
+                workouts: normalizedWorkouts,
+              },
+            };
+          } else {
+            queue.push(payload);
+          }
+          globalThis.__HEALTH_SYNC_QUEUE__ = queue;
+
           const currentData = await readSyncData();
           await writeSyncData(currentData);
 
