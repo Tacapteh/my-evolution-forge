@@ -312,6 +312,15 @@ export function createTrainingEngine(
             "Tempo 2010 : poussée explosive, retour contrôlé 2s",
             "Repos strict : 90s après chaque série",
           ];
+        } else if (dayIndex === 3) {
+          label = "Tractions (Pré-activation) — 4 × 3-4 reps (Sous-maximales)";
+          detail = `Pré-activation du haut du corps sans échec • Conserver la fraîcheur des jambes avant le Luc Léger de l'après-midi • Repos : 90s`;
+          steps = [
+            "Échauffement articulaire et mobilité des épaules",
+            "4 séries de 3 à 4 tractions sous-maximales contrôlées (Tempo 2010)",
+            "Ne pas aller à l'échec : pré-activation pour préserver les jambes avant le Luc Léger de l'après-midi",
+            "Repos strict : 90s entre les séries",
+          ];
         } else {
           const reps = Math.max(3, Math.round(userMaxPull * 0.65));
           label = `Tractions — Force & Volume : 5 × ${reps} reps (Obj 17-20)`;
@@ -335,6 +344,15 @@ export function createTrainingEngine(
             "Dos plaqué au mur, cuisses parallèles au sol à 90° exacts",
             "3 séries de 60 secondes de maintien statique continu",
             "Tempo Isométrie 1000 : verrouillage postural continu",
+            "Repos strict : 60s entre les séries",
+          ];
+        } else if (dayIndex === 3) {
+          label = "Pré-activation Bas du corps & Stabilité — Chaise 3 × 30s";
+          detail = "Activation bas du corps légère sans charge lourde et sans échec • Préserve la fraîcheur des jambes avant le Luc Léger de l'après-midi • Repos : 60s";
+          steps = [
+            "Placement à 90° contre le mur sans charge lourde",
+            "3 séries de 30 secondes de maintien statique léger (sans échec)",
+            "Mobilité des chevilles et éveil neuromusculaire des fessiers",
             "Repos strict : 60s entre les séries",
           ];
         } else if (dayIndex === 0 || dayIndex === 2) {
@@ -383,6 +401,15 @@ export function createTrainingEngine(
             "Bassin fixe sans balancement, verrouillage abdominal et fessiers",
             "3 séries de 45 secondes de mouvement continu • Repos strict : 60s",
           ];
+        } else if (dayIndex === 3) {
+          label = "Gainage & Mobilité (Pré-activation Core) — 3 × 45s";
+          detail = "Activation du tronc & gainage statique pour stabiliser les changements de direction • Pré-activation sans échec • Repos : 60s";
+          steps = [
+            "Planche statique ou gainage latéral contrôlé sans surtaxer le bas du corps",
+            "3 séries de 45 secondes de maintien neutre et contrôlé",
+            "Pré-activation de la ceinture abdominale pour stabiliser les relances du Luc Léger de l'après-midi",
+            "Repos strict : 60s entre les séries",
+          ];
         } else {
           label = "Gainage Abdominal Planche — 4 × 60s";
           detail = "Verrouillage abdominal et fessiers • Tempo Isométrie 1000 • Repos strict : 60s";
@@ -396,13 +423,23 @@ export function createTrainingEngine(
         const isThursday = dayIndex === 3;
         if (isThursday && isTestMaxDay) {
           label = "⚠️ TEST MAX LUC LÉGER (Bi-hebdomadaire — Cycle 2 semaines)";
-          detail = `Test navette 20m avec bande sonore du jeudi • Saisis ton Palier atteint (Actuel: Palier ${userMaxLuc} / Obj: Palier 12)`;
-          steps = ["Tracer 20m avec balises", "Suivre les bips de la bande sonore Luc Léger", "Arrêt au 2ème manquement consécutif", "Saisir le Palier dans l'application"];
+          detail = `Test navette 20m avec bande sonore du jeudi • Focus : Cardio haute intensité & changements de direction (Actuel: Palier ${userMaxLuc} / Obj: Palier 12)`;
+          steps = [
+            "Échauffement cardio 10 min & mobilité dynamique des chevilles",
+            "Test navettes 20m au rythme des bips sonores avec relances explosives et changements de direction à 180°",
+            "Arrêt au 2ème manquement consécutif",
+            "Saisir le Palier atteint dans l'application",
+          ];
         } else if (isThursday) {
           const targetPalier = Math.min(12, +(userMaxLuc + 0.5).toFixed(1));
-          label = `Entraînement Luc Léger — Allure Palier ${targetPalier}`;
-          detail = `Séance spécifique Luc Léger (Navettes 20m) • Palier cible ${targetPalier} (Basé sur max Palier ${userMaxLuc})`;
-          steps = ["Échauffement 10 min", `Navettes 20m au rythme Palier ${targetPalier}`, "5 min récupération active"];
+          label = `Test / Séance Luc Léger — Allure Palier ${targetPalier}`;
+          detail = `Séance spécifique Luc Léger (Navettes 20m) • Focus : Cardio haute intensité et changements de direction rapides (Palier cible ${targetPalier} vs Max ${userMaxLuc})`;
+          steps = [
+            "Échauffement cardio 10 min & mobilité dynamique des chevilles",
+            `Navettes 20m au rythme Palier ${targetPalier} avec relances explosives et changements de direction rapides`,
+            "Montée progressive d'intensité au bip sonore",
+            "5 min récupération active et étirements régressifs",
+          ];
         } else if (dayIndex === 1) {
           const targetPalier = Math.min(12, +(userMaxLuc + 0.5).toFixed(1));
           label = `Fractionné VMA 30/30 — 12 reps à l'allure Palier ${targetPalier}`;
@@ -418,11 +455,20 @@ export function createTrainingEngine(
         }
       }
 
+      let moment = task.moment ?? inferMoment(task.type, index);
+      if (dayIndex === 3) {
+        if (task.type === "pull" || task.type === "chair" || task.type === "custom") {
+          moment = "morning";
+        } else if (task.type === "run" && !label.includes("Footing")) {
+          moment = "afternoon";
+        }
+      }
+
       return {
         ...task,
         label,
         detail,
-        moment: task.moment ?? inferMoment(task.type, index),
+        moment,
         estimatedMinutes: task.estimatedMinutes ?? defaultDuration(task.type),
         rest: task.rest ?? defaultRest(task.type),
         steps: steps ?? defaultSteps(task),
@@ -446,7 +492,7 @@ export function createTrainingEngine(
       return t;
     });
 
-    const hasStrength = rawTasks.some(
+    const hasStrength = dayIndex !== 3 && rawTasks.some(
       (t) => t.type === "pull" || t.type === "chair" || (t.type === "custom" && t.id.includes("core"))
     );
 

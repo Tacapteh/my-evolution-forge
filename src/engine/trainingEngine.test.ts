@@ -78,4 +78,29 @@ describe("training engine", () => {
 
     expect(toggled).toEqual([["2026-07-21", "psycho-2"]]);
   });
+
+  test("generates light morning pre-activation and afternoon Luc Léger for Thursday", () => {
+    const engine = createTrainingEngine(state, { toggleTask: () => {} }, { todayISO: "2026-07-23" });
+
+    // 2026-07-23 est un Jeudi (dayIndex === 3)
+    const mission = engine.getMission("2026-07-23");
+    expect(mission.dayName).toBe("Jeudi");
+
+    // Matin : Renforcement léger / pré-activation
+    const pullTask = mission.tasks.find((t) => t.type === "pull");
+    expect(pullTask?.moment).toBe("morning");
+    expect(pullTask?.label).toContain("Pré-activation");
+    expect(pullTask?.detail).toContain("fraîcheur des jambes");
+
+    const chairTask = mission.tasks.find((t) => t.type === "chair");
+    expect(chairTask?.moment).toBe("morning");
+    expect(chairTask?.label).toContain("Pré-activation");
+    expect(chairTask?.detail).toContain("sans charge lourde");
+
+    // Après-midi : Test / Séance Luc Léger (cardio haute intensité & changements de direction)
+    const lucTask = mission.tasks.find((t) => t.type === "run" && t.label.includes("Luc Léger"));
+    expect(lucTask?.moment).toBe("afternoon");
+    expect(lucTask?.detail).toContain("Cardio haute intensité");
+    expect(lucTask?.detail).toContain("changements de direction");
+  });
 });
