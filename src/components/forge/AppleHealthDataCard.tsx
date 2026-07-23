@@ -146,7 +146,7 @@ export function AppleHealthDataCard({ className }: { className?: string }) {
       </div>
 
       {/* Grille de croisement synthétique */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         {/* Course Réelle vs Obj */}
         <div className="p-3.5 rounded-xl border border-primary/20 bg-primary/5 space-y-2">
           <div className="flex items-center justify-between text-xs font-bold text-muted-foreground uppercase tracking-wider">
@@ -215,6 +215,24 @@ export function AppleHealthDataCard({ className }: { className?: string }) {
               <span className="text-xs font-normal text-muted-foreground">bpm</span>
             </span>
             <span className="text-xs text-muted-foreground">Repos / Effots</span>
+          </div>
+          <div className="text-[10px] text-muted-foreground italic">Capteurs Apple Watch</div>
+        </div>
+
+        {/* Calories Actives */}
+        <div className="p-3.5 rounded-xl border border-amber-500/20 bg-amber-500/5 space-y-2">
+          <div className="flex items-center justify-between text-xs font-bold text-muted-foreground uppercase tracking-wider">
+            <span className="flex items-center gap-1.5 text-foreground">
+              <Flame className="h-4 w-4 text-amber-500" /> Calories Actives
+            </span>
+            <span className="text-amber-400 font-bold">Brûlées</span>
+          </div>
+          <div className="flex items-baseline justify-between">
+            <span className="text-2xl font-extrabold tabular-nums text-foreground">
+              {healthAnalysis.totalActiveCalories ? `${healthAnalysis.totalActiveCalories}` : "--"}{" "}
+              <span className="text-xs font-normal text-muted-foreground">kcal</span>
+            </span>
+            <span className="text-xs text-muted-foreground">Total Période</span>
           </div>
           <div className="text-[10px] text-muted-foreground italic">Capteurs Apple Watch</div>
         </div>

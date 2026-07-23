@@ -48,20 +48,29 @@ async function readSyncData(): Promise<any[]> {
 
   return rawList.map((item) => {
     const workouts = item.workouts ?? item.health?.workouts ?? [];
+    const rawCal = item.activeCalories ?? item.health?.activeCalories ?? item.calories ?? item.moveCalories ?? item.activeEnergyBurned;
+    const activeCalories = rawCal != null && !isNaN(Number(rawCal)) ? Number(rawCal) : undefined;
+
     return {
       date: item.date ?? new Date().toISOString().slice(0, 10),
       steps: item.steps ?? item.health?.steps,
       avgHeartRate: item.avgHeartRate ?? item.health?.avgHeartRate,
-      activeCalories: item.activeCalories ?? item.health?.activeCalories,
+      activeCalories,
       exerciseMinutes: item.exerciseMinutes ?? item.health?.exerciseMinutes,
       workouts: workouts,
-      health: item.health ?? {
-        steps: item.steps,
-        avgHeartRate: item.avgHeartRate,
-        activeCalories: item.activeCalories,
-        exerciseMinutes: item.exerciseMinutes,
-        workouts: workouts,
-      },
+      health: item.health
+        ? {
+            ...item.health,
+            activeCalories: activeCalories ?? item.health.activeCalories,
+            workouts: workouts,
+          }
+        : {
+            steps: item.steps,
+            avgHeartRate: item.avgHeartRate,
+            activeCalories,
+            exerciseMinutes: item.exerciseMinutes,
+            workouts: workouts,
+          },
     };
   });
 }

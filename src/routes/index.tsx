@@ -349,7 +349,7 @@ function Dashboard() {
               
               {hasHealthData ? (
                 <div className="space-y-4 mt-4">
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <div className="flex items-center justify-between p-3 rounded-lg bg-primary/5 border border-primary/10">
                       <div className="flex items-center gap-2.5">
                         <Footprints className="h-5 w-5 text-primary" />
@@ -373,6 +373,16 @@ function Dashboard() {
                         <div className="text-xs text-muted-foreground">Fréquence cardiaque</div>
                         <div className="text-sm font-bold tabular-nums mt-0.5">
                           {healthData.avgHeartRate ? `${healthData.avgHeartRate} bpm` : "--"}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2.5 p-3 rounded-lg bg-amber-500/5 border border-amber-500/20">
+                      <Flame className="h-5 w-5 text-amber-500" />
+                      <div>
+                        <div className="text-xs text-muted-foreground">Calories actives</div>
+                        <div className="text-sm font-bold tabular-nums text-foreground mt-0.5">
+                          {healthData.activeCalories ? `${healthData.activeCalories} kcal` : "--"}
                         </div>
                       </div>
                     </div>
