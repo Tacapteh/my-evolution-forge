@@ -146,4 +146,33 @@ describe("training engine", () => {
       expect(duoTask.moment).toBe("evening");
     }
   });
+
+  test("supports tractions_lsit smart swap and dynamic recalculation via userMax", () => {
+    const customState: ForgeState = {
+      ...state,
+      perf: [
+        { id: "p1", type: "pull", value: 16, date: "2026-07-15" },
+        { id: "c1", type: "chair", value: 120, date: "2026-07-15" },
+      ],
+      days: {
+        "2026-07-21": {
+          checked: {},
+          swaps: {
+            "w1-tue-pull": "tractions_lsit",
+          },
+        },
+      },
+    };
+
+    const engine = createTrainingEngine(customState, { toggleTask: () => {} }, { todayISO: "2026-07-21" });
+    const mission = engine.getMission("2026-07-21");
+
+    const lsitTask = mission.tasks.find((t) => t.id === "w1-tue-pull");
+    expect(lsitTask?.label).toContain("Tractions L-Sit");
+    expect(lsitTask?.detail).toContain("Jambes tendues à 90°");
+    expect(lsitTask?.steps.some((s) => s.includes("Tuck L-Sit"))).toBe(true);
+
+    // Le nombre de reps sur Tractions L-Sit est calculé à 50% de userMaxPull (16 * 0.50 = 8)
+    expect(lsitTask?.label).toContain("8 reps");
+  });
 });

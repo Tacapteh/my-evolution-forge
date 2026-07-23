@@ -134,17 +134,17 @@ export function ExerciseSwapModal({
     });
 
     alternatives.push({
-      id: "tractions_australiennes",
-      title: "Tractions Australiennes (Tirage horizontal)",
+      id: "tractions_lsit",
+      title: "Tractions L-Sit (Tirage Horizontal / Core)",
       icon: Dumbbell,
-      badge: "Haut du corps / Dos & Biceps",
+      badge: "Haut du corps & Core / Dos, Biceps & Abdos",
       structure: isPyramid
-        ? `Pyramide : 2-4-6-8-6-4-2 reps`
-        : `5 séries × ${Math.max(5, Math.round(userMaxPull * 1.2))} reps`,
+        ? `Pyramide : 1-2-3-4-3-2-1 reps`
+        : `5 séries × ${Math.max(3, Math.round(userMaxPull * 0.50))} reps`,
       tempo: "Tempo 2010 (2s descente, 0s pause, 1s montée, 0s pause)",
       rest: "Repos strict : 90s",
-      formConsignes: "Corps suspendu sous une barre basse, talons au sol, tirage poitrine contre la barre avec omoplates resserrées.",
-      detail: "Exercice de tirage au poids du corps ciblant le grand dorsal.",
+      formConsignes: "Suspendu à la barre, lever les jambes tendues à 90° (parallèles au sol), puis effectuer la traction. Option genoux pliés à 90° (Tuck L-Sit) au besoin.",
+      detail: `Combinaison de tirage vertical et de gainage abdominal intense. Basé sur Max Tractions = ${userMaxPull}.`,
     });
   }
 

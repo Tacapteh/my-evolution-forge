@@ -67,14 +67,19 @@ export const ACTIVITY_PRESETS: Record<string, { id: string; label: string; detai
     xp: 20,
     steps: ["Consignes : Pieds surélevés sur chaise, corps aligné sans creuser le dos", "Exécution Tempo 2010", "Repos strict : 90s"],
   },
-  tractions_australiennes: {
-    id: "tractions_australiennes",
-    label: "Tractions Australiennes — Tirage Horizontal",
-    detail: "Tempo 2010 • Repos strict : 90s • Tirage au poids du corps jusqu'à la poitrine",
+  tractions_lsit: {
+    id: "tractions_lsit",
+    label: "Tractions L-Sit — Tirage Horizontal & Core",
+    detail: "Tirage vertical & gainage L-Sit (Jambes à 90°) • Option Tuck L-Sit (genoux pliés) • Repos strict : 90s",
     type: "pull",
     estimatedMinutes: 25,
     xp: 20,
-    steps: ["Corps suspendu sous barre basse", "Tirage poitrine contre la barre Tempo 2010", "Repos strict : 90s"],
+    steps: [
+      "Consignes : Suspendu à la barre, lever les jambes tendues à 90° (parallèles au sol)",
+      "Tirer le menton au-dessus de la barre en maintenant le buste et les jambes immobiles",
+      "Option régression : Replier les genoux à 90° (Tuck L-Sit) si les jambes tendues sont trop exigeantes",
+      "Repos strict : 90s entre les séries",
+    ],
   },
   squat_iso: {
     id: "squat_iso",
@@ -894,30 +899,33 @@ function resolveSmartSwappedTask(
   let detail = preset.detail;
   let steps = preset.steps;
 
-  if (swapId === "pompes_militaires" || swapId === "pompes_diamant" || swapId === "pompes_declinees" || swapId === "tractions_australiennes") {
-    const pPushMax = userMaxPush;
-    const peak = Math.max(6, Math.round(pPushMax * 0.40));
+  if (swapId === "pompes_militaires" || swapId === "pompes_diamant" || swapId === "pompes_declinees" || swapId === "tractions_lsit") {
+    const isLsit = swapId === "tractions_lsit";
+    const pPushMax = isLsit ? userMaxPull : userMaxPush;
+    const peak = isLsit ? Math.max(3, Math.round(userMaxPull * 0.70)) : Math.max(6, Math.round(pPushMax * 0.40));
     const p1 = Math.max(1, Math.round(peak * 0.25));
     const p2 = Math.max(2, Math.round(peak * 0.50));
     const p3 = Math.max(4, Math.round(peak * 0.75));
     const p4 = peak;
     const pyramidStr = `${p1}-${p2}-${p3}-${p4}-${p3}-${p2}-${p1}`;
 
-    const submaxReps = Math.max(6, Math.round(pPushMax * 0.65));
-    const degressiveStr = `${Math.round(pPushMax * 0.65)}-${Math.round(pPushMax * 0.55)}-${Math.round(pPushMax * 0.45)}-${Math.round(pPushMax * 0.35)}-${Math.round(pPushMax * 0.25)}`;
+    const submaxReps = isLsit ? Math.max(3, Math.round(userMaxPull * 0.50)) : Math.max(6, Math.round(pPushMax * 0.65));
+    const degressiveStr = isLsit
+      ? `${Math.round(userMaxPull * 0.60)}-${Math.round(userMaxPull * 0.50)}-${Math.round(userMaxPull * 0.40)}-${Math.round(userMaxPull * 0.30)}-${Math.round(userMaxPull * 0.20)}`
+      : `${Math.round(pPushMax * 0.65)}-${Math.round(pPushMax * 0.55)}-${Math.round(pPushMax * 0.45)}-${Math.round(pPushMax * 0.35)}-${Math.round(pPushMax * 0.25)}`;
 
     const formConsignesMap: Record<string, string> = {
       pompes_militaires: "Coudes à 45°, corps parfaitement gainé, poitrine effleurant le sol",
       pompes_diamant: "Mains jointes en diamant sous le sternum, coudes serrés le long du corps",
       pompes_declinees: "Pieds surélevés sur chaise/banc, corps aligné sans creuser le dos",
-      tractions_australiennes: "Corps suspendu sous barre basse, tirage poitrine contre la barre",
+      tractions_lsit: "Jambes tendues à 90° (ou genoux pliés en Tuck L-Sit au besoin), tirage menton au-dessus de la barre",
     };
 
     const nameMap: Record<string, string> = {
       pompes_militaires: "Pompes Militaires",
       pompes_diamant: "Pompes Diamant",
       pompes_declinees: "Pompes Déclinées (chaise)",
-      tractions_australiennes: "Tractions Australiennes",
+      tractions_lsit: "Tractions L-Sit (Tirage / Core)",
     };
 
     const exerciseName = nameMap[swapId] ?? "Pompes";
