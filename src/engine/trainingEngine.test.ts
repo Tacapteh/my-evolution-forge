@@ -169,11 +169,11 @@ describe("training engine", () => {
 
     const lsitTask = mission.tasks.find((t) => t.id === "w1-tue-pull");
     expect(lsitTask?.label).toContain("Tractions L-Sit");
-    expect(lsitTask?.detail).toContain("Jambes tendues à 90°");
+    expect(lsitTask?.steps.some((s) => s.toLowerCase().includes("jambes tendues"))).toBe(true);
     expect(lsitTask?.steps.some((s) => s.includes("Tuck L-Sit"))).toBe(true);
 
-    // Le nombre de reps sur Tractions L-Sit est calculé à 50% de userMaxPull (16 * 0.50 = 8)
-    expect(lsitTask?.label).toContain("8 reps");
+    // Le nombre de reps sur Tractions L-Sit est calculé à 60% de userMaxPullLSit (8 * 0.60 = 5)
+    expect(lsitTask?.label).toContain("5 reps");
   });
 
   test("getUserMaxes correctly derives metrics for all catalog exercises", () => {
@@ -200,5 +200,35 @@ describe("training engine", () => {
     if (commandoTask) {
       expect(commandoTask.detail).toContain("42s");
     }
+  });
+
+  test("supports inter-module smart swap, block context retention and isolation intensity compensation", () => {
+    const customState: ForgeState = {
+      ...state,
+      perf: [
+        { id: "tr1", type: "push_triceps", value: 14, date: "2026-07-15" },
+        { id: "p1", type: "pull", value: 16, date: "2026-07-15" },
+      ],
+      days: {
+        "2026-07-21": {
+          checked: {},
+          swaps: {
+            "w1-tue-pull": "bras_triceps_sol", // Remplacer l'exercice principal par un exercice du module finisher
+          },
+        },
+      },
+    };
+
+    const engine = createTrainingEngine(customState, { toggleTask: () => {} }, { todayISO: "2026-07-21" });
+    const mission = engine.getMission("2026-07-21");
+
+    const swappedTask = mission.tasks.find((t) => t.id === "w1-tue-pull");
+    expect(swappedTask?.label).toContain("Extensions Triceps au Sol");
+    // Conservation de la structure 5 séries réparties du bloc principal
+    expect(swappedTask?.label).toContain("5 ×");
+    // Calcul basé sur userMaxTriceps (14) avec compensation isolation (+15% volume => 14 * 0.60 * 1.15 = 10 reps)
+    expect(swappedTask?.label).toContain("10 reps");
+    expect(swappedTask?.detail).toContain("compensation isolation");
+    expect(swappedTask?.isSwapped).toBe(true);
   });
 });

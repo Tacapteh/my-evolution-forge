@@ -89,63 +89,104 @@ export function ExerciseSwapModal({
     detail: string;
   }> = [];
 
-  if (taskType === "pull" || taskType === "custom" || taskLabel.toLowerCase().includes("traction") || taskLabel.toLowerCase().includes("renforcement")) {
-    // Intention Renforcement Haut du corps -> Pompes & Tirages
-    const structPush = isPyramid
-      ? `Pyramide : ${pyramidPushStr} reps`
-      : isDegressive
-      ? `Dégressif : ${degressivePushStr} reps`
-      : `5 séries × ${submaxPushReps} reps`;
+  if (taskType === "pull" || taskType === "custom" || taskLabel.toLowerCase().includes("traction") || taskLabel.toLowerCase().includes("pompe") || taskLabel.toLowerCase().includes("poussée") || taskLabel.toLowerCase().includes("renforcement") || taskLabel.toLowerCase().includes("bras")) {
+    const isPush = taskLabel.toLowerCase().includes("pompe") || taskLabel.toLowerCase().includes("poussée") || taskLabel.toLowerCase().includes("triceps");
 
-    alternatives.push({
-      id: "pompes_militaires",
-      title: "Pompes Militaires",
-      icon: Shield,
-      badge: "Haut du corps / Pectoraux & Triceps",
-      structure: structPush,
-      tempo: "Tempo 2010 (2s descente, 0s pause, 1s montée, 0s pause)",
-      rest: "Repos strict : 90s",
-      formConsignes: "Coudes orientés à 45° par rapport au tronc, corps parfaitement gainé, poitrine effleurant le sol à chaque répétition.",
-      detail: `Alternative fidèle à l'intention (${intentionName}). Basé sur Max Pompes = ${pPushMax}.`,
-    });
+    if (isPush) {
+      // Alternatives Poussée & Triceps (Bloc Principal & Module Finisher Inter-Modules)
+      const structPush = isPyramid
+        ? `Pyramide : ${pyramidPushStr} reps`
+        : isDegressive
+        ? `Dégressif : ${degressivePushStr} reps`
+        : `5 séries × ${submaxPushReps} reps`;
 
-    alternatives.push({
-      id: "pompes_diamant",
-      title: "Pompes Diamant",
-      icon: Gem,
-      badge: "Haut du corps / Triceps & Sternum",
-      structure: structPush,
-      tempo: "Tempo 2010 (2s descente, 0s pause, 1s montée, 0s pause)",
-      rest: "Repos strict : 90s",
-      formConsignes: "Mains jointes en forme de diamant sous le sternum, coudes collés au corps lors de la descente.",
-      detail: `Travail d'isolation triceps et centre des pectoraux. Basé sur Max Pompes = ${pPushMax}.`,
-    });
+      alternatives.push({
+        id: "pompes_militaires",
+        title: "Pompes Militaires",
+        icon: Shield,
+        badge: "Polyarticulaire / Pectoraux & Triceps",
+        structure: structPush,
+        tempo: "Tempo 2010 (2s descente, 0s pause, 1s montée, 0s pause)",
+        rest: "Repos strict : 90s",
+        formConsignes: "Coudes orientés à 45° par rapport au tronc, corps parfaitement gainé, poitrine effleurant le sol à chaque répétition.",
+        detail: `Exercice polyarticulaire de poussée. Basé sur Max Pompes = ${pPushMax}.`,
+      });
 
-    alternatives.push({
-      id: "pompes_declinees",
-      title: "Pompes Déclinées sur chaise",
-      icon: Armchair,
-      badge: "Haut du corps / Haut de poitrine & Épaules",
-      structure: structPush,
-      tempo: "Tempo 2010 (2s descente, 0s pause, 1s montée, 0s pause)",
-      rest: "Repos strict : 90s",
-      formConsignes: "Pieds surélevés sur une chaise/banc, mains au sol largeur d'épaules, corps droit sans creuser le bas du dos.",
-      detail: `Accentuation de la charge sur le haut des pectoraux. Basé sur Max Pompes = ${pPushMax}.`,
-    });
+      alternatives.push({
+        id: "pompes_diamant",
+        title: "Pompes Diamant",
+        icon: Gem,
+        badge: "Polyarticulaire Heavy / Triceps & Sternum",
+        structure: structPush,
+        tempo: "Tempo 2010 (2s descente, 0s pause, 1s montée, 0s pause)",
+        rest: "Repos strict : 90s",
+        formConsignes: "Mains jointes en forme de diamant sous le sternum, coudes collés au corps lors de la descente.",
+        detail: `Travail ciblé sur les triceps et le sternum. Basé sur Max Pompes = ${pPushMax}.`,
+      });
 
-    alternatives.push({
-      id: "tractions_lsit",
-      title: "Tractions L-Sit (Tirage Horizontal / Core)",
-      icon: Dumbbell,
-      badge: "Haut du corps & Core / Dos, Biceps & Abdos",
-      structure: isPyramid
-        ? `Pyramide : 1-2-3-4-3-2-1 reps`
-        : `5 séries × ${Math.max(3, Math.round(userMaxPull * 0.50))} reps`,
-      tempo: "Tempo 2010 (2s descente, 0s pause, 1s montée, 0s pause)",
-      rest: "Repos strict : 90s",
-      formConsignes: "Suspendu à la barre, lever les jambes tendues à 90° (parallèles au sol), puis effectuer la traction. Option genoux pliés à 90° (Tuck L-Sit) au besoin.",
-      detail: `Combinaison de tirage vertical et de gainage abdominal intense. Basé sur Max Tractions = ${userMaxPull}.`,
-    });
+      alternatives.push({
+        id: "pompes_declinees",
+        title: "Pompes Déclinées sur chaise",
+        icon: Armchair,
+        badge: "Polyarticulaire / Haut de poitrine & Épaules",
+        structure: structPush,
+        tempo: "Tempo 2010 (2s descente, 0s pause, 1s montée, 0s pause)",
+        rest: "Repos strict : 90s",
+        formConsignes: "Pieds surélevés sur une chaise/banc, mains au sol largeur d'épaules, corps droit sans creuser le bas du dos.",
+        detail: `Accentuation de la charge sur le haut des pectoraux. Basé sur Max Pompes = ${pPushMax}.`,
+      });
+
+      alternatives.push({
+        id: "bras_triceps_sol",
+        title: "Extensions Triceps au Sol (Smart Swap Inter-Module)",
+        icon: Dumbbell,
+        badge: "Isolation Triceps / Inter-Module Finisher ↔ Main",
+        structure: `5 séries × ${Math.max(4, Math.round(pPushMax * 0.70))} reps (Compensation Isolation)`,
+        tempo: "Tempo 3010 (Contrôle strict de la poussée des triceps)",
+        rest: "Repos strict : 60s",
+        formConsignes: "Planche sur avant-bras, coudes posés au sol, poussée explosive sur les paumes pour tendre complètement les bras.",
+        detail: "Mouvement d'isolation remplaçant les pompes polyarticulaires avec compensation de volume (+15%).",
+      });
+    } else {
+      // Alternatives Tirage & Biceps (Bloc Principal & Module Finisher Inter-Modules)
+      alternatives.push({
+        id: "tractions_lsit",
+        title: "Tractions L-Sit (Tirage Horizontal / Core)",
+        icon: Dumbbell,
+        badge: "Polyarticulaire / Dos, Biceps & Abdos",
+        structure: isPyramid
+          ? `Pyramide : 1-2-3-4-3-2-1 reps`
+          : `5 séries × ${Math.max(3, Math.round(userMaxPull * 0.50))} reps`,
+        tempo: "Tempo 2010 (2s descente, 0s pause, 1s montée, 0s pause)",
+        rest: "Repos strict : 90s",
+        formConsignes: "Suspendu à la barre, lever les jambes tendues à 90° (parallèles au sol), puis effectuer la traction. Option genoux pliés à 90° (Tuck L-Sit) au besoin.",
+        detail: `Combinaison de tirage vertical et de gainage abdominal intense. Basé sur Max Tractions = ${userMaxPull}.`,
+      });
+
+      alternatives.push({
+        id: "bras_biceps_iso",
+        title: "Tractions Supination Iso 90° (Smart Swap Inter-Module)",
+        icon: Timer,
+        badge: "Isolation Biceps / Inter-Module Finisher ↔ Main",
+        structure: `5 séries × 20s (Maintien Isométrique)`,
+        tempo: "Isométrie 1000 (Blocage strict de l'angle à 90°)",
+        rest: "Repos strict : 60s",
+        formConsignes: "Prise supination serrée (paumes vers vous), tirer jusqu'à 90° et maintenir le blocage.",
+        detail: "Mouvement isométrique d'isolation biceps héritant du format du bloc principal.",
+      });
+
+      alternatives.push({
+        id: "bras_biceps_neg",
+        title: "Tractions Supination Négatives 5s (Excentrique)",
+        icon: RotateCcw,
+        badge: "Excentrique Biceps / Inter-Module Finisher ↔ Main",
+        structure: `5 séries × 5 reps (Descente freinée 5s)`,
+        tempo: "Tempo 5010 (5s descente très lente)",
+        rest: "Repos strict : 90s",
+        formConsignes: "Départ menton au-dessus de la barre, freiner la descente sur 5 secondes complètes.",
+        detail: "Travail excentrique lourd ciblant le recrutement des fibres musculaires des biceps.",
+      });
+    }
   }
 
   if (taskType === "chair" || isIso) {
@@ -156,22 +197,22 @@ export function ExerciseSwapModal({
       : `4 séries × ${submaxChairSecs}s`;
 
     alternatives.push({
-      id: "gainage_planche",
-      title: "Gainage Abdominal Planche",
-      icon: Activity,
-      badge: "Ceinture Abdominale & Tronc",
-      structure: structIso,
-      tempo: "Isométrie 1000 (Maintien statique continu)",
+      id: "gainage_commando",
+      title: "Gainage Commando (Coudes ↔ Mains)",
+      icon: Shield,
+      badge: "Core Dynamique / Abdos & Stabilité",
+      structure: `3 séries × ${Math.max(25, Math.round(chairMax * 0.70))}s`,
+      tempo: "Dynamique contrôlé",
       rest: "Repos strict : 60s",
-      formConsignes: "Coudes alignés sous les épaules, avant-bras parallèles, fessiers et abdos verrouillés sans s'affaisser.",
-      detail: `Hérite de l'intention isométrique (${intentionName}). Basé sur Max Chaise = ${chairMax}s.`,
+      formConsignes: "Départ en planche sur coudes, montée alternative sur bras tendus sans balancement du bassin.",
+      detail: "Gainage dynamique du tronc en remplacement de la chaise statique.",
     });
 
     alternatives.push({
       id: "squat_iso",
       title: "Squat Isométrique (Mur)",
       icon: Timer,
-      badge: "Quadriceps & Fessiers",
+      badge: "Isométrie / Quadriceps & Fessiers",
       structure: structIso,
       tempo: "Isométrie 1000 (Maintien statique continu à 90°)",
       rest: "Repos strict : 60s",

@@ -3,7 +3,19 @@ import type { ForgeState } from "../lib/forge-store";
 import { militarySeptemberProgram } from "../data/programs/military-september";
 import type { TrainingMission, TrainingProgress, TrainingWeeklyCompletion, TrainingDaySummary } from "../types/training";
 
-export const ACTIVITY_PRESETS: Record<string, { id: string; label: string; detail: string; type: "swim" | "run" | "pull" | "chair" | "stretch" | "psycho" | "custom"; estimatedMinutes: number; xp: number; steps: string[] }> = {
+export interface ActivityPreset {
+  id: string;
+  label: string;
+  detail: string;
+  type: "swim" | "run" | "pull" | "chair" | "stretch" | "psycho" | "custom";
+  estimatedMinutes: number;
+  xp: number;
+  steps: string[];
+  swapTags: string[];
+  isIsolation?: boolean;
+}
+
+export const ACTIVITY_PRESETS: Record<string, ActivityPreset> = {
   natation: {
     id: "natation",
     label: "Natation — 1000m continu & éducatifs aquatiques",
@@ -12,6 +24,7 @@ export const ACTIVITY_PRESETS: Record<string, { id: string; label: string; detai
     estimatedMinutes: 45,
     xp: 25,
     steps: ["Échauffement 200m coulée", "800m nage libre / brasse", "Récupération 100m"],
+    swapTags: ["cardio", "aquatique", "endurance"],
   },
   course: {
     id: "course",
@@ -21,6 +34,7 @@ export const ACTIVITY_PRESETS: Record<string, { id: string; label: string; detai
     estimatedMinutes: 45,
     xp: 25,
     steps: ["Échauffement 5 min", "40 min course continue", "Retour au calme 5 min"],
+    swapTags: ["cardio", "course", "endurance"],
   },
   fractionne: {
     id: "fractionne",
@@ -30,6 +44,7 @@ export const ACTIVITY_PRESETS: Record<string, { id: string; label: string; detai
     estimatedMinutes: 35,
     xp: 30,
     steps: ["10 min footing d'échauffement", "12 x (30s VMA / 30s marche)", "5 min retour au calme"],
+    swapTags: ["cardio", "course", "vma"],
   },
   tractions: {
     id: "tractions",
@@ -39,6 +54,7 @@ export const ACTIVITY_PRESETS: Record<string, { id: string; label: string; detai
     estimatedMinutes: 30,
     xp: 20,
     steps: ["Échauffement épaules", "Séries adaptées à votre max • Repos strict 90s", "Étirements"],
+    swapTags: ["tirage", "dos", "biceps", "tirage_poly"],
   },
   pompes_militaires: {
     id: "pompes_militaires",
@@ -48,6 +64,7 @@ export const ACTIVITY_PRESETS: Record<string, { id: string; label: string; detai
     estimatedMinutes: 25,
     xp: 20,
     steps: ["Consignes : Coudes à 45°, corps parfaitement gainé, poitrine sol à chaque rep", "Exécution Tempo 2010", "Repos strict : 90s entre les séries"],
+    swapTags: ["poussée", "pectoraux", "triceps", "poussée_poly"],
   },
   pompes_diamant: {
     id: "pompes_diamant",
@@ -57,6 +74,7 @@ export const ACTIVITY_PRESETS: Record<string, { id: string; label: string; detai
     estimatedMinutes: 25,
     xp: 20,
     steps: ["Consignes : Mains jointes en diamant sous le sternum, coudes serrés le long du corps", "Exécution Tempo 2010", "Repos strict : 90s"],
+    swapTags: ["poussée", "triceps", "triceps_heavy", "poussée_poly"],
   },
   pompes_declinees: {
     id: "pompes_declinees",
@@ -66,6 +84,7 @@ export const ACTIVITY_PRESETS: Record<string, { id: string; label: string; detai
     estimatedMinutes: 25,
     xp: 20,
     steps: ["Consignes : Pieds surélevés sur chaise, corps aligné sans creuser le dos", "Exécution Tempo 2010", "Repos strict : 90s"],
+    swapTags: ["poussée", "pectoraux_haut", "épaules", "poussée_poly"],
   },
   tractions_lsit: {
     id: "tractions_lsit",
@@ -76,10 +95,11 @@ export const ACTIVITY_PRESETS: Record<string, { id: string; label: string; detai
     xp: 20,
     steps: [
       "Consignes : Suspendu à la barre, lever les jambes tendues à 90° (parallèles au sol)",
-      "Tirer le menton au-dessus de la barre en maintenant le buste et les jambes immobiles",
+      "Tirer le menton au-dessus de la barre en maintaining le buste et les jambes immobiles",
       "Option régression : Replier les genoux à 90° (Tuck L-Sit) si les jambes tendues sont trop exigeantes",
       "Repos strict : 90s entre les séries",
     ],
+    swapTags: ["tirage", "dos", "biceps", "core", "tirage_poly"],
   },
   squat_iso: {
     id: "squat_iso",
@@ -89,6 +109,7 @@ export const ACTIVITY_PRESETS: Record<string, { id: string; label: string; detai
     estimatedMinutes: 20,
     xp: 20,
     steps: ["Dos plaqué au mur, cuisses parallèles au sol (90°)", "Maintien statique continu", "Repos strict : 60s"],
+    swapTags: ["cuisses", "isométrie", "bas_du_corps"],
   },
   gainage_commando: {
     id: "gainage_commando",
@@ -98,6 +119,7 @@ export const ACTIVITY_PRESETS: Record<string, { id: string; label: string; detai
     estimatedMinutes: 15,
     xp: 20,
     steps: ["Départ en planche sur les coudes", "Passage dynamique bras tendus alternativement", "3 séries de 45s • Repos 60s"],
+    swapTags: ["core", "gainage", "abdominaux"],
   },
   bras_diamant: {
     id: "bras_diamant",
@@ -107,6 +129,8 @@ export const ACTIVITY_PRESETS: Record<string, { id: string; label: string; detai
     estimatedMinutes: 6,
     xp: 15,
     steps: ["Mains jointes en diamant sous le sternum", "3 séries à l'échec strict", "Repos 60s"],
+    swapTags: ["poussée", "triceps", "triceps_heavy", "poussée_isolation"],
+    isIsolation: true,
   },
   bras_biceps_iso: {
     id: "bras_biceps_iso",
@@ -116,6 +140,8 @@ export const ACTIVITY_PRESETS: Record<string, { id: string; label: string; detai
     estimatedMinutes: 6,
     xp: 15,
     steps: ["Supination serrée", "Blocage isométrique à 90° d'angle", "3 séries de 30s • Repos 60s"],
+    swapTags: ["tirage", "biceps", "biceps_iso", "tirage_isolation"],
+    isIsolation: true,
   },
   bras_triceps_sol: {
     id: "bras_triceps_sol",
@@ -125,6 +151,8 @@ export const ACTIVITY_PRESETS: Record<string, { id: string; label: string; detai
     estimatedMinutes: 6,
     xp: 15,
     steps: ["Planche sur avant-bras", "Poussée sur paumes pour tendre les bras", "3 séries à l'échec • Repos 60s"],
+    swapTags: ["poussée", "triceps", "triceps_heavy", "poussée_isolation"],
+    isIsolation: true,
   },
   bras_biceps_neg: {
     id: "bras_biceps_neg",
@@ -134,6 +162,8 @@ export const ACTIVITY_PRESETS: Record<string, { id: string; label: string; detai
     estimatedMinutes: 6,
     xp: 15,
     steps: ["Départ menton au-dessus de la barre", "Freinage de la descente sur 5 secondes", "3 × 6-8 reps à l'échec • Repos 60s"],
+    swapTags: ["tirage", "biceps", "biceps_excentrique", "tirage_isolation"],
+    isIsolation: true,
   },
   psycho: {
     id: "psycho",
@@ -143,6 +173,7 @@ export const ACTIVITY_PRESETS: Record<string, { id: string; label: string; detai
     estimatedMinutes: 20,
     xp: 15,
     steps: ["Série de calcul rapide", "Tests de suites numériques", "Test d'attention"],
+    swapTags: ["psycho", "mental"],
   },
   repos: {
     id: "repos",
@@ -152,6 +183,7 @@ export const ACTIVITY_PRESETS: Record<string, { id: string; label: string; detai
     estimatedMinutes: 20,
     xp: 15,
     steps: ["10 min étirements doux", "5 min automassages", "5 min exercices de respiration"],
+    swapTags: ["stretch", "recup"],
   },
 };
 
@@ -674,13 +706,13 @@ let thuRunCount = 0;
         if (swaps[taskId]) {
           // Remplacement individuel au niveau de l'exercice
           finalTasks.push(
-            resolveSmartSwappedTask(t, dateISO, moment, swapId, userMaxPull, userMaxChair, userMaxPush)
+            resolveSmartSwappedTask(t, dateISO, moment, swapId, userMaxes)
           );
         } else if (!processedMoments.has(moment)) {
           // Remplacement global au niveau du moment
           processedMoments.add(moment);
           finalTasks.push(
-            resolveSmartSwappedTask(t, dateISO, moment, swapId, userMaxPull, userMaxChair, userMaxPush)
+            resolveSmartSwappedTask(t, dateISO, moment, swapId, userMaxes)
           );
         }
       } else {
@@ -907,108 +939,83 @@ function resolveSmartSwappedTask(
   dateISO: string,
   moment: string,
   swapId: string,
-  userMaxPull: number,
-  userMaxChair: number,
-  userMaxPush: number,
+  userMaxes: ReturnType<typeof getUserMaxes>,
 ) {
   const preset = ACTIVITY_PRESETS[swapId];
   if (!preset) return t;
 
-  const originalLabel = t.label ?? "";
-  const isPyramid = originalLabel.toLowerCase().includes("pyramide");
-  const isDegressive = originalLabel.toLowerCase().includes("dégressif") || originalLabel.toLowerCase().includes("degressif");
+  const originalLabel = String(t.label ?? "").toLowerCase();
+  const isPyramid = originalLabel.includes("pyramide");
+  const isDegressive = originalLabel.includes("dégressif") || originalLabel.includes("degressif");
+  const isIso = originalLabel.includes("isométrie") || originalLabel.includes("iso") || t.type === "chair";
+
+  // Compensation d'intensité biomécanique si mouvement d'isolation remplace polyarticulaire
+  const isTargetIsolation = !!preset.isIsolation;
+  const compensationFactor = isTargetIsolation ? 1.15 : 1.0;
+
+  // Obtenir le userMax propre à l'exercice entrant
+  let targetMax = userMaxes.userMaxPull;
+  if (swapId === "pompes_militaires") targetMax = userMaxes.userMaxPushMilitary;
+  else if (swapId === "pompes_diamant" || swapId === "bras_diamant") targetMax = userMaxes.userMaxPushDiamond;
+  else if (swapId === "pompes_declinees") targetMax = userMaxes.userMaxPushDeclined;
+  else if (swapId === "bras_triceps_sol") targetMax = userMaxes.userMaxTriceps;
+  else if (swapId === "tractions_lsit") targetMax = userMaxes.userMaxPullLSit;
+  else if (swapId === "bras_biceps_iso") targetMax = userMaxes.userMaxPullSupineIso;
+  else if (swapId === "bras_biceps_neg") targetMax = userMaxes.userMaxPullSupineNeg;
+  else if (swapId === "squat_iso") targetMax = userMaxes.userMaxChair;
+  else if (swapId === "gainage_commando") targetMax = userMaxes.userMaxCommando;
 
   let label = preset.label;
   let detail = preset.detail;
   let steps = preset.steps;
 
-  if (swapId === "pompes_militaires" || swapId === "pompes_diamant" || swapId === "pompes_declinees" || swapId === "tractions_lsit") {
-    const isLsit = swapId === "tractions_lsit";
-    const pPushMax = isLsit ? userMaxPull : userMaxPush;
-    const peak = isLsit ? Math.max(3, Math.round(userMaxPull * 0.70)) : Math.max(6, Math.round(pPushMax * 0.40));
+  if (isIso || preset.type === "chair") {
+    const submaxSecs = Math.max(25, Math.round(targetMax * 0.70 * compensationFactor));
+    const c1 = Math.max(15, Math.round(targetMax * 0.45 * compensationFactor));
+    const c2 = Math.max(25, Math.round(targetMax * 0.70 * compensationFactor));
+    const c3 = Math.max(35, Math.round(targetMax * 0.90 * compensationFactor));
+    const pyramidStr = `${c1}s - ${c2}s - ${c3}s - ${c2}s - ${c1}s`;
+    const degressiveStr = `${Math.round(targetMax * 0.8 * compensationFactor)}s - ${Math.round(targetMax * 0.65 * compensationFactor)}s - ${Math.round(targetMax * 0.5 * compensationFactor)}s`;
+
+    if (isPyramid) {
+      label = `${preset.label} — Pyramide : ${pyramidStr}`;
+      detail = `Format Pyramidal (Pic à ${c3}s, Max=${targetMax}s) • Tempo Isométrie 1000 • Repos strict : 60s`;
+      steps = [...preset.steps, `Pyramide statique : ${pyramidStr}`, "Repos strict : 60s entre les paliers"];
+    } else if (isDegressive) {
+      label = `${preset.label} — Dégressif : ${degressiveStr}`;
+      detail = `Format Dégressif d'épuisement (Max=${targetMax}s) • Repos strict : 60s`;
+      steps = [...preset.steps, `Enchaîner les paliers dégressifs : ${degressiveStr}`, "Repos strict : 60s"];
+    } else {
+      label = `${preset.label} — Séries réparties : 4 × ${submaxSecs}s`;
+      detail = `4 séries (70% Max=${targetMax}s${compensationFactor > 1 ? " + compensation isolation" : ""}) • Repos strict : 60s`;
+      steps = [...preset.steps, `4 séries de ${submaxSecs} secondes`, "Repos strict : 60s entre les séries"];
+    }
+  } else if (isPyramid) {
+    const peak = Math.max(3, Math.round(targetMax * 0.40 * compensationFactor));
     const p1 = Math.max(1, Math.round(peak * 0.25));
     const p2 = Math.max(2, Math.round(peak * 0.50));
-    const p3 = Math.max(4, Math.round(peak * 0.75));
+    const p3 = Math.max(3, Math.round(peak * 0.75));
     const p4 = peak;
     const pyramidStr = `${p1}-${p2}-${p3}-${p4}-${p3}-${p2}-${p1}`;
 
-    const submaxReps = isLsit ? Math.max(3, Math.round(userMaxPull * 0.50)) : Math.max(6, Math.round(pPushMax * 0.65));
-    const degressiveStr = isLsit
-      ? `${Math.round(userMaxPull * 0.60)}-${Math.round(userMaxPull * 0.50)}-${Math.round(userMaxPull * 0.40)}-${Math.round(userMaxPull * 0.30)}-${Math.round(userMaxPull * 0.20)}`
-      : `${Math.round(pPushMax * 0.65)}-${Math.round(pPushMax * 0.55)}-${Math.round(pPushMax * 0.45)}-${Math.round(pPushMax * 0.35)}-${Math.round(pPushMax * 0.25)}`;
+    label = `${preset.label} — Pyramide : ${pyramidStr} reps`;
+    detail = `Format Pyramidal (Pic à ${p4} reps, Max=${targetMax}) • Tempo 2010 • Repos : 90s`;
+    steps = [...preset.steps, `Pyramide de reps : ${pyramidStr}`, "Tempo 2010 • Repos strict : 90s entre les paliers"];
+  } else if (isDegressive) {
+    const d1 = Math.round(targetMax * 0.65 * compensationFactor);
+    const d2 = Math.round(targetMax * 0.55 * compensationFactor);
+    const d3 = Math.round(targetMax * 0.45 * compensationFactor);
+    const d4 = Math.round(targetMax * 0.35 * compensationFactor);
+    const degressiveStr = `${d1}-${d2}-${d3}-${d4}`;
 
-    const formConsignesMap: Record<string, string> = {
-      pompes_militaires: "Coudes à 45°, corps parfaitement gainé, poitrine effleurant le sol",
-      pompes_diamant: "Mains jointes en diamant sous le sternum, coudes serrés le long du corps",
-      pompes_declinees: "Pieds surélevés sur chaise/banc, corps aligné sans creuser le dos",
-      tractions_lsit: "Jambes tendues à 90° (ou genoux pliés en Tuck L-Sit au besoin), tirage menton au-dessus de la barre",
-    };
-
-    const nameMap: Record<string, string> = {
-      pompes_militaires: "Pompes Militaires",
-      pompes_diamant: "Pompes Diamant",
-      pompes_declinees: "Pompes Déclinées (chaise)",
-      tractions_lsit: "Tractions L-Sit (Tirage / Core)",
-    };
-
-    const exerciseName = nameMap[swapId] ?? "Pompes";
-    const consignes = formConsignesMap[swapId] ?? "Forme stricte";
-
-    if (isPyramid) {
-      label = `${exerciseName} — Pyramide : ${pyramidStr} reps`;
-      detail = `Format Pyramidal (Pic à ${p4} reps) • Tempo 2010 (2s descente, 0s pause, 1s montée, 0s pause) • Repos strict : 90s • Consignes : ${consignes}`;
-      steps = [
-        `Consignes : ${consignes}`,
-        `Pyramide de reps : ${pyramidStr}`,
-        "Tempo 2010 : poussée explosive, 2s descente contrôlée",
-        "Repos strict : 90s entre les paliers",
-      ];
-    } else if (isDegressive) {
-      label = `${exerciseName} — Dégressif : ${degressiveStr} reps`;
-      detail = `Format Dégressif d'épuisement • Tempo 2010 • Repos strict : 90s • Consignes : ${consignes}`;
-      steps = [
-        `Consignes : ${consignes}`,
-        `Séries dégressives : ${degressiveStr} reps`,
-        "Tempo 2010",
-        "Repos strict : 90s après chaque série",
-      ];
-    } else {
-      label = `${exerciseName} — Séries réparties : 5 × ${submaxReps} reps`;
-      detail = `5 séries (65% Max=${pPushMax}) • Tempo 2010 • Repos strict : 90s • Consignes : ${consignes}`;
-      steps = [
-        `Consignes : ${consignes}`,
-        `5 séries de ${submaxReps} répétitions`,
-        "Tempo 2010 : régularité et contrôle",
-        "Repos strict : 90s entre les séries",
-      ];
-    }
-  } else if (swapId === "squat_iso" || swapId === "gainage_planche") {
-    const chairMax = userMaxChair;
-    const submaxSecs = Math.max(30, Math.round(chairMax * 0.70));
-    const c1 = Math.max(15, Math.round(chairMax * 0.45));
-    const c2 = Math.max(25, Math.round(chairMax * 0.70));
-    const c3 = Math.max(35, Math.round(chairMax * 0.90));
-    const pyramidStr = `${c1}s - ${c2}s - ${c3}s - ${c2}s - ${c1}s`;
-    const degressiveStr = `${Math.round(chairMax * 0.8)}s - ${Math.round(chairMax * 0.65)}s - ${Math.round(chairMax * 0.5)}s - ${Math.round(chairMax * 0.35)}s`;
-
-    const isoName = swapId === "gainage_planche" ? "Gainage Abdominal Planche" : "Squat Isométrique (Mur)";
-    const isoConsignes = swapId === "gainage_planche"
-      ? "Coudes sous épaules, corps parfaitement aligné, fessiers & abdos contractés"
-      : "Dos plaqué au mur, cuisses parallèles au sol à 90° exacts";
-
-    if (isPyramid) {
-      label = `${isoName} — Pyramide : ${pyramidStr}`;
-      detail = `Format Pyramidal (Pic à ${c3}s) • Tempo Isométrie 1000 • Repos strict : 60s • Consignes : ${isoConsignes}`;
-      steps = [`Consignes : ${isoConsignes}`, `Pyramide statique : ${pyramidStr}`, "Tempo Isométrie 1000", "Repos strict : 60s entre les paliers"];
-    } else if (isDegressive) {
-      label = `${isoName} — Dégressif : ${degressiveStr}`;
-      detail = `Format Dégressif d'épuisement • Tempo Isométrie 1000 • Repos strict : 60s • Consignes : ${isoConsignes}`;
-      steps = [`Consignes : ${isoConsignes}`, `Enchaîner : ${degressiveStr}`, "Tempo Isométrie 1000", "Repos strict : 60s"];
-    } else {
-      label = `${isoName} — Séries réparties : 4 × ${submaxSecs}s`;
-      detail = `4 séries (70% Max=${chairMax}s) • Tempo Isométrie 1000 • Repos strict : 60s • Consignes : ${isoConsignes}`;
-      steps = [`Consignes : ${isoConsignes}`, `4 séries de ${submaxSecs} secondes`, "Tempo Isométrie 1000", "Repos strict : 60s entre les séries"];
-    }
+    label = `${preset.label} — Dégressif : ${degressiveStr} reps`;
+    detail = `Format Dégressif d'épuisement (Max=${targetMax}) • Tempo 2010 • Repos : 90s`;
+    steps = [...preset.steps, `Séries dégressives : ${degressiveStr} reps`, "Tempo 2010 • Repos strict : 90s"];
+  } else {
+    const submaxReps = Math.max(3, Math.round(targetMax * 0.60 * compensationFactor));
+    label = `${preset.label} — Séries réparties : 5 × ${submaxReps} reps`;
+    detail = `5 séries (60% Max=${targetMax}${compensationFactor > 1 ? " + compensation isolation" : ""}) • Tempo 2010 • Repos : 90s`;
+    steps = [...preset.steps, `5 séries de ${submaxReps} répétitions`, "Tempo 2010 • Repos strict : 90s entre les séries"];
   }
 
   return {
@@ -1022,7 +1029,7 @@ function resolveSmartSwappedTask(
     xp: preset.xp,
     steps,
     isSwapped: true,
-    originalLabel: t.label,
+    swapId,
   };
 }
 
