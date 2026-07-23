@@ -55,15 +55,26 @@ describe("training engine", () => {
   test("loads the bifurcated program based on morning swim presence", () => {
     const engine = createTrainingEngine(state, { toggleTask: () => {} }, { todayISO: "2026-07-20" });
 
-    // Lundi a Natation le matin -> Programme Maintien / Technique
+    // Lundi a Natation le matin -> Programme Maintien / Technique + Bras Explosion (Régénération / Volume doux)
     const swimMission = engine.getMission("2026-07-20");
     expect(swimMission.tasks[0].label).toBe("Natation — 45 min");
     expect(swimMission.tasks[1].label).toContain("Maintien / Technique");
 
-    // Mardi n'a pas de Natation le matin -> Programme Force & Volume (axé 17-20 tractions)
+    const swimBrasTasks = swimMission.tasks.filter((t) => t.id.startsWith("bras-"));
+    expect(swimBrasTasks.length).toBe(4);
+    expect(swimBrasTasks[0].label).toContain("Régénération / Volume doux");
+    expect(swimBrasTasks[0].label).toContain("RIR 2-3");
+    expect(swimBrasTasks[0].detail).toContain("Régénération post-natation");
+
+    // Mardi n'a pas de Natation le matin -> Programme Force & Volume + 🔥 Bras Explosion (à l'échec)
     const noSwimMission = engine.getMission("2026-07-21");
     expect(noSwimMission.tasks[0].label).toContain("Force & Volume");
     expect(noSwimMission.tasks[0].label).toContain("Obj 17-20");
+
+    const noSwimBrasTasks = noSwimMission.tasks.filter((t) => t.id.startsWith("bras-"));
+    expect(noSwimBrasTasks.length).toBe(4);
+    expect(noSwimBrasTasks[0].label).toContain("🔥 Bras Explosion");
+    expect(noSwimBrasTasks[0].label).toContain("à l'échec");
   });
 
   test("can complete an exercise through the engine", () => {
