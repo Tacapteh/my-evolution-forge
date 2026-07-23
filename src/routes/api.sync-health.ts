@@ -208,7 +208,7 @@ function normalizeWorkoutsServer(rawWorkouts: any): any[] {
       }
     }
 
-    if (!durationMinutes && !distanceKm && !calories) continue;
+    if (!type) continue;
 
     results.push({
       type,
@@ -306,6 +306,14 @@ export const Route = createFileRoute("/api/sync-health")({
                 headers: { "Content-Type": "application/json" },
               }
             );
+          }
+
+          // Normalize workouts and update payload before adding to queue or writing
+          const rawWorkouts = payload.workouts ?? payload.health?.workouts ?? [];
+          const normalizedWorkouts = normalizeWorkoutsServer(rawWorkouts);
+          payload.workouts = normalizedWorkouts;
+          if (payload.health && typeof payload.health === "object") {
+            payload.health.workouts = normalizedWorkouts;
           }
 
           // Add payload to memory queue & disk

@@ -734,7 +734,7 @@ export function normalizeWorkouts(rawWorkouts: any): Array<{
     }
 
     // Filter out dummy 0-duration 0-calorie empty objects
-    if (!durationMinutes && !distanceKm && !calories) continue;
+    if (!type) continue;
 
     results.push({
       type,
