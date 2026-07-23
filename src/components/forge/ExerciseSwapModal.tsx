@@ -263,9 +263,6 @@ export function ExerciseSwapModal({
             <Badge variant="outline" className="border-primary/40 text-primary px-3 py-1">
               <Sparkles className="mr-1.5 h-3.5 w-3.5" /> Système Intelligent de Remplacement
             </Badge>
-            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onClose}>
-              <X className="h-4 w-4" />
-            </Button>
           </div>
           <DialogTitle className="text-2xl font-bold tracking-tight">
             Modifier l'exercice ({momentLabel})

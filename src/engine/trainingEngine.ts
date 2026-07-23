@@ -145,12 +145,12 @@ export const ACTIVITY_PRESETS: Record<string, ActivityPreset> = {
   },
   bras_triceps_sol: {
     id: "bras_triceps_sol",
-    label: "Extensions Triceps au Sol",
-    detail: "Module Bras Explosion [3/4] • Coudes posés -> bras tendus",
+    label: "Extensions Triceps au Sol (Pompes Sphinx)",
+    detail: "Module Bras Explosion [3/4] • Coudes posés -> bras tendus (Pompes Sphinx)",
     type: "pull",
     estimatedMinutes: 6,
     xp: 15,
-    steps: ["Planche sur avant-bras", "Poussée sur paumes pour tendre les bras", "3 séries à l'échec • Repos 60s"],
+    steps: ["Planche sur avant-bras", "Poussée sur paumes pour tendre les bras (Pompes Sphinx)", "3 séries à l'échec • Repos 60s"],
     swapTags: ["poussée", "triceps", "triceps_heavy", "poussée_isolation"],
     isIsolation: true,
   },
@@ -703,18 +703,9 @@ let thuRunCount = 0;
       const swapId = swaps[taskId] ?? swaps[moment];
 
       if (swapId && ACTIVITY_PRESETS[swapId]) {
-        if (swaps[taskId]) {
-          // Remplacement individuel au niveau de l'exercice
-          finalTasks.push(
-            resolveSmartSwappedTask(t, dateISO, moment, swapId, userMaxes)
-          );
-        } else if (!processedMoments.has(moment)) {
-          // Remplacement global au niveau du moment
-          processedMoments.add(moment);
-          finalTasks.push(
-            resolveSmartSwappedTask(t, dateISO, moment, swapId, userMaxes)
-          );
-        }
+        finalTasks.push(
+          resolveSmartSwappedTask(t, dateISO, moment, swapId, userMaxes)
+        );
       } else {
         finalTasks.push(t);
       }
