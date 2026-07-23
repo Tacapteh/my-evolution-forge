@@ -85,23 +85,50 @@ export const ACTIVITY_PRESETS: Record<string, { id: string; label: string; detai
     xp: 20,
     steps: ["Dos plaqué au mur, cuisses parallèles au sol (90°)", "Maintien statique continu", "Repos strict : 60s"],
   },
-  gainage_planche: {
-    id: "gainage_planche",
-    label: "Gainage Abdominal Planche",
-    detail: "Tempo Isométrie 1000 • Repos strict : 60s • Coudes sous épaules, corps droit",
+  gainage_commando: {
+    id: "gainage_commando",
+    label: "Gainage Commando — Planche Coudes ↔ Bras tendus",
+    detail: "Passage dynamique coudes à bras tendus • Repos strict : 60s",
     type: "chair",
-    estimatedMinutes: 20,
+    estimatedMinutes: 15,
     xp: 20,
-    steps: ["Coudes sous les épaules, corps parfaitement aligné", "Verrouillage abdominal et fessiers", "Repos strict : 60s"],
+    steps: ["Départ en planche sur les coudes", "Passage dynamique bras tendus alternativement", "3 séries de 45s • Repos 60s"],
   },
-  chaise: {
-    id: "chaise",
-    label: "Chaise & Gainage — Séries isométriques",
-    detail: "Renforcement des quadriceps • Tempo Isométrie 1000 • Repos strict : 60s",
-    type: "chair",
-    estimatedMinutes: 25,
-    xp: 20,
-    steps: ["Échauffement genoux/cuisses", "Séries de chaise à 90°", "Repos strict : 60s"],
+  bras_diamant: {
+    id: "bras_diamant",
+    label: "Pompes Diamant — Triceps (Échec)",
+    detail: "Module Bras Explosion [1/4] • Mains en diamant, coudes serrés",
+    type: "pull",
+    estimatedMinutes: 6,
+    xp: 15,
+    steps: ["Mains jointes en diamant sous le sternum", "3 séries à l'échec strict", "Repos 60s"],
+  },
+  bras_biceps_iso: {
+    id: "bras_biceps_iso",
+    label: "Tractions Supination — Blocage Iso 90°",
+    detail: "Module Bras Explosion [2/4] • Supination serrée (3 × 30s)",
+    type: "pull",
+    estimatedMinutes: 6,
+    xp: 15,
+    steps: ["Supination serrée", "Blocage isométrique à 90° d'angle", "3 séries de 30s • Repos 60s"],
+  },
+  bras_triceps_sol: {
+    id: "bras_triceps_sol",
+    label: "Extensions Triceps au Sol",
+    detail: "Module Bras Explosion [3/4] • Coudes posés -> bras tendus",
+    type: "pull",
+    estimatedMinutes: 6,
+    xp: 15,
+    steps: ["Planche sur avant-bras", "Poussée sur paumes pour tendre les bras", "3 séries à l'échec • Repos 60s"],
+  },
+  bras_biceps_neg: {
+    id: "bras_biceps_neg",
+    label: "Tractions Supination Négatives 5s",
+    detail: "Module Bras Explosion [4/4] • Contrôle descente 5s (3 × 6-8 reps)",
+    type: "pull",
+    estimatedMinutes: 6,
+    xp: 15,
+    steps: ["Départ menton au-dessus de la barre", "Freinage de la descente sur 5 secondes", "3 × 6-8 reps à l'échec • Repos 60s"],
   },
   psycho: {
     id: "psycho",
@@ -206,6 +233,25 @@ export function createTrainingEngine(
       ? definition.tasks ?? []
       : (definition?.sessions ?? []).flatMap((session) => session.exercises);
 
+    const dayRecord = state.days[dateISO];
+    const checkedMap = dayRecord?.checked ?? {};
+    const swapsMap = dayRecord?.swaps ?? {};
+
+    const hasRawSwim = rawTasks.some(
+      (t) => t.type === "swim" || (t.label && t.label.toLowerCase().includes("natation"))
+    );
+    const isSwimChecked = Object.keys(checkedMap).some((taskId) => {
+      if (!checkedMap[taskId]) return false;
+      const t = rawTasks.find((rt) => rt.id === taskId);
+      return taskId.includes("swim") || (t && t.type === "swim");
+    });
+    const isSwimSwapped = swapsMap.morning === "natation";
+    const hasHealthSwim = (dayRecord?.health?.workouts ?? []).some(
+      (w) => w.type && (w.type.toLowerCase().includes("natation") || w.type.toLowerCase().includes("swim"))
+    );
+
+    const hasMorningSwim = hasRawSwim || isSwimChecked || isSwimSwapped || hasHealthSwim;
+
     let tasks = rawTasks.map((task, index) => {
       let label = task.label;
       let detail = task.detail;
@@ -216,41 +262,50 @@ export function createTrainingEngine(
           label = "⚠️ TEST MAX TRACTIONS (Obligatoire — Cycle 2 semaines)";
           detail = `1 série à l'échec strict • Tempo 2010 • Repos strict 120s • Saisis ton score pour adapter les 2 prochaines semaines (Max: ${userMaxPull} / Obj: 17-20)`;
           steps = ["Échauffement haut du corps et mobilité des épaules", "1 série unique à l'échec strict (Tempo 2010)", "Saisir le score dans l'application"];
+        } else if (hasMorningSwim) {
+          // Natation détectée -> Programme Maintien / Technique (50-60% Max)
+          const reps = Math.max(3, Math.round(userMaxPull * 0.55));
+          label = `Tractions (Maintien / Technique) — 5 × ${reps} reps (50-60% Max)`;
+          detail = `Programme Maintien & Technique (post-natation, moins taxant) • 50-60% du Max (${userMaxPull}) • Tempo 2010 • Repos strict : 90s`;
+          steps = [
+            "Échauffement articulaire et mobilité des épaules post-natation",
+            `5 séries de ${reps} tractions sous-maximales (50-60% du max ${userMaxPull})`,
+            "Tempo 2010 : 2s descente freinée, 1s montée contrôlée, sans chercher l'échec",
+            "Repos strict : 90s entre les séries",
+          ];
         } else if (dayIndex === 0) {
-          // Lundi : Pyramide (1-2-3-4-5-4-3-2-1)
+          // Sans Natation -> Lundi : Pyramide lourde axée 17-20 tractions
           const peak = Math.max(4, Math.min(10, Math.round(userMaxPull * 0.85)));
           const p1 = 1;
           const p2 = Math.max(2, Math.round(peak * 0.4));
           const p3 = Math.max(3, Math.round(peak * 0.7));
           const p4 = peak;
-          label = `Tractions — Pyramide : ${p1}-${p2}-${p3}-${p4}-${p3}-${p2}-${p1} reps`;
-          detail = `Format Pyramidal (Pic à ${p4} reps) • Tempo 2010 (2s descente, 0s pause, 1s montée, 0s pause) • Repos strict : 90s`;
+          label = `Tractions — Pyramide Force & Volume : ${p1}-${p2}-${p3}-${p4}-${p3}-${p2}-${p1} reps (Obj 17-20)`;
+          detail = `Format Pyramidal Lourd (Pic à ${p4} reps) • Axé sur l'objectif 17-20 tractions (Max: ${userMaxPull}) • Tempo 2010 • Repos strict : 90s`;
           steps = [
-            "Échauffement épaules et mobilité des coudes",
-            `Enchaîner la pyramide : ${p1}-${p2}-${p3}-${p4}-${p3}-${p2}-${p1} reps`,
-            "Tempo 2010 : 2s descente freinée, 1s montée explosive",
+            "Échauffement haut du corps et mobilité des épaules",
+            `Enchaîner la pyramide lourde : ${p1}-${p2}-${p3}-${p4}-${p3}-${p2}-${p1} reps`,
+            "Tempo 2010 : 2s descente freinée, 1s montée explosive menton par-dessus la barre",
             "Repos strict : 90s entre chaque palier",
           ];
         } else if (dayIndex === 1) {
-          // Mardi : Séries réparties (65% Max)
-          const reps = Math.max(3, Math.round(userMaxPull * 0.65));
-          label = `Tractions — Séries réparties : 5 × ${reps} reps`;
-          detail = `5 séries sous-maximales (65% Max=${userMaxPull}) • Tempo 2010 • Repos strict : 90s`;
+          const reps = Math.max(3, Math.round(userMaxPull * 0.70));
+          label = `Tractions — Force & Volume : 5 × ${reps} reps (Obj 17-20)`;
+          detail = `5 séries lourdes (70% Max=${userMaxPull}) • Axé sur la progression 17-20 tractions • Tempo 2010 • Repos strict : 90s`;
           steps = [
             "Échauffement haut du corps",
-            `5 séries de ${reps} tractions propres`,
-            "Tempo 2010 : 2s descente, 1s montée",
+            `5 séries de ${reps} tractions lourdes et explosives`,
+            "Tempo 2010 : 2s descente, 1s montée menton au-dessus de la barre",
             "Repos strict : 90s entre les séries",
           ];
         } else if (dayIndex === 2) {
-          // Mercredi : Dégressif
           const r1 = Math.max(3, userMaxPull);
           const r2 = Math.max(2, userMaxPull - 1);
           const r3 = Math.max(2, userMaxPull - 2);
           const r4 = Math.max(1, userMaxPull - 3);
           const r5 = Math.max(1, userMaxPull - 4);
-          label = `Tractions — Dégressif : ${r1}-${r2}-${r3}-${r4}-${r5} reps`;
-          detail = `Format Dégressif d'épuisement (Max=${userMaxPull}) • Tempo 2010 • Repos strict : 90s`;
+          label = `Tractions — Dégressif Lourd : ${r1}-${r2}-${r3}-${r4}-${r5} reps (Obj 17-20)`;
+          detail = `Format Dégressif d'épuisement (Max=${userMaxPull}) • Axé sur l'objectif 17-20 tractions • Tempo 2010 • Repos strict : 90s`;
           steps = [
             "Échauffement dos & biceps",
             `Enchaîner : ${r1}-${r2}-${r3}-${r4}-${r5} reps`,
@@ -258,13 +313,12 @@ export function createTrainingEngine(
             "Repos strict : 90s après chaque série",
           ];
         } else {
-          // Samedi (dayIndex 5) / Autres : Sous-maximal (60% Max)
-          const reps = Math.max(3, Math.round(userMaxPull * 0.60));
-          label = `Tractions — Sous-maximal : 5 × ${reps} reps`;
-          detail = `Format Sous-maximal d'entretien (60% Max=${userMaxPull}) • Tempo 2010 • Repos strict : 90s`;
+          const reps = Math.max(3, Math.round(userMaxPull * 0.65));
+          label = `Tractions — Force & Volume : 5 × ${reps} reps (Obj 17-20)`;
+          detail = `Format Force & Volume (65% Max=${userMaxPull}) • Tempo 2010 • Repos strict : 90s`;
           steps = [
             "Échauffement propre",
-            `5 séries de ${reps} tractions sans échec`,
+            `5 séries de ${reps} tractions régulières`,
             "Tempo 2010 : forme irréprochable",
             "Repos strict : 90s entre les séries",
           ];
@@ -274,6 +328,15 @@ export function createTrainingEngine(
           label = "⚠️ TEST MAX CHAISE (Obligatoire — Cycle 2 semaines)";
           detail = `1 série max à 90° jusqu'à l'échec strict • Tempo Isométrie 1000 • Repos 120s • (Record: ${userMaxChair}s / Obj: 168s)`;
           steps = ["Dos collé au mur à 90°", "Chronométrer jusqu'à l'échec strict", "Saisir le temps en secondes dans l'application"];
+        } else if (hasMorningSwim) {
+          label = "Chaise — 3 × 1 min (60s)";
+          detail = "3 séries de 1 minute (60s) à 90° contre le mur • Tempo Isométrie 1000 • Repos strict : 60s";
+          steps = [
+            "Dos plaqué au mur, cuisses parallèles au sol à 90° exacts",
+            "3 séries de 60 secondes de maintien statique continu",
+            "Tempo Isométrie 1000 : verrouillage postural continu",
+            "Repos strict : 60s entre les séries",
+          ];
         } else if (dayIndex === 0 || dayIndex === 2) {
           const secs = Math.max(30, Math.round(userMaxChair * 0.75));
           label = `Chaise — Séries réparties : 4 × ${secs}s (75% Max)`;
@@ -308,6 +371,25 @@ export function createTrainingEngine(
             `Enchaîner : ${s1}s - ${s2}s - ${s3}s - ${s4}s`,
             "Tempo Isométrie 1000 : maintien continu",
             "Repos strict : 60s après chaque série",
+          ];
+        }
+      } else if (task.type === "custom") {
+        if (hasMorningSwim) {
+          label = "Gainage Commando — 3 × 45s (Planche Coudes ↔ Bras tendus)";
+          detail = "Passage dynamique coudes à bras tendus en gainage • Repos strict : 60s";
+          steps = [
+            "Position de départ : Planche sur les coudes, corps parfaitement droit",
+            "Monter alternativement main droite puis gauche sur bras tendus, puis redescendre sur les coudes",
+            "Bassin fixe sans balancement, verrouillage abdominal et fessiers",
+            "3 séries de 45 secondes de mouvement continu • Repos strict : 60s",
+          ];
+        } else {
+          label = "Gainage Abdominal Planche — 4 × 60s";
+          detail = "Verrouillage abdominal et fessiers • Tempo Isométrie 1000 • Repos strict : 60s";
+          steps = [
+            "Coudes sous les épaules, corps parfaitement aligné",
+            "4 séries de 60 secondes de maintien statique",
+            "Repos strict : 60s entre les séries",
           ];
         }
       } else if (task.type === "run") {
@@ -363,6 +445,75 @@ export function createTrainingEngine(
       }
       return t;
     });
+
+    const hasStrength = rawTasks.some(
+      (t) => t.type === "pull" || t.type === "chair" || (t.type === "custom" && t.id.includes("core"))
+    );
+
+    if (hasStrength && !isTestMaxDay) {
+      tasks.push(
+        {
+          id: `bras-1-diamant-${dateISO}`,
+          label: "🔥 Bras Explosion [1/4] — Pompes Diamant (3 séries à l'échec)",
+          detail: "Exo 1 (Triceps) • Mains en diamant sous le sternum, coudes serrés • 3 séries à l'échec strict • Repos : 60s",
+          type: "pull",
+          moment: "afternoon",
+          estimatedMinutes: 6,
+          xp: 15,
+          completed: false,
+          steps: [
+            "Consignes : Mains jointes en diamant sous le sternum, coudes collés au corps",
+            "Descente contrôlée et poussée jusqu'à l'extension complète des bras",
+            "3 séries exécutées à l'échec strict • Repos 60s entre les séries",
+          ],
+        },
+        {
+          id: `bras-2-biceps-iso-${dateISO}`,
+          label: "🔥 Bras Explosion [2/4] — Tractions supination serrée (Iso 90° : 3 × 30s)",
+          detail: "Exo 2 (Biceps) • Prise supination serrée • Blocage isométrique à 90° • 3 × 30s maintien max • Repos : 60s",
+          type: "pull",
+          moment: "afternoon",
+          estimatedMinutes: 6,
+          xp: 15,
+          completed: false,
+          steps: [
+            "Consignes : Prise supination serrée (paumes vers vous, mains écartées de 10-15 cm)",
+            "Tirer jusqu'à l'angle de 90° des coudes et bloquer fermement la position",
+            "3 séries de 30 secondes de maintien maximal continu • Repos 60s",
+          ],
+        },
+        {
+          id: `bras-3-triceps-sol-${dateISO}`,
+          label: "🔥 Bras Explosion [3/4] — Extensions triceps au sol (3 séries à l'échec)",
+          detail: "Exo 3 (Triceps) • Coudes posés sur avant-bras -> poussée bras tendus • 3 séries à l'échec strict • Repos : 60s",
+          type: "pull",
+          moment: "afternoon",
+          estimatedMinutes: 6,
+          xp: 15,
+          completed: false,
+          steps: [
+            "Consignes : Avant-bras au sol en planche, coudes posés, mains à plat",
+            "Pousser fort sur les paumes pour décoller les coudes et tendre complètement les bras (Tempo contrôlé)",
+            "3 séries exécutées à l'échec strict • Repos 60s entre les séries",
+          ],
+        },
+        {
+          id: `bras-4-biceps-neg-${dateISO}`,
+          label: "🔥 Bras Explosion [4/4] — Tractions supination négatives 5s (3 × 6-8 reps)",
+          detail: "Exo 4 (Biceps) • Supination serrée • Contrôle strict de la négative (5s descente) • 3 × 6-8 reps à l'échec • Repos : 60s",
+          type: "pull",
+          moment: "afternoon",
+          estimatedMinutes: 6,
+          xp: 15,
+          completed: false,
+          steps: [
+            "Consignes : Saisir la barre en supination serrée, menton au-dessus de la barre (avec saut si besoin)",
+            "Freiner la descente très lentement sur 5 secondes complètes jusqu'aux bras tendus",
+            "3 séries de 6 à 8 répétitions à l'échec strict • Repos 60s",
+          ],
+        }
+      );
+    }
 
     // Appliquer les réagencements / modifications d'activités personnalisés (Intention héritée)
     const swaps = state.days[dateISO]?.swaps ?? {};

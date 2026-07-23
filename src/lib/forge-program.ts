@@ -134,43 +134,32 @@ export function groupTasksByMoment(tasks: ProgramTask[]) {
   };
 }
 
-export function buildDayMission(state: ForgeState, dateISO: string): DayMission {
-  const template = templateForDate(dateISO);
-  const tasks = programTasksForDate(dateISO);
-  const day = state.days[dateISO];
-  const doneCount = tasks.filter((task) => day?.checked[task.id]).length;
-  const totalCount = tasks.length;
-  const completionPct = totalCount ? Math.round((doneCount / totalCount) * 100) : 0;
-  const remainingCount = Math.max(0, totalCount - doneCount);
-  const status: DayStatus =
-    doneCount === 0 ? "a_faire" : remainingCount === 0 ? "termine" : "en_cours";
-  const psychoTask = tasks.find((task) => task.type === "psycho");
-  const psychoDone = psychoTask ? !!day?.checked[psychoTask.id] : false;
+import { createTrainingEngine } from "../engine/trainingEngine";
 
+export function buildDayMission(state: ForgeState, dateISO: string): DayMission {
+  const engine = createTrainingEngine(state, { toggleTask: () => {} }, { todayISO: dateISO });
+  const mission = engine.getMission(dateISO);
   return {
-    iso: dateISO,
-    title: template.title ?? `${template.name} - ${normalizeText(template.objective)}`,
-    dayName: template.name,
-    objective: normalizeText(template.objective),
-    priority: template.priority ?? inferPriority(tasks),
-    tasks,
-    doneCount,
-    remainingCount,
-    totalCount,
-    completionPct,
-    xp: tasks.reduce((sum, task) => sum + (day?.checked[task.id] ? task.xp : 0), 0),
-    estimatedMinutes: tasks.reduce((sum, task) => sum + task.estimatedMinutes, 0),
-    status,
-    psychotechnique: psychoTask
-      ? {
-          label: psychoTask.label,
-          detail: psychoTask.detail ?? "20 min",
-          durationTarget: psychoTask.estimatedMinutes,
-          score: day?.psycho?.score,
-          done: psychoDone,
-        }
-      : undefined,
-    summary: buildSummary(doneCount, totalCount, remainingCount),
+    iso: mission.iso,
+    title: mission.title,
+    dayName: mission.dayName,
+    objective: mission.objective,
+    priority: mission.priority,
+    tasks: mission.tasks.map((task) => ({
+      ...task,
+      moment: task.moment ?? "afternoon",
+      estimatedMinutes: task.estimatedMinutes ?? 15,
+      steps: task.steps ?? [task.label],
+    })),
+    doneCount: mission.doneCount,
+    remainingCount: mission.remainingCount,
+    totalCount: mission.totalCount,
+    completionPct: mission.completionPct,
+    xp: mission.xp,
+    estimatedMinutes: mission.estimatedMinutes,
+    status: mission.status,
+    psychotechnique: mission.psychotechnique,
+    summary: mission.summary,
   };
 }
 

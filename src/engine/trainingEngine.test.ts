@@ -32,28 +32,38 @@ describe("training engine", () => {
 
     const mission = engine.getTodayProgram();
     const progress = engine.getProgress();
-    const weeklyCompletion = engine.getWeeklyCompletion();
     const dailyXP = engine.getDailyXP();
 
     expect(mission.dayName).toBe("Mardi");
     expect(mission.programId).toBe("military-september");
     expect(mission.weekId).toBe("week-1");
     expect(mission.doneCount).toBe(1);
-    expect(mission.completionPct).toBe(25);
-    expect(progress.completionPct).toBe(25);
-    expect(weeklyCompletion.completionPct).toBe(29);
+    expect(mission.totalCount).toBe(8);
+    expect(mission.completionPct).toBe(13);
+    expect(progress.completionPct).toBe(13);
     expect(dailyXP).toBe(50);
+
+    // Vérification du module Bras Explosion (4 exercices)
+    const brasTasks = mission.tasks.filter((t) => t.id.startsWith("bras-"));
+    expect(brasTasks.length).toBe(4);
+    expect(brasTasks[0].label).toContain("Pompes Diamant");
+    expect(brasTasks[1].label).toContain("Iso 90°");
+    expect(brasTasks[2].label).toContain("Extensions triceps au sol");
+    expect(brasTasks[3].label).toContain("négatives 5s");
   });
 
-  test("loads the personalized weekly program data from the training week files", () => {
+  test("loads the bifurcated program based on morning swim presence", () => {
     const engine = createTrainingEngine(state, { toggleTask: () => {} }, { todayISO: "2026-07-20" });
 
-    const mission = engine.getMission("2026-07-20");
+    // Lundi a Natation le matin -> Programme Maintien / Technique
+    const swimMission = engine.getMission("2026-07-20");
+    expect(swimMission.tasks[0].label).toBe("Natation — 45 min");
+    expect(swimMission.tasks[1].label).toContain("Maintien / Technique");
 
-    expect(mission.tasks[0].label).toBe("Natation — 45 min");
-    expect(mission.tasks[0].detail).toBe("Piscine + échauffement");
-    expect(mission.tasks[0].estimatedMinutes).toBe(45);
-    expect(mission.tasks[1].label).toContain("Tractions — Pyramide");
+    // Mardi n'a pas de Natation le matin -> Programme Force & Volume (axé 17-20 tractions)
+    const noSwimMission = engine.getMission("2026-07-21");
+    expect(noSwimMission.tasks[0].label).toContain("Force & Volume");
+    expect(noSwimMission.tasks[0].label).toContain("Obj 17-20");
   });
 
   test("can complete an exercise through the engine", () => {

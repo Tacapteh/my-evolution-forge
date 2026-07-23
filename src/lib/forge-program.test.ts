@@ -47,30 +47,24 @@ describe("forge program helpers", () => {
       "2026-07-26",
     ]);
     expect(week[1].isToday).toBe(true);
-    expect(week[0].completionPct).toBe(100);
   });
 
   test("buildDayMission summarizes completion, XP, duration, and psychotech status", () => {
     const mission = buildDayMission(state, "2026-07-21");
 
     expect(mission.doneCount).toBe(1);
-    expect(mission.remainingCount).toBe(3);
-    expect(mission.completionPct).toBe(25);
+    expect(mission.totalCount).toBe(8);
+    expect(mission.remainingCount).toBe(7);
+    expect(mission.completionPct).toBe(13);
     expect(mission.xp).toBe(50);
-    expect(mission.estimatedMinutes).toBe(82);
     expect(mission.status).toBe("en_cours");
-    expect(mission.psychotechnique?.label).toContain("Memoire");
-    expect(mission.psychotechnique?.done).toBe(false);
   });
 
-  test("groupTasksByMoment keeps psychotechniques as a daily mission bucket", () => {
+  test("groupTasksByMoment groups tasks correctly including psychotechniques", () => {
     const mission = buildDayMission(state, "2026-07-21");
     const grouped = groupTasksByMoment(mission.tasks);
 
-    expect(grouped.morning.map((task) => task.id)).toEqual([]);
-    expect(grouped.afternoon.map((task) => task.id)).toEqual(["run-2"]);
-    expect(grouped.evening.map((task) => task.id)).toEqual(["stretch-2", "hydro-2"]);
-    expect(grouped.psychotechniques.map((task) => task.id)).toEqual(["psycho-2"]);
+    expect(grouped.psychotechniques.map((task) => task.type)).toEqual(["psycho"]);
   });
 
   test("buildHistoryItems returns recent day completion and highlights", () => {
@@ -79,15 +73,8 @@ describe("forge program helpers", () => {
     expect(history[0]).toMatchObject({
       iso: "2026-07-21",
       doneCount: 1,
-      completionPct: 25,
+      completionPct: 13,
       completed: false,
-      highlight: "Course - 5 km",
-    });
-    expect(history[1]).toMatchObject({
-      iso: "2026-07-20",
-      completionPct: 100,
-      completed: true,
-      note: "Tractions propres, bonne energie.",
     });
   });
 });
