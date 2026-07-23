@@ -64,7 +64,7 @@ const TASK_ICONS = {
 };
 
 function ProgrammePage() {
-  const { state, hydrated, toggleTask, startSession, addPerf, setMomentSwap, setTaskRealization } = useForge();
+  const { state, hydrated, toggleTask, startSession, addPerf, setMomentSwap, setTaskSwap, setTaskRealization } = useForge();
   const today = todayISO();
   const [viewMode, setViewMode] = useState<"today" | "week">("today");
   const [anchor, setAnchor] = useState(() => new Date());
@@ -118,23 +118,35 @@ function ProgrammePage() {
     }
   };
 
-  const handleSwapMoment = (date: string, moment: string, task?: any) => {
-    setSwapModalState({ open: true, dateISO: date, moment, task });
+  const handleSwapTask = (date: string, task: any) => {
+    setSwapModalState({ open: true, dateISO: date, moment: task.moment, task });
+  };
+
+  const handleSwapMoment = (date: string, moment: string) => {
+    setSwapModalState({ open: true, dateISO: date, moment, task: null });
   };
 
   const handleSelectSwap = (swapId: string) => {
-    if (!swapModalState.dateISO || !swapModalState.moment) return;
-    setMomentSwap(swapModalState.dateISO, swapModalState.moment, swapId);
+    if (!swapModalState.dateISO) return;
+    if (swapModalState.task?.id) {
+      setTaskSwap(swapModalState.dateISO, swapModalState.task.id, swapId);
+    } else if (swapModalState.moment) {
+      setMomentSwap(swapModalState.dateISO, swapModalState.moment, swapId);
+    }
     toast.success("Exercice remplacé avec succès !", {
-      description: `L'alternative préserve strictement l'intention de la séance et s'adapte à vos Max.`,
+      description: `L'alternative préserve l'intention de la séance et s'adapte à vos Max.`,
     });
   };
 
   const handleResetSwap = () => {
-    if (!swapModalState.dateISO || !swapModalState.moment) return;
-    setMomentSwap(swapModalState.dateISO, swapModalState.moment, "");
+    if (!swapModalState.dateISO) return;
+    if (swapModalState.task?.id) {
+      setTaskSwap(swapModalState.dateISO, swapModalState.task.id, "");
+    } else if (swapModalState.moment) {
+      setMomentSwap(swapModalState.dateISO, swapModalState.moment, "");
+    }
     toast.info("Exercice d'origine restauré.", {
-      description: `La programmation initiale a été rétablie pour ce moment.`,
+      description: `La programmation initiale a été rétablie pour cet exercice.`,
     });
   };
 
@@ -444,6 +456,19 @@ function ProgrammePage() {
                                     </Button>
                                   )}
 
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-6 w-6 text-muted-foreground/60 hover:text-primary hover:bg-primary/10"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleSwapTask(today, task);
+                                    }}
+                                    title="Modifier cet exercice indépendamment"
+                                  >
+                                    <Pencil className="h-3 w-3" />
+                                  </Button>
+
                                   <span
                                     className={cn(
                                       "text-xs font-bold shrink-0",
@@ -663,7 +688,7 @@ function ProgrammePage() {
                                               task.isPenalized
                                                 ? "border-red-500/50 bg-red-500/20 text-red-300 hover:bg-red-500/30"
                                                 : task.actualDistance != null
-                                                ? "border-emerald-500/50 bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30"
+                                                ? "border-emerald-500/50 bg-emerald-500/20 text-emerald-300 hover:emerald-500/30"
                                                 : "text-primary hover:bg-primary/10"
                                             )}
                                             onClick={(e) => {
@@ -678,6 +703,19 @@ function ProgrammePage() {
                                               : `${task.targetDistance}${task.unit}`}
                                           </Button>
                                         )}
+
+                                        <Button
+                                          variant="ghost"
+                                          size="icon"
+                                          className="h-5 w-5 text-muted-foreground/60 hover:text-primary hover:bg-primary/10"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleSwapTask(day.iso, task);
+                                          }}
+                                          title="Modifier cet exercice indépendamment"
+                                        >
+                                          <Pencil className="h-2.5 w-2.5" />
+                                        </Button>
 
                                         <span className={cn(
                                           "text-[10px] font-bold tabular-nums shrink-0 self-center",

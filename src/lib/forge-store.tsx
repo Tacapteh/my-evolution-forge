@@ -98,6 +98,7 @@ interface Ctx {
   setPsycho: (date: string, psycho: DayRecord["psycho"]) => void;
   setHealth: (date: string, health: DayRecord["health"]) => void;
   setMomentSwap: (date: string, moment: string, activityId: string) => void;
+  setTaskSwap: (date: string, taskId: string, activityId: string) => void;
   setTaskRealization: (date: string, taskId: string, realization: TaskRealization) => void;
   addPerf: (entry: Omit<PerfEntry, "id">) => void;
   removePerf: (id: string) => void;
@@ -457,7 +458,29 @@ export function ForgeProvider({ children }: { children: ReactNode }) {
       setMomentSwap: (date, moment, activityId) =>
         setLocalState((prev) => {
           const day = prev.days[date] ?? { checked: {} };
-          const swaps = { ...day.swaps, [moment]: activityId };
+          const swaps = { ...day.swaps };
+          if (activityId) {
+            swaps[moment] = activityId;
+          } else {
+            delete swaps[moment];
+          }
+          return {
+            ...prev,
+            days: {
+              ...prev.days,
+              [date]: { ...day, swaps },
+            },
+          };
+        }),
+      setTaskSwap: (date, taskId, activityId) =>
+        setLocalState((prev) => {
+          const day = prev.days[date] ?? { checked: {} };
+          const swaps = { ...day.swaps };
+          if (activityId) {
+            swaps[taskId] = activityId;
+          } else {
+            delete swaps[taskId];
+          }
           return {
             ...prev,
             days: {

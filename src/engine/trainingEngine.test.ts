@@ -103,4 +103,36 @@ describe("training engine", () => {
     expect(lucTask?.detail).toContain("Cardio haute intensité");
     expect(lucTask?.detail).toContain("changements de direction");
   });
+
+  test("allows per-task independent swapping and forces DUO runs to the evening", () => {
+    const customState: ForgeState = {
+      ...state,
+      days: {
+        "2026-07-21": {
+          checked: {},
+          swaps: {
+            "w1-tue-core": "pompes_diamant", // Remplacer uniquement w1-tue-core (Gainage)
+          },
+        },
+      },
+    };
+
+    const engine = createTrainingEngine(customState, { toggleTask: () => {} }, { todayISO: "2026-07-21" });
+    const mission = engine.getMission("2026-07-21");
+
+    // L'exercice w1-tue-core est remplacé par Pompes Diamant
+    const swappedCoreTask = mission.tasks.find((t) => t.id === "w1-tue-core");
+    expect(swappedCoreTask?.label).toContain("Pompes Diamant");
+    expect(swappedCoreTask?.isSwapped).toBe(true);
+
+    // Les autres exercices du même jour (ex: Tractions w1-tue-pull) restent intacts
+    const pullTask = mission.tasks.find((t) => t.id === "w1-tue-pull");
+    expect(pullTask?.label).toContain("Force & Volume");
+
+    // Course en DUO est systématiquement le soir
+    const duoTask = mission.tasks.find((t) => t.label.toLowerCase().includes("duo"));
+    if (duoTask) {
+      expect(duoTask.moment).toBe("evening");
+    }
+  });
 });

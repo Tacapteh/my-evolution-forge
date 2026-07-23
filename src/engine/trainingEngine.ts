@@ -567,10 +567,24 @@ export function createTrainingEngine(
     const processedMoments = new Set<string>();
 
     for (const t of tasks) {
-      const moment = t.moment;
-      const swapId = swaps[moment];
+      let moment = t.moment;
+      const lowerLabel = String(t.label || "").toLowerCase();
+      if (lowerLabel.includes("duo") || lowerLabel.includes("footing")) {
+        moment = "evening";
+        t.moment = "evening";
+      }
+
+      const taskId = t.id;
+      const swapId = swaps[taskId] ?? swaps[moment];
+
       if (swapId && ACTIVITY_PRESETS[swapId]) {
-        if (!processedMoments.has(moment)) {
+        if (swaps[taskId]) {
+          // Remplacement individuel au niveau de l'exercice
+          finalTasks.push(
+            resolveSmartSwappedTask(t, dateISO, moment, swapId, userMaxPull, userMaxChair, userMaxPush)
+          );
+        } else if (!processedMoments.has(moment)) {
+          // Remplacement global au niveau du moment
           processedMoments.add(moment);
           finalTasks.push(
             resolveSmartSwappedTask(t, dateISO, moment, swapId, userMaxPull, userMaxChair, userMaxPush)
@@ -903,7 +917,7 @@ function resolveSmartSwappedTask(
 
   return {
     ...t,
-    id: `swapped-${dateISO}-${moment}-${swapId}`,
+    id: t.id,
     moment,
     label,
     detail,
@@ -911,6 +925,8 @@ function resolveSmartSwappedTask(
     estimatedMinutes: preset.estimatedMinutes,
     xp: preset.xp,
     steps,
+    isSwapped: true,
+    originalLabel: t.label,
   };
 }
 
