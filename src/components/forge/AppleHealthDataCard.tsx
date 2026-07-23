@@ -16,7 +16,7 @@ import {
 import { useForge, normalizeWorkouts, toISO } from "@/lib/forge-store";
 import { cn } from "@/lib/utils";
 
-export function AppleHealthDataCard({ className }: { className?: string }) {
+export function AppleHealthDataCard({ className, compact = false }: { className?: string; compact?: boolean }) {
   const { state } = useForge();
 
   const healthAnalysis = useMemo(() => {
@@ -118,6 +118,40 @@ export function AppleHealthDataCard({ className }: { className?: string }) {
   const runPct = Math.min(100, Math.round((healthAnalysis.totalRunKm / targetRunKm) * 100));
   const swimPct = Math.min(100, Math.round((healthAnalysis.totalSwimMeters / targetSwimMeters) * 100));
   const stepsPct = Math.min(100, Math.round((healthAnalysis.avgSteps / targetDailySteps) * 100));
+
+  if (compact) {
+    return (
+      <Card className={cn("card-forge p-3 border-primary/20 bg-card/60 backdrop-blur-sm", className)}>
+        <div className="flex flex-wrap items-center justify-between gap-3 text-xs">
+          <div className="flex items-center gap-2">
+            <Heart className="h-4 w-4 text-red-500 animate-pulse" />
+            <span className="font-bold text-foreground">Apple Santé</span>
+            <Badge variant="outline" className="border-primary/30 text-primary text-[9px] px-1 py-0">
+              {healthAnalysis.recordedDaysCount} j sync
+            </Badge>
+          </div>
+          <div className="flex flex-wrap items-center gap-4 text-muted-foreground font-medium">
+            <span className="flex items-center gap-1">
+              <Footprints className="h-3.5 w-3.5 text-emerald-400" />
+              <strong className="text-foreground">{healthAnalysis.totalRunKm}</strong> km
+            </span>
+            <span className="flex items-center gap-1">
+              <Waves className="h-3.5 w-3.5 text-cyan-400" />
+              <strong className="text-foreground">{healthAnalysis.totalSwimKm}</strong> km
+            </span>
+            <span className="flex items-center gap-1">
+              <Flame className="h-3.5 w-3.5 text-amber-400" />
+              <strong className="text-foreground">{healthAnalysis.totalActiveCalories}</strong> kcal
+            </span>
+            <span className="flex items-center gap-1">
+              <Heart className="h-3.5 w-3.5 text-red-400" />
+              <strong className="text-foreground">{healthAnalysis.overallAvgHeartRate || "--"}</strong> bpm
+            </span>
+          </div>
+        </div>
+      </Card>
+    );
+  }
 
   return (
     <Card className={cn("card-forge p-5 md:p-6 border-primary/30 bg-card/80 backdrop-blur-md space-y-6 shadow-md", className)}>

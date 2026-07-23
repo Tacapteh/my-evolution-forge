@@ -184,12 +184,49 @@ const TRAINING_WEEKS = militarySeptemberProgram.weeks;
 const TRAINING_START = new Date("2026-07-20T12:00:00");
 const DAY_LABELS = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
 
-interface EngineDependencies {
-  toggleTask: (date: string, taskId: string) => void;
-}
+export function getUserMaxes(state: ForgeState) {
+  const perfs = state.perf ?? [];
+  const getMax = (type: string, fallback: number) => {
+    const list = perfs.filter((p) => p.type === type).map((p) => p.value);
+    return list.length > 0 ? Math.max(...list) : fallback;
+  };
 
-interface EngineOptions {
-  todayISO?: string;
+  const userMaxPull = getMax("pull", 6);
+  const userMaxPullLSit = getMax("pull_lsit", Math.max(3, Math.round(userMaxPull * 0.50)));
+  const userMaxPullSupineIso = getMax("pull_supine_iso", 30);
+  const userMaxPullSupineNeg = getMax("pull_supine_neg", 8);
+
+  const userMaxPushMilitary = getMax("push_military", Math.max(15, Math.round(userMaxPull * 2.5)));
+  const userMaxPushDiamond = getMax("push_diamond", Math.max(12, Math.round(userMaxPushMilitary * 0.8)));
+  const userMaxPushDeclined = getMax("push_declined", Math.max(12, Math.round(userMaxPushMilitary * 0.85)));
+  const userMaxTriceps = getMax("push_triceps", Math.max(10, Math.round(userMaxPushMilitary * 0.7)));
+
+  const userMaxChair = getMax("chair", 60);
+  const userMaxSquat = getMax("squat", 30);
+  const userMaxLunge = getMax("lunge", 15);
+  const userMaxCalves = getMax("calves", 25);
+
+  const userMaxCommando = getMax("commando", 45);
+  const userMaxLuc = getMax("luc", 7.0);
+  const userMaxVMA = getMax("vma", +(userMaxLuc * 1.5 + 4).toFixed(1));
+
+  return {
+    userMaxPull,
+    userMaxPullLSit,
+    userMaxPullSupineIso,
+    userMaxPullSupineNeg,
+    userMaxPushMilitary,
+    userMaxPushDiamond,
+    userMaxPushDeclined,
+    userMaxTriceps,
+    userMaxChair,
+    userMaxSquat,
+    userMaxLunge,
+    userMaxCalves,
+    userMaxCommando,
+    userMaxLuc,
+    userMaxVMA,
+  };
 }
 
 export function createTrainingEngine(
@@ -205,31 +242,17 @@ export function createTrainingEngine(
     const diffDays = Math.floor((date.getTime() - TRAINING_START.getTime()) / 86400000);
     const weekIndex = Math.max(0, Math.min(TRAINING_WEEKS.length - 1, Math.floor(diffDays / 7)));
     const week = TRAINING_WEEKS[weekIndex] ?? TRAINING_WEEKS[0];
-    return { week, dayIndex };
-  };
-
-  const getProgramDefinition = (dateISO: string) => {
-    const { week, dayIndex } = getTrainingWeek(dateISO);
-    return week.days[dayIndex] ?? week.days[0];
+    return { week, dayIndex, weekIndex };
   };
 
   const buildMission = (dateISO: string): TrainingMission => {
-    const { week, dayIndex } = getTrainingWeek(dateISO);
-    const date = new Date(`${dateISO}T12:00:00`);
-    const diffDays = Math.floor((date.getTime() - TRAINING_START.getTime()) / 86400000);
-    const weekIndex = Math.max(0, Math.min(TRAINING_WEEKS.length - 1, Math.floor(diffDays / 7)));
-
-    const pullPerfs = (state.perf ?? []).filter((p) => p.type === "pull").map((p) => p.value);
-    const userMaxPull = pullPerfs.length > 0 ? Math.max(...pullPerfs) : 6;
-
-    const pushPerfs = (state.perf ?? []).filter((p: any) => p.type === "push").map((p: any) => p.value);
-    const userMaxPush = pushPerfs.length > 0 ? Math.max(...pushPerfs) : Math.max(15, Math.round(userMaxPull * 2.5));
-
-    const chairPerfs = (state.perf ?? []).filter((p) => p.type === "chair").map((p) => p.value);
-    const userMaxChair = chairPerfs.length > 0 ? Math.max(...chairPerfs) : 60;
-
-    const lucPerfs = (state.perf ?? []).filter((p) => p.type === "luc").map((p) => p.value);
-    const userMaxLuc = lucPerfs.length > 0 ? Math.max(...lucPerfs) : 7.0;
+    const { week, dayIndex, weekIndex } = getTrainingWeek(dateISO);
+    
+    const userMaxes = getUserMaxes(state);
+    const userMaxPull = userMaxes.userMaxPull;
+    const userMaxPush = userMaxes.userMaxPushMilitary;
+    const userMaxChair = userMaxes.userMaxChair;
+    const userMaxLuc = userMaxes.userMaxLuc;
 
     const isTestMaxDay = dayIndex === 6 && (weekIndex + 1) % 2 === 0;
 

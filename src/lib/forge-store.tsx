@@ -56,7 +56,27 @@ export interface DayRecord {
 export interface PerfEntry {
   id: string;
   date: string; // ISO
-  type: "pull" | "chair" | "run5" | "run10" | "luc" | "weight" | "hr" | "sleep";
+  type:
+    | "pull"
+    | "pull_lsit"
+    | "pull_supine_iso"
+    | "pull_supine_neg"
+    | "push_military"
+    | "push_diamond"
+    | "push_declined"
+    | "push_triceps"
+    | "chair"
+    | "squat"
+    | "lunge"
+    | "calves"
+    | "commando"
+    | "luc"
+    | "vma"
+    | "run5"
+    | "run10"
+    | "weight"
+    | "hr"
+    | "sleep";
   value: number;
 }
 

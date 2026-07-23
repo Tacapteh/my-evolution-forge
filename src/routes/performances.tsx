@@ -18,13 +18,25 @@ export const Route = createFileRoute("/performances")({
 });
 
 const TYPES = [
-  { v: "pull", l: "Tractions (reps)" },
-  { v: "chair", l: "Chaise (s)" },
+  { v: "pull", l: "Tractions Pronation (reps)" },
+  { v: "pull_lsit", l: "Tractions L-Sit (reps)" },
+  { v: "pull_supine_iso", l: "Supination Iso 90° (s)" },
+  { v: "pull_supine_neg", l: "Supination Négatives (reps)" },
+  { v: "push_military", l: "Pompes Militaires (reps)" },
+  { v: "push_diamond", l: "Pompes Diamant (reps)" },
+  { v: "push_declined", l: "Pompes Déclinées (reps)" },
+  { v: "push_triceps", l: "Extensions Triceps Sol (reps)" },
+  { v: "chair", l: "Chaise au Mur (s)" },
+  { v: "squat", l: "Squats (reps)" },
+  { v: "lunge", l: "Fentes (reps/jambe)" },
+  { v: "calves", l: "Extensions Mollets (reps)" },
+  { v: "commando", l: "Gainage Commando (s)" },
+  { v: "luc", l: "Luc Léger (paliers)" },
+  { v: "vma", l: "VMA estimée (km/h)" },
   { v: "run5", l: "5 km (min)" },
   { v: "run10", l: "10 km (min)" },
-  { v: "luc", l: "Luc Léger (paliers)" },
   { v: "weight", l: "Poids (kg)" },
-  { v: "hr", l: "Fréquence cardiaque" },
+  { v: "hr", l: "Fréquence cardiaque (bpm)" },
   { v: "sleep", l: "Sommeil (h)" },
 ] as const;
 
@@ -47,8 +59,8 @@ function PerformancesPage() {
       <PageHeader title="Performances" subtitle="Historique des records, données réelles et courbes d'évolution." />
 
       <div className="px-4 md:px-8 pb-10 space-y-6">
-        {/* Apple Health Real Data Card */}
-        <AppleHealthDataCard />
+        {/* Apple Health Real Data Card Compact */}
+        <AppleHealthDataCard compact={true} />
 
         {/* Add form */}
         <Card className="card-forge p-5">

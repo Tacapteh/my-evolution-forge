@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { createTrainingEngine } from "./trainingEngine";
+import { createTrainingEngine, getUserMaxes } from "./trainingEngine";
 import type { ForgeState } from "../lib/forge-store";
 
 const state: ForgeState = {
@@ -174,5 +174,31 @@ describe("training engine", () => {
 
     // Le nombre de reps sur Tractions L-Sit est calculé à 50% de userMaxPull (16 * 0.50 = 8)
     expect(lsitTask?.label).toContain("8 reps");
+  });
+
+  test("getUserMaxes correctly derives metrics for all catalog exercises", () => {
+    const fullPerfState: ForgeState = {
+      ...state,
+      perf: [
+        { id: "p1", type: "pull", value: 18, date: "2026-07-15" },
+        { id: "sq1", type: "squat", value: 40, date: "2026-07-15" },
+        { id: "cm1", type: "commando", value: 60, date: "2026-07-15" },
+        { id: "pd1", type: "push_diamond", value: 20, date: "2026-07-15" },
+      ],
+    };
+
+    const maxes = getUserMaxes(fullPerfState);
+    expect(maxes.userMaxPull).toBe(18);
+    expect(maxes.userMaxSquat).toBe(40);
+    expect(maxes.userMaxCommando).toBe(60);
+    expect(maxes.userMaxPushDiamond).toBe(20);
+
+    // Vérifier que le jour de natation génère le gainage dynamique basé sur 70% de userMaxCommando=60 (42s)
+    const engine = createTrainingEngine(fullPerfState, { toggleTask: () => {} }, { todayISO: "2026-07-20" });
+    const mission = engine.getMission("2026-07-20");
+    const commandoTask = mission.tasks.find((t) => t.id.startsWith("leg-3-gainage"));
+    if (commandoTask) {
+      expect(commandoTask.detail).toContain("42s");
+    }
   });
 });

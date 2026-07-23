@@ -49,9 +49,6 @@ function ProgressionPage() {
           </Card>
         </div>
 
-        {/* Section compacte Données Réelles Apple Santé */}
-        <AppleHealthDataCard />
-
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {cards.map((card) => {
             const pct = Math.min(100, (card.cur / card.target) * 100);
