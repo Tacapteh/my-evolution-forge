@@ -38,9 +38,9 @@ describe("training engine", () => {
     expect(mission.programId).toBe("military-september");
     expect(mission.weekId).toBe("week-1");
     expect(mission.doneCount).toBe(1);
-    expect(mission.totalCount).toBe(8);
-    expect(mission.completionPct).toBe(13);
-    expect(progress.completionPct).toBe(13);
+    expect(mission.totalCount).toBe(7);
+    expect(mission.completionPct).toBe(14);
+    expect(progress.completionPct).toBe(14);
     expect(dailyXP).toBe(50);
 
     // Vérification du module Bras Explosion (4 exercices)
@@ -66,10 +66,9 @@ describe("training engine", () => {
     expect(swimBrasTasks[0].label).toContain("RIR 2-3");
     expect(swimBrasTasks[0].detail).toContain("Régénération post-natation");
 
-    // Mardi n'a pas de Natation le matin -> Programme Force & Volume + 🔥 Bras Explosion (à l'échec)
+    // Mardi n'a pas de Natation le matin -> Programme Gainage + Course + 🔥 Bras Explosion (à l'échec)
     const noSwimMission = engine.getMission("2026-07-21");
-    expect(noSwimMission.tasks[0].label).toContain("Force & Volume");
-    expect(noSwimMission.tasks[0].label).toContain("Obj 17-20");
+    expect(noSwimMission.tasks[0].label).toContain("Gainage");
 
     const noSwimBrasTasks = noSwimMission.tasks.filter((t) => t.id.startsWith("bras-"));
     expect(noSwimBrasTasks.length).toBe(4);
@@ -101,7 +100,7 @@ describe("training engine", () => {
     const pullTask = mission.tasks.find((t) => t.type === "pull");
     expect(pullTask?.moment).toBe("morning");
     expect(pullTask?.label).toContain("Pré-activation");
-    expect(pullTask?.detail).toContain("fraîcheur des jambes");
+    expect(pullTask?.detail).toContain("fraîcheur");
 
     const chairTask = mission.tasks.find((t) => t.type === "chair");
     expect(chairTask?.moment).toBe("morning");
@@ -136,10 +135,6 @@ describe("training engine", () => {
     expect(swappedCoreTask?.label).toContain("Pompes Diamant");
     expect(swappedCoreTask?.isSwapped).toBe(true);
 
-    // Les autres exercices du même jour (ex: Tractions w1-tue-pull) restent intacts
-    const pullTask = mission.tasks.find((t) => t.id === "w1-tue-pull");
-    expect(pullTask?.label).toContain("Force & Volume");
-
     // Course en DUO est systématiquement le soir
     const duoTask = mission.tasks.find((t) => t.label.toLowerCase().includes("duo"));
     if (duoTask) {
@@ -155,24 +150,24 @@ describe("training engine", () => {
         { id: "c1", type: "chair", value: 120, date: "2026-07-15" },
       ],
       days: {
-        "2026-07-21": {
+        "2026-07-22": {
           checked: {},
           swaps: {
-            "w1-tue-pull": "tractions_lsit",
+            "w1-wed-pull": "tractions_lsit",
           },
         },
       },
     };
 
-    const engine = createTrainingEngine(customState, { toggleTask: () => {} }, { todayISO: "2026-07-21" });
-    const mission = engine.getMission("2026-07-21");
+    const engine = createTrainingEngine(customState, { toggleTask: () => {} }, { todayISO: "2026-07-22" });
+    const mission = engine.getMission("2026-07-22");
 
-    const lsitTask = mission.tasks.find((t) => t.id === "w1-tue-pull");
+    const lsitTask = mission.tasks.find((t) => t.id === "w1-wed-pull");
     expect(lsitTask?.label).toContain("Tractions L-Sit");
     expect(lsitTask?.steps.some((s) => s.toLowerCase().includes("jambes tendues"))).toBe(true);
     expect(lsitTask?.steps.some((s) => s.includes("Tuck L-Sit"))).toBe(true);
 
-    // Le nombre de reps sur Tractions L-Sit est calculé à 60% de userMaxPullLSit (8 * 0.60 = 5)
+    // Le nombre de reps sur Tractions L-Sit est calculé à 65% de userMaxPullLSit (8 * 0.65 = 5)
     expect(lsitTask?.label).toContain("5 reps");
   });
 
@@ -210,23 +205,23 @@ describe("training engine", () => {
         { id: "p1", type: "pull", value: 16, date: "2026-07-15" },
       ],
       days: {
-        "2026-07-21": {
+        "2026-07-20": {
           checked: {},
           swaps: {
-            "w1-tue-pull": "bras_triceps_sol", // Remplacer l'exercice principal par un exercice du module finisher
+            "w1-mon-pull": "bras_triceps_sol", // Remplacer l'exercice principal par un exercice du module finisher
           },
         },
       },
     };
 
-    const engine = createTrainingEngine(customState, { toggleTask: () => {} }, { todayISO: "2026-07-21" });
-    const mission = engine.getMission("2026-07-21");
+    const engine = createTrainingEngine(customState, { toggleTask: () => {} }, { todayISO: "2026-07-20" });
+    const mission = engine.getMission("2026-07-20");
 
-    const swappedTask = mission.tasks.find((t) => t.id === "w1-tue-pull");
+    const swappedTask = mission.tasks.find((t) => t.id === "w1-mon-pull");
     expect(swappedTask?.label).toContain("Extensions Triceps au Sol");
-    // Conservation de la structure 5 séries réparties du bloc principal
-    expect(swappedTask?.label).toContain("5 ×");
-    // Calcul basé sur userMaxTriceps (14) avec compensation isolation (+15% volume => 14 * 0.60 * 1.15 = 10 reps)
+    // Conservation de la structure 4 séries droites du bloc principal
+    expect(swappedTask?.label).toContain("4 ×");
+    // Calcul basé sur userMaxTriceps (14) avec compensation isolation (+15% volume => 14 * 0.65 * 1.15 = 10 reps)
     expect(swappedTask?.label).toContain("10 reps");
     expect(swappedTask?.detail).toContain("compensation isolation");
     expect(swappedTask?.isSwapped).toBe(true);

@@ -53,9 +53,9 @@ describe("forge program helpers", () => {
     const mission = buildDayMission(state, "2026-07-21");
 
     expect(mission.doneCount).toBe(1);
-    expect(mission.totalCount).toBe(8);
-    expect(mission.remainingCount).toBe(7);
-    expect(mission.completionPct).toBe(13);
+    expect(mission.totalCount).toBe(7);
+    expect(mission.remainingCount).toBe(6);
+    expect(mission.completionPct).toBe(14);
     expect(mission.xp).toBe(50);
     expect(mission.status).toBe("en_cours");
   });
@@ -73,7 +73,7 @@ describe("forge program helpers", () => {
     expect(history[0]).toMatchObject({
       iso: "2026-07-21",
       doneCount: 1,
-      completionPct: 13,
+      completionPct: 14,
       completed: false,
     });
   });

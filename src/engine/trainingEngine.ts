@@ -320,75 +320,45 @@ export function createTrainingEngine(
       if (task.type === "pull") {
         if (isTestMaxDay) {
           label = "⚠️ TEST MAX TRACTIONS (Obligatoire — Cycle 2 semaines)";
-          detail = `1 série à l'échec strict • Tempo 2010 • Repos strict 120s • Saisis ton score pour adapter les 2 prochaines semaines (Max: ${userMaxPull} / Obj: 17-20)`;
+          detail = `1 série à l'échec strict • Tempo 2010 • Repos strict 120s • Saisis ton score pour adapter les séances futures (Max: ${userMaxPull} / Obj: 17-20)`;
           steps = ["Échauffement haut du corps et mobilité des épaules", "1 série unique à l'échec strict (Tempo 2010)", "Saisir le score dans l'application"];
-        } else if (hasMorningSwim) {
-          // Natation détectée -> Programme Maintien / Technique (50-60% Max)
-          const reps = Math.max(3, Math.round(userMaxPull * 0.55));
-          label = `Tractions (Maintien / Technique) — 5 × ${reps} reps (50-60% Max)`;
-          detail = `Programme Maintien & Technique (post-natation, moins taxant) • 50-60% du Max (${userMaxPull}) • Tempo 2010 • Repos strict : 90s`;
-          steps = [
-            "Échauffement articulaire et mobilité des épaules post-natation",
-            `5 séries de ${reps} tractions sous-maximales (50-60% du max ${userMaxPull})`,
-            "Tempo 2010 : 2s descente freinée, 1s montée contrôlée, sans chercher l'échec",
-            "Repos strict : 90s entre les séries",
-          ];
-        } else if (dayIndex === 0) {
-          // Sans Natation -> Lundi : Pyramide lourde axée 17-20 tractions
-          const peak = Math.max(4, Math.min(10, Math.round(userMaxPull * 0.85)));
-          const p1 = 1;
-          const p2 = Math.max(2, Math.round(peak * 0.4));
-          const p3 = Math.max(3, Math.round(peak * 0.7));
-          const p4 = peak;
-          label = `Tractions — Pyramide Force & Volume : ${p1}-${p2}-${p3}-${p4}-${p3}-${p2}-${p1} reps (Obj 17-20)`;
-          detail = `Format Pyramidal Lourd (Pic à ${p4} reps) • Axé sur l'objectif 17-20 tractions (Max: ${userMaxPull}) • Tempo 2010 • Repos strict : 90s`;
-          steps = [
-            "Échauffement haut du corps et mobilité des épaules",
-            `Enchaîner la pyramide lourde : ${p1}-${p2}-${p3}-${p4}-${p3}-${p2}-${p1} reps`,
-            "Tempo 2010 : 2s descente freinée, 1s montée explosive menton par-dessus la barre",
-            "Repos strict : 90s entre chaque palier",
-          ];
-        } else if (dayIndex === 1) {
-          const reps = Math.max(3, Math.round(userMaxPull * 0.70));
-          label = `Tractions — Force & Volume : 5 × ${reps} reps (Obj 17-20)`;
-          detail = `5 séries lourdes (70% Max=${userMaxPull}) • Axé sur la progression 17-20 tractions • Tempo 2010 • Repos strict : 90s`;
-          steps = [
-            "Échauffement haut du corps",
-            `5 séries de ${reps} tractions lourdes et explosives`,
-            "Tempo 2010 : 2s descente, 1s montée menton au-dessus de la barre",
-            "Repos strict : 90s entre les séries",
-          ];
-        } else if (dayIndex === 2) {
-          const r1 = Math.max(3, userMaxPull);
-          const r2 = Math.max(2, userMaxPull - 1);
-          const r3 = Math.max(2, userMaxPull - 2);
-          const r4 = Math.max(1, userMaxPull - 3);
-          const r5 = Math.max(1, userMaxPull - 4);
-          label = `Tractions — Dégressif Lourd : ${r1}-${r2}-${r3}-${r4}-${r5} reps (Obj 17-20)`;
-          detail = `Format Dégressif d'épuisement (Max=${userMaxPull}) • Axé sur l'objectif 17-20 tractions • Tempo 2010 • Repos strict : 90s`;
-          steps = [
-            "Échauffement dos & biceps",
-            `Enchaîner : ${r1}-${r2}-${r3}-${r4}-${r5} reps`,
-            "Tempo 2010 : poussée explosive, retour contrôlé 2s",
-            "Repos strict : 90s après chaque série",
-          ];
         } else if (dayIndex === 3) {
-          label = "Tractions (Pré-activation) — 4 × 3-4 reps (Sous-maximales)";
-          detail = `Pré-activation du haut du corps sans échec • Conserver la fraîcheur des jambes avant le Luc Léger de l'après-midi • Repos : 90s`;
+          label = "Tractions (Pré-activation) — 4 × 3 reps (Sous-maximales)";
+          detail = `Pré-activation du haut du corps sans échec (RIR 3-4) • Conserver la fraîcheur avant le cardio de l'après-midi • Repos : 90s`;
           steps = [
             "Échauffement articulaire et mobilité des épaules",
-            "4 séries de 3 à 4 tractions sous-maximales contrôlées (Tempo 2010)",
-            "Ne pas aller à l'échec : pré-activation pour préserver les jambes avant le Luc Léger de l'après-midi",
+            "4 séries de 3 à 4 tractions sous-maximales contrôlées (Tempo 2010, RIR 3-4)",
+            "Ne pas aller à l'échec : pré-activation pure",
+            "Repos strict : 90s entre les séries",
+          ];
+        } else if (hasMorningSwim) {
+          const reps = Math.max(3, Math.round(userMaxPull * 0.55));
+          label = `Tractions (Maintien / Technique) — 4 × ${reps} reps (RIR 2-3)`;
+          detail = `Programme Maintien & Technique (post-natation, RIR 2-3) • 50-60% du Max (${userMaxPull}) • Tempo 2010 • Repos strict : 90s`;
+          steps = [
+            "Échauffement articulaire et mobilité des épaules post-natation",
+            `4 séries droites de ${reps} tractions sous-maximales (RIR 2-3)`,
+            "Tempo 2010 : 2s descente freinée, 1s montée contrôlée",
             "Repos strict : 90s entre les séries",
           ];
         } else {
-          const reps = Math.max(3, Math.round(userMaxPull * 0.65));
-          label = `Tractions — Force & Volume : 5 × ${reps} reps (Obj 17-20)`;
-          detail = `Format Force & Volume (65% Max=${userMaxPull}) • Tempo 2010 • Repos strict : 90s`;
+          // Séries Droites (RIR 1-2) pour l'entraînement principal (Lundi, Mercredi, Vendredi)
+          let numSets = 4;
+          let targetReps = Math.max(3, Math.round(userMaxPull * 0.70));
+
+          const matchSetsReps = task.label.match(/(\d+)\s*[\timesx×]\s*(\d+)/i);
+          if (matchSetsReps) {
+            numSets = parseInt(matchSetsReps[1], 10);
+            targetReps = Math.max(targetReps, parseInt(matchSetsReps[2], 10));
+          }
+
+          label = `Tractions (Séries Droites RIR 1-2) — ${numSets} × ${targetReps} reps`;
+          detail = `${numSets} séries droites de ${targetReps} reps (RIR 1-2 • Max: ${userMaxPull}) • Tempo 2010 • Repos strict : 90s • Test RIR sur dernière série`;
           steps = [
-            "Échauffement propre",
-            `5 séries de ${reps} tractions régulières`,
-            "Tempo 2010 : forme irréprochable",
+            "Échauffement haut du corps et mobilité des épaules",
+            `${numSets} séries droites de ${targetReps} reps irréprochables (Tempo 2010)`,
+            "Conserver 1 à 2 répétitions en réserve (RIR 1-2) sur chaque série",
+            "Sur la dernière série : valider les reps et enregistrer si nouveau max",
             "Repos strict : 90s entre les séries",
           ];
         }
@@ -397,58 +367,33 @@ export function createTrainingEngine(
           label = "⚠️ TEST MAX CHAISE (Obligatoire — Cycle 2 semaines)";
           detail = `1 série max à 90° jusqu'à l'échec strict • Tempo Isométrie 1000 • Repos 120s • (Record: ${userMaxChair}s / Obj: 168s)`;
           steps = ["Dos collé au mur à 90°", "Chronométrer jusqu'à l'échec strict", "Saisir le temps en secondes dans l'application"];
-        } else if (hasMorningSwim) {
-          label = "Chaise — 3 × 1 min (60s)";
-          detail = "3 séries de 1 minute (60s) à 90° contre le mur • Tempo Isométrie 1000 • Repos strict : 60s";
-          steps = [
-            "Dos plaqué au mur, cuisses parallèles au sol à 90° exacts",
-            "3 séries de 60 secondes de maintien statique continu",
-            "Tempo Isométrie 1000 : verrouillage postural continu",
-            "Repos strict : 60s entre les séries",
-          ];
         } else if (dayIndex === 3) {
           label = "Pré-activation Bas du corps & Stabilité — Chaise 3 × 30s";
-          detail = "Activation bas du corps légère sans charge lourde et sans échec • Préserve la fraîcheur des jambes avant le Luc Léger de l'après-midi • Repos : 60s";
+          detail = "Activation bas du corps légère sans charge lourde et sans échec • Préserve la fraîcheur des jambes avant le cardio • Repos : 60s";
           steps = [
             "Placement à 90° contre le mur sans charge lourde",
             "3 séries de 30 secondes de maintien statique léger (sans échec)",
             "Mobilité des chevilles et éveil neuromusculaire des fessiers",
             "Repos strict : 60s entre les séries",
           ];
-        } else if (dayIndex === 0 || dayIndex === 2) {
-          const secs = Math.max(30, Math.round(userMaxChair * 0.75));
-          label = `Chaise — Séries réparties : 4 × ${secs}s (75% Max)`;
-          detail = `4 séries isométriques à 90° • Tempo Isométrie 1000 • Repos strict : 60s`;
+        } else {
+          // Séries Droites Isométrie Chaise (Lundi, Mercredi, Vendredi)
+          let numSets = 3;
+          let targetSecs = Math.max(30, Math.round(userMaxChair * 0.75));
+
+          const matchChairSecs = task.label.match(/(\d+)\s*[\timesx×]\s*(\d+)\s*s/i);
+          if (matchChairSecs) {
+            numSets = parseInt(matchChairSecs[1], 10);
+            targetSecs = Math.max(targetSecs, parseInt(matchChairSecs[2], 10));
+          }
+
+          label = `Chaise Isométrique — ${numSets} × ${targetSecs} s`;
+          detail = `${numSets} séries droites de ${targetSecs}s à 90° (Record: ${userMaxChair}s) • Tempo Isométrie 1000 • Repos strict : 60s`;
           steps = [
             "Dos bien à plat contre le mur, genoux à 90° exacts",
-            `4 séries de ${secs} secondes de maintien`,
-            "Tempo Isométrie 1000 : maintien continu",
+            `${numSets} séries de ${targetSecs} secondes de maintien statique continu`,
+            "Tempo Isométrie 1000 : verrouillage postural continu",
             "Repos strict : 60s entre les séries",
-          ];
-        } else if (dayIndex === 1 || dayIndex === 5) {
-          const c1 = Math.max(20, Math.round(userMaxChair * 0.60));
-          const c2 = Math.max(30, Math.round(userMaxChair * 0.80));
-          const c3 = Math.max(35, Math.round(userMaxChair * 0.95));
-          label = `Chaise — Pyramide : ${c1}s - ${c2}s - ${c3}s - ${c2}s - ${c1}s`;
-          detail = `Format Pyramidal (Pic à ${c3}s) • Tempo Isométrie 1000 • Repos strict : 60s`;
-          steps = [
-            "Placement à 90° contre le mur",
-            `Séries pyramidales : ${c1}s - ${c2}s - ${c3}s - ${c2}s - ${c1}s`,
-            "Tempo Isométrie 1000 : verrouillage postural",
-            "Repos strict : 60s entre chaque palier",
-          ];
-        } else {
-          const s1 = Math.max(25, userMaxChair - 10);
-          const s2 = Math.max(20, userMaxChair - 20);
-          const s3 = Math.max(15, userMaxChair - 30);
-          const s4 = Math.max(10, userMaxChair - 40);
-          label = `Chaise — Dégressif : ${s1}s - ${s2}s - ${s3}s - ${s4}s`;
-          detail = `Format Dégressif d'épuisement isométrique • Tempo Isométrie 1000 • Repos strict : 60s`;
-          steps = [
-            "Posture 90° contre le mur",
-            `Enchaîner : ${s1}s - ${s2}s - ${s3}s - ${s4}s`,
-            "Tempo Isométrie 1000 : maintien continu",
-            "Repos strict : 60s après chaque série",
           ];
         }
       } else if (task.type === "custom") {
@@ -962,51 +907,14 @@ function resolveSmartSwappedTask(
 
   if (isIso || preset.type === "chair") {
     const submaxSecs = Math.max(25, Math.round(targetMax * 0.70 * compensationFactor));
-    const c1 = Math.max(15, Math.round(targetMax * 0.45 * compensationFactor));
-    const c2 = Math.max(25, Math.round(targetMax * 0.70 * compensationFactor));
-    const c3 = Math.max(35, Math.round(targetMax * 0.90 * compensationFactor));
-    const pyramidStr = `${c1}s - ${c2}s - ${c3}s - ${c2}s - ${c1}s`;
-    const degressiveStr = `${Math.round(targetMax * 0.8 * compensationFactor)}s - ${Math.round(targetMax * 0.65 * compensationFactor)}s - ${Math.round(targetMax * 0.5 * compensationFactor)}s`;
-
-    if (isPyramid) {
-      label = `${preset.label} — Pyramide : ${pyramidStr}`;
-      detail = `Format Pyramidal (Pic à ${c3}s, Max=${targetMax}s) • Tempo Isométrie 1000 • Repos strict : 60s`;
-      steps = [...preset.steps, `Pyramide statique : ${pyramidStr}`, "Repos strict : 60s entre les paliers"];
-    } else if (isDegressive) {
-      label = `${preset.label} — Dégressif : ${degressiveStr}`;
-      detail = `Format Dégressif d'épuisement (Max=${targetMax}s) • Repos strict : 60s`;
-      steps = [...preset.steps, `Enchaîner les paliers dégressifs : ${degressiveStr}`, "Repos strict : 60s"];
-    } else {
-      label = `${preset.label} — Séries réparties : 4 × ${submaxSecs}s`;
-      detail = `4 séries (70% Max=${targetMax}s${compensationFactor > 1 ? " + compensation isolation" : ""}) • Repos strict : 60s`;
-      steps = [...preset.steps, `4 séries de ${submaxSecs} secondes`, "Repos strict : 60s entre les séries"];
-    }
-  } else if (isPyramid) {
-    const peak = Math.max(3, Math.round(targetMax * 0.40 * compensationFactor));
-    const p1 = Math.max(1, Math.round(peak * 0.25));
-    const p2 = Math.max(2, Math.round(peak * 0.50));
-    const p3 = Math.max(3, Math.round(peak * 0.75));
-    const p4 = peak;
-    const pyramidStr = `${p1}-${p2}-${p3}-${p4}-${p3}-${p2}-${p1}`;
-
-    label = `${preset.label} — Pyramide : ${pyramidStr} reps`;
-    detail = `Format Pyramidal (Pic à ${p4} reps, Max=${targetMax}) • Tempo 2010 • Repos : 90s`;
-    steps = [...preset.steps, `Pyramide de reps : ${pyramidStr}`, "Tempo 2010 • Repos strict : 90s entre les paliers"];
-  } else if (isDegressive) {
-    const d1 = Math.round(targetMax * 0.65 * compensationFactor);
-    const d2 = Math.round(targetMax * 0.55 * compensationFactor);
-    const d3 = Math.round(targetMax * 0.45 * compensationFactor);
-    const d4 = Math.round(targetMax * 0.35 * compensationFactor);
-    const degressiveStr = `${d1}-${d2}-${d3}-${d4}`;
-
-    label = `${preset.label} — Dégressif : ${degressiveStr} reps`;
-    detail = `Format Dégressif d'épuisement (Max=${targetMax}) • Tempo 2010 • Repos : 90s`;
-    steps = [...preset.steps, `Séries dégressives : ${degressiveStr} reps`, "Tempo 2010 • Repos strict : 90s"];
+    label = `${preset.label} — Séries Droites : 4 × ${submaxSecs}s`;
+    detail = `4 séries droites (70% Max=${targetMax}s${compensationFactor > 1 ? " + compensation isolation" : ""}) • Repos strict : 60s`;
+    steps = [...preset.steps, `4 séries droites de ${submaxSecs} secondes`, "Repos strict : 60s entre les séries"];
   } else {
-    const submaxReps = Math.max(3, Math.round(targetMax * 0.60 * compensationFactor));
-    label = `${preset.label} — Séries réparties : 5 × ${submaxReps} reps`;
-    detail = `5 séries (60% Max=${targetMax}${compensationFactor > 1 ? " + compensation isolation" : ""}) • Tempo 2010 • Repos : 90s`;
-    steps = [...preset.steps, `5 séries de ${submaxReps} répétitions`, "Tempo 2010 • Repos strict : 90s entre les séries"];
+    const submaxReps = Math.max(3, Math.round(targetMax * 0.65 * compensationFactor));
+    label = `${preset.label} — Séries Droites (RIR 1-2) : 4 × ${submaxReps} reps`;
+    detail = `4 séries droites (65% Max=${targetMax}${compensationFactor > 1 ? " + compensation isolation" : ""}) • Tempo 2010 • Repos : 90s`;
+    steps = [...preset.steps, `4 séries droites de ${submaxReps} répétitions (RIR 1-2)`, "Tempo 2010 • Repos strict : 90s entre les séries"];
   }
 
   return {

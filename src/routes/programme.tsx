@@ -213,28 +213,36 @@ function ProgrammePage() {
         duration: 2000,
       });
 
-      if (task.label.includes("TEST MAX")) {
+      if (task.label.includes("TEST MAX") || task.type === "pull" || task.type === "chair") {
         setTimeout(() => {
-          if (task.label.includes("TRACTIONS")) {
-            const input = window.prompt("Bravo pour ton Test Max Tractions ! Combien de tractions as-tu réalisées ?", "8");
+          if (task.type === "pull" || task.label.includes("TRACTIONS")) {
+            const currentMax = engine.getUserMaxes?.()?.userMaxPull ?? 6;
+            const input = window.prompt(
+              `Validation Tractions (RIR 1-2) — Combien de tractions as-tu réalisées sur la dernière série ?\n(Max actuel : ${currentMax} reps)`,
+              String(currentMax)
+            );
             if (input) {
               const val = parseInt(input, 10);
-              if (!isNaN(val) && val > 0) {
+              if (!isNaN(val) && val > currentMax) {
                 addPerf({ type: "pull", value: val, date: iso });
-                toast.success(`Nouveau Max enregistré : ${val} tractions !`, {
-                  description: "Tes séances de tractions pour les 2 prochaines semaines ont été adaptées.",
+                toast.success(`🎉 Nouveau Max Tractions enregistré : ${val} reps !`, {
+                  description: "Les cibles et volumes des séances suivantes ont été recalculés automatiquement.",
                   duration: 4000,
                 });
               }
             }
-          } else if (task.label.includes("CHAISE")) {
-            const input = window.prompt("Bravo pour ton Test Max Chaise ! Combien de secondes as-tu tenues à 90° ?", "90");
+          } else if (task.type === "chair" || task.label.includes("CHAISE")) {
+            const currentMax = engine.getUserMaxes?.()?.userMaxChair ?? 60;
+            const input = window.prompt(
+              `Validation Chaise Isométrique — Combien de secondes as-tu tenues sur la dernière série ?\n(Record actuel : ${currentMax}s)`,
+              String(currentMax)
+            );
             if (input) {
               const val = parseInt(input, 10);
-              if (!isNaN(val) && val > 0) {
+              if (!isNaN(val) && val > currentMax) {
                 addPerf({ type: "chair", value: val, date: iso });
-                toast.success(`Nouveau Record Chaise enregistré : ${val}s !`, {
-                  description: "Tes séries de chaise pour les 2 prochaines semaines ont été adaptées.",
+                toast.success(`🎉 Nouveau Record Chaise enregistré : ${val}s !`, {
+                  description: "Les cibles et volumes des séances suivantes ont été recalculés automatiquement.",
                   duration: 4000,
                 });
               }
