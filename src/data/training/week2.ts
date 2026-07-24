@@ -63,7 +63,6 @@ export const week2: TrainingWeekDefinition = {
         { id: "w2-fri-swim", label: "Natation — 45 min", type: "swim", moment: "morning", detail: "Récupération active", estimatedMinutes: 45, xp: 35, completed: false },
         { id: "w2-fri-pull", label: "Tractions (Séries Droites RIR 1-2) — 4 × 5 reps", type: "pull", moment: "morning", detail: "4 séries droites • RIR 1-2 • Repos strict 90s • Test RIR sur dernière série", estimatedMinutes: 15, xp: 25, completed: false },
         { id: "w2-fri-chair", label: "Chaise Isométrique — 3 × 60 s", type: "chair", moment: "morning", detail: "Maintien statique à 90° • Repos 60s", estimatedMinutes: 10, xp: 15, completed: false },
-        { id: "w2-fri-run", label: "Course en duo — footing récupération 4-5 km", type: "run", moment: "evening", detail: "Allure souple", estimatedMinutes: 35, xp: 50, completed: false },
         { id: "w2-fri-psycho", label: "Psychotechnique — Orientation spatiale", type: "psycho", moment: "psychotechniques", detail: "30-45 min", estimatedMinutes: 35, xp: 20, completed: false },
       ],
     },

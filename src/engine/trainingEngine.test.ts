@@ -38,42 +38,30 @@ describe("training engine", () => {
     expect(mission.programId).toBe("military-september");
     expect(mission.weekId).toBe("week-1");
     expect(mission.doneCount).toBe(1);
-    expect(mission.totalCount).toBe(7);
-    expect(mission.completionPct).toBe(14);
-    expect(progress.completionPct).toBe(14);
-    expect(dailyXP).toBe(50);
+    expect(mission.totalCount).toBe(3);
+    expect(mission.completionPct).toBe(33);
+    expect(progress.completionPct).toBe(33);
 
-    // Vérification du module Bras Explosion (4 exercices)
+    // Vérification de la suppression stricte de Bras Explosion
     const brasTasks = mission.tasks.filter((t) => t.id.startsWith("bras-"));
-    expect(brasTasks.length).toBe(4);
-    expect(brasTasks[0].label).toContain("Pompes Diamant");
-    expect(brasTasks[1].label).toContain("Iso 90°");
-    expect(brasTasks[2].label).toContain("Extensions triceps au sol");
-    expect(brasTasks[3].label).toContain("négatives 5s");
+    expect(brasTasks.length).toBe(0);
   });
 
-  test("loads the bifurcated program based on morning swim presence", () => {
-    const engine = createTrainingEngine(state, { toggleTask: () => {} }, { todayISO: "2026-07-20" });
+  test("loads swim day program with strict discipline isolation (no runs, no secondary arm modules)", () => {
+    const engine = createTrainingEngine(state, { toggleTask: () => {} }, { todayISO: "2026-07-24" });
 
-    // Lundi a Natation le matin -> Programme Maintien / Technique + Bras Explosion (Régénération / Volume doux)
-    const swimMission = engine.getMission("2026-07-20");
-    expect(swimMission.tasks[0].label).toBe("Natation — 45 min");
-    expect(swimMission.tasks[1].label).toContain("Maintien / Technique");
+    // 2026-07-24 est un Vendredi (Natation le matin) -> Seulement Swim + Pull + Chair + Psycho (Aucune course)
+    const friMission = engine.getMission("2026-07-24");
+    expect(friMission.tasks[0].label).toBe("Natation — 45 min");
+    expect(friMission.tasks.some((t) => t.type === "pull")).toBe(true);
+    expect(friMission.tasks.some((t) => t.type === "chair")).toBe(true);
 
-    const swimBrasTasks = swimMission.tasks.filter((t) => t.id.startsWith("bras-"));
-    expect(swimBrasTasks.length).toBe(4);
-    expect(swimBrasTasks[0].label).toContain("Régénération / Volume doux");
-    expect(swimBrasTasks[0].label).toContain("RIR 2-3");
-    expect(swimBrasTasks[0].detail).toContain("Régénération post-natation");
+    // Aucune course à pied et aucun exercice bras secondaire ne doit être présent
+    const runTasks = friMission.tasks.filter((t) => t.type === "run");
+    expect(runTasks.length).toBe(0);
 
-    // Mardi n'a pas de Natation le matin -> Programme Gainage + Course + 🔥 Bras Explosion (à l'échec)
-    const noSwimMission = engine.getMission("2026-07-21");
-    expect(noSwimMission.tasks[0].label).toContain("Gainage");
-
-    const noSwimBrasTasks = noSwimMission.tasks.filter((t) => t.id.startsWith("bras-"));
-    expect(noSwimBrasTasks.length).toBe(4);
-    expect(noSwimBrasTasks[0].label).toContain("🔥 Bras Explosion");
-    expect(noSwimBrasTasks[0].label).toContain("à l'échec");
+    const brasTasks = friMission.tasks.filter((t) => t.id.startsWith("bras-"));
+    expect(brasTasks.length).toBe(0);
   });
 
   test("can complete an exercise through the engine", () => {

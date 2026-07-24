@@ -61,7 +61,6 @@ export const week8: TrainingWeekDefinition = {
         { id: "w8-fri-swim", label: "Natation — 45 min", type: "swim", moment: "morning", detail: "Récupération active", estimatedMinutes: 45, xp: 35, completed: false },
         { id: "w8-fri-pull", label: "Tractions (Affûtage -50% vol) — 3 × 4 reps légères", type: "pull", moment: "morning", detail: "Volume réduit pour fraîcheur musculaire • RIR 3-4", estimatedMinutes: 10, xp: 20, completed: false },
         { id: "w8-fri-chair", label: "Chaise (Affûtage -50% vol) — 2 × 45 s max", type: "chair", moment: "morning", detail: "Maintien statique sous-maximal • Repos 60s", estimatedMinutes: 6, xp: 15, completed: false },
-        { id: "w8-fri-run", label: "Course en duo — footing récupération 4-5 km", type: "run", moment: "evening", detail: "Allure souple", estimatedMinutes: 35, xp: 50, completed: false },
         { id: "w8-fri-psycho", label: "Psychotechnique — Orientation spatiale", type: "psycho", moment: "psychotechniques", detail: "30-45 min", estimatedMinutes: 35, xp: 20, completed: false },
       ],
     },
