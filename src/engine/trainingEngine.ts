@@ -320,11 +320,11 @@ export function createTrainingEngine(
       if (task.type === "pull") {
         if (isTestMaxDay) {
           label = "⚠️ TEST MAX TRACTIONS (Obligatoire — Cycle 2 semaines)";
-          detail = `1 série à l'échec strict • Tempo 2010 • Repos strict 120s • Saisis ton score pour adapter les séances futures (Max: ${userMaxPull} / Obj: 17-20)`;
+          detail = `1 série à l'échec strict • Tempo 2010 • Saisis ton score pour adapter les séances futures (Max: ${userMaxPull} / Obj: 17-20)`;
           steps = ["Échauffement haut du corps et mobilité des épaules", "1 série unique à l'échec strict (Tempo 2010)", "Saisir le score dans l'application"];
         } else if (dayIndex === 3) {
           label = "Tractions (Pré-activation) — 4 × 3 reps (Sous-maximales)";
-          detail = `Pré-activation du haut du corps sans échec (RIR 3-4) • Conserver la fraîcheur avant le cardio de l'après-midi • Repos : 90s`;
+          detail = `Pré-activation du haut du corps sans échec (RIR 3-4) • Conserver la fraîcheur avant le cardio de l'après-midi`;
           steps = [
             "Échauffement articulaire et mobilité des épaules",
             "4 séries de 3 à 4 tractions sous-maximales contrôlées (Tempo 2010, RIR 3-4)",
@@ -334,7 +334,7 @@ export function createTrainingEngine(
         } else if (hasMorningSwim) {
           const reps = Math.max(3, Math.round(userMaxPull * 0.55));
           label = `Tractions (Maintien / Technique) — 4 × ${reps} reps (RIR 2-3)`;
-          detail = `Programme Maintien & Technique (post-natation, RIR 2-3) • 50-60% du Max (${userMaxPull}) • Tempo 2010 • Repos strict : 90s`;
+          detail = `Programme Maintien & Technique (post-natation, RIR 2-3) • 50-60% du Max (${userMaxPull}) • Tempo 2010`;
           steps = [
             "Échauffement articulaire et mobilité des épaules post-natation",
             `4 séries droites de ${reps} tractions sous-maximales (RIR 2-3)`,
@@ -353,7 +353,7 @@ export function createTrainingEngine(
           }
 
           label = `Tractions (Séries Droites RIR 1-2) — ${numSets} × ${targetReps} reps`;
-          detail = `${numSets} séries droites de ${targetReps} reps (RIR 1-2 • Max: ${userMaxPull}) • Tempo 2010 • Repos strict : 90s • Test RIR sur dernière série`;
+          detail = `${numSets} séries droites de ${targetReps} reps (RIR 1-2 • Max: ${userMaxPull}) • Tempo 2010 • Test RIR sur dernière série`;
           steps = [
             "Échauffement haut du corps et mobilité des épaules",
             `${numSets} séries droites de ${targetReps} reps irréprochables (Tempo 2010)`,
@@ -365,11 +365,11 @@ export function createTrainingEngine(
       } else if (task.type === "chair") {
         if (isTestMaxDay) {
           label = "⚠️ TEST MAX CHAISE (Obligatoire — Cycle 2 semaines)";
-          detail = `1 série max à 90° jusqu'à l'échec strict • Tempo Isométrie 1000 • Repos 120s • (Record: ${userMaxChair}s / Obj: 168s)`;
+          detail = `1 série max à 90° jusqu'à l'échec strict • Tempo Isométrie 1000 • (Record: ${userMaxChair}s / Obj: 168s)`;
           steps = ["Dos collé au mur à 90°", "Chronométrer jusqu'à l'échec strict", "Saisir le temps en secondes dans l'application"];
         } else if (dayIndex === 3) {
           label = "Pré-activation Bas du corps & Stabilité — Chaise 3 × 30s";
-          detail = "Activation bas du corps légère sans charge lourde et sans échec • Préserve la fraîcheur des jambes avant le cardio • Repos : 60s";
+          detail = "Activation bas du corps légère sans charge lourde et sans échec • Préserve la fraîcheur des jambes avant le cardio";
           steps = [
             "Placement à 90° contre le mur sans charge lourde",
             "3 séries de 30 secondes de maintien statique léger (sans échec)",
@@ -388,7 +388,7 @@ export function createTrainingEngine(
           }
 
           label = `Chaise Isométrique — ${numSets} × ${targetSecs} s`;
-          detail = `${numSets} séries droites de ${targetSecs}s à 90° (Record: ${userMaxChair}s) • Tempo Isométrie 1000 • Repos strict : 60s`;
+          detail = `${numSets} séries droites de ${targetSecs}s à 90° (Record: ${userMaxChair}s) • Tempo Isométrie 1000`;
           steps = [
             "Dos bien à plat contre le mur, genoux à 90° exacts",
             `${numSets} séries de ${targetSecs} secondes de maintien statique continu`,
@@ -399,7 +399,7 @@ export function createTrainingEngine(
       } else if (task.type === "custom") {
         if (hasMorningSwim) {
           label = "Gainage Commando — 3 × 45s (Planche Coudes ↔ Bras tendus)";
-          detail = "Passage dynamique coudes à bras tendus en gainage • Repos strict : 60s";
+          detail = "Passage dynamique coudes à bras tendus en gainage";
           steps = [
             "Position de départ : Planche sur les coudes, corps parfaitement droit",
             "Monter alternativement main droite puis gauche sur bras tendus, puis redescendre sur les coudes",
@@ -408,7 +408,7 @@ export function createTrainingEngine(
           ];
         } else if (dayIndex === 3) {
           label = "Gainage & Mobilité (Pré-activation Core) — 3 × 45s";
-          detail = "Activation du tronc & gainage statique pour stabiliser les changements de direction • Pré-activation sans échec • Repos : 60s";
+          detail = "Activation du tronc & gainage statique pour stabiliser les changements de direction • Pré-activation sans échec";
           steps = [
             "Planche statique ou gainage latéral contrôlé sans surtaxer le bas du corps",
             "3 séries de 45 secondes de maintien neutre et contrôlé",
@@ -417,7 +417,7 @@ export function createTrainingEngine(
           ];
         } else {
           label = "Gainage Abdominal Planche — 4 × 60s";
-          detail = "Verrouillage abdominal et fessiers • Tempo Isométrie 1000 • Repos strict : 60s";
+          detail = "Verrouillage abdominal et fessiers • Tempo Isométrie 1000";
           steps = [
             "Coudes sous les épaules, corps parfaitement aligné",
             "4 séries de 60 secondes de maintien statique",
@@ -723,7 +723,7 @@ function defaultRest(type: string) {
   switch (type) {
     case "swim": return "30s entre blocs";
     case "pull": return "90s";
-    case "chair": return "45s";
+    case "chair": return "60s";
     case "run": return "Marche 3 min si besoin";
     case "stretch": return "Respiration lente";
     default: return undefined;

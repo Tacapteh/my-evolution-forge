@@ -107,7 +107,7 @@ export function ExerciseSwapModal({
         badge: "Polyarticulaire / Pectoraux & Triceps",
         structure: structPush,
         tempo: "Tempo 2010 (2s descente, 0s pause, 1s montée, 0s pause)",
-        rest: "Repos strict : 90s",
+        rest: "90s",
         formConsignes: "Coudes orientés à 45° par rapport au tronc, corps parfaitement gainé, poitrine effleurant le sol à chaque répétition.",
         detail: `Exercice polyarticulaire de poussée. Basé sur Max Pompes = ${pPushMax}.`,
       });
@@ -119,7 +119,7 @@ export function ExerciseSwapModal({
         badge: "Polyarticulaire Heavy / Triceps & Sternum",
         structure: structPush,
         tempo: "Tempo 2010 (2s descente, 0s pause, 1s montée, 0s pause)",
-        rest: "Repos strict : 90s",
+        rest: "90s",
         formConsignes: "Mains jointes en forme de diamant sous le sternum, coudes collés au corps lors de la descente.",
         detail: `Travail ciblé sur les triceps et le sternum. Basé sur Max Pompes = ${pPushMax}.`,
       });
@@ -131,7 +131,7 @@ export function ExerciseSwapModal({
         badge: "Polyarticulaire / Haut de poitrine & Épaules",
         structure: structPush,
         tempo: "Tempo 2010 (2s descente, 0s pause, 1s montée, 0s pause)",
-        rest: "Repos strict : 90s",
+        rest: "90s",
         formConsignes: "Pieds surélevés sur une chaise/banc, mains au sol largeur d'épaules, corps droit sans creuser le bas du dos.",
         detail: `Accentuation de la charge sur le haut des pectoraux. Basé sur Max Pompes = ${pPushMax}.`,
       });
@@ -143,7 +143,7 @@ export function ExerciseSwapModal({
         badge: "Isolation Triceps / Inter-Module Finisher ↔ Main",
         structure: `5 séries × ${Math.max(4, Math.round(pPushMax * 0.70))} reps (Compensation Isolation)`,
         tempo: "Tempo 3010 (Contrôle strict de la poussée des triceps)",
-        rest: "Repos strict : 60s",
+        rest: "60s",
         formConsignes: "Planche sur avant-bras, coudes posés au sol, poussée explosive sur les paumes pour tendre complètement les bras.",
         detail: "Mouvement d'isolation remplaçant les pompes polyarticulaires avec compensation de volume (+15%).",
       });
@@ -158,7 +158,7 @@ export function ExerciseSwapModal({
           ? `Pyramide : 1-2-3-4-3-2-1 reps`
           : `5 séries × ${Math.max(3, Math.round(userMaxPull * 0.50))} reps`,
         tempo: "Tempo 2010 (2s descente, 0s pause, 1s montée, 0s pause)",
-        rest: "Repos strict : 90s",
+        rest: "90s",
         formConsignes: "Suspendu à la barre, lever les jambes tendues à 90° (parallèles au sol), puis effectuer la traction. Option genoux pliés à 90° (Tuck L-Sit) au besoin.",
         detail: `Combinaison de tirage vertical et de gainage abdominal intense. Basé sur Max Tractions = ${userMaxPull}.`,
       });
@@ -170,7 +170,7 @@ export function ExerciseSwapModal({
         badge: "Isolation Biceps / Inter-Module Finisher ↔ Main",
         structure: `5 séries × 20s (Maintien Isométrique)`,
         tempo: "Isométrie 1000 (Blocage strict de l'angle à 90°)",
-        rest: "Repos strict : 60s",
+        rest: "60s",
         formConsignes: "Prise supination serrée (paumes vers vous), tirer jusqu'à 90° et maintenir le blocage.",
         detail: "Mouvement isométrique d'isolation biceps héritant du format du bloc principal.",
       });
@@ -182,7 +182,7 @@ export function ExerciseSwapModal({
         badge: "Excentrique Biceps / Inter-Module Finisher ↔ Main",
         structure: `5 séries × 5 reps (Descente freinée 5s)`,
         tempo: "Tempo 5010 (5s descente très lente)",
-        rest: "Repos strict : 90s",
+        rest: "90s",
         formConsignes: "Départ menton au-dessus de la barre, freiner la descente sur 5 secondes complètes.",
         detail: "Travail excentrique lourd ciblant le recrutement des fibres musculaires des biceps.",
       });
@@ -203,7 +203,7 @@ export function ExerciseSwapModal({
       badge: "Core Dynamique / Abdos & Stabilité",
       structure: `3 séries × ${Math.max(25, Math.round(chairMax * 0.70))}s`,
       tempo: "Dynamique contrôlé",
-      rest: "Repos strict : 60s",
+      rest: "60s",
       formConsignes: "Départ en planche sur coudes, montée alternative sur bras tendus sans balancement du bassin.",
       detail: "Gainage dynamique du tronc en remplacement de la chaise statique.",
     });
@@ -215,7 +215,7 @@ export function ExerciseSwapModal({
       badge: "Isométrie / Quadriceps & Fessiers",
       structure: structIso,
       tempo: "Isométrie 1000 (Maintien statique continu à 90°)",
-      rest: "Repos strict : 60s",
+      rest: "60s",
       formConsignes: "Dos plaqué au mur, cuisses parallèles au sol à 90° exacts, mains libres sans appui sur les cuisses.",
       detail: `Renforcement isométrique pur des membres inférieurs. Basé sur Record = ${chairMax}s.`,
     });

@@ -11,8 +11,8 @@ export const week1: TrainingWeekDefinition = {
       priority: "Normale",
       tasks: [
         { id: "w1-mon-swim", label: "Natation — 45 min", type: "swim", moment: "morning", detail: "Piscine + échauffement", estimatedMinutes: 45, xp: 35, completed: false },
-        { id: "w1-mon-pull", label: "Tractions (Séries Droites RIR 1-2) — 4 × 4 reps", type: "pull", moment: "morning", detail: "4 séries droites • RIR 1-2 • Repos strict 90s • Test RIR sur dernière série", estimatedMinutes: 15, xp: 25, completed: false },
-        { id: "w1-mon-chair", label: "Chaise Isométrique — 3 × 45 s", type: "chair", moment: "morning", detail: "Maintien statique à 90° • Repos 60s", estimatedMinutes: 10, xp: 15, completed: false },
+        { id: "w1-mon-pull", label: "Tractions (Séries Droites RIR 1-2) — 4 × 4 reps", type: "pull", moment: "morning", detail: "4 séries droites • RIR 1-2 • Test RIR sur dernière série", estimatedMinutes: 15, xp: 25, completed: false },
+        { id: "w1-mon-chair", label: "Chaise Isométrique — 3 × 45 s", type: "chair", moment: "morning", detail: "Maintien statique à 90°", estimatedMinutes: 10, xp: 15, completed: false },
         { id: "w1-mon-run", label: "Course en duo — footing 5 km", type: "run", moment: "evening", detail: "Allure confortable", estimatedMinutes: 40, xp: 50, completed: false },
         { id: "w1-mon-psycho", label: "Psychotechnique — Calcul mental", type: "psycho", moment: "psychotechniques", detail: "30-45 min", estimatedMinutes: 35, xp: 20, completed: false },
       ],
@@ -35,8 +35,8 @@ export const week1: TrainingWeekDefinition = {
       priority: "Normale",
       tasks: [
         { id: "w1-wed-swim", label: "Natation — 45 min", type: "swim", moment: "morning", detail: "Échauffement + technique", estimatedMinutes: 45, xp: 35, completed: false },
-        { id: "w1-wed-pull", label: "Tractions (Séries Droites RIR 1-2) — 4 × 4 reps", type: "pull", moment: "morning", detail: "4 séries droites • RIR 1-2 • Repos strict 90s • Test RIR sur dernière série", estimatedMinutes: 15, xp: 25, completed: false },
-        { id: "w1-wed-chair", label: "Chaise Isométrique — 3 × 45 s", type: "chair", moment: "morning", detail: "Maintien statique à 90° • Repos 60s", estimatedMinutes: 10, xp: 15, completed: false },
+        { id: "w1-wed-pull", label: "Tractions (Séries Droites RIR 1-2) — 4 × 4 reps", type: "pull", moment: "morning", detail: "4 séries droites • RIR 1-2 • Test RIR sur dernière série", estimatedMinutes: 15, xp: 25, completed: false },
+        { id: "w1-wed-chair", label: "Chaise Isométrique — 3 × 45 s", type: "chair", moment: "morning", detail: "Maintien statique à 90°", estimatedMinutes: 10, xp: 15, completed: false },
         { id: "w1-wed-run", label: "Course en duo — footing facile", type: "run", moment: "evening", detail: "Allure douce", estimatedMinutes: 35, xp: 50, completed: false },
         { id: "w1-wed-psycho", label: "Psychotechnique — Mémoire", type: "psycho", moment: "psychotechniques", detail: "30-45 min", estimatedMinutes: 35, xp: 20, completed: false },
       ],
@@ -61,8 +61,8 @@ export const week1: TrainingWeekDefinition = {
       priority: "Normale",
       tasks: [
         { id: "w1-fri-swim", label: "Natation — 45 min", type: "swim", moment: "morning", detail: "Récupération active", estimatedMinutes: 45, xp: 35, completed: false },
-        { id: "w1-fri-pull", label: "Tractions (Séries Droites RIR 1-2) — 4 × 4 reps", type: "pull", moment: "morning", detail: "4 séries droites • RIR 1-2 • Repos strict 90s • Test RIR sur dernière série", estimatedMinutes: 15, xp: 25, completed: false },
-        { id: "w1-fri-chair", label: "Chaise Isométrique — 3 × 45 s", type: "chair", moment: "morning", detail: "Maintien statique à 90° • Repos 60s", estimatedMinutes: 10, xp: 15, completed: false },
+        { id: "w1-fri-pull", label: "Tractions (Séries Droites RIR 1-2) — 4 × 4 reps", type: "pull", moment: "morning", detail: "4 séries droites • RIR 1-2 • Test RIR sur dernière série", estimatedMinutes: 15, xp: 25, completed: false },
+        { id: "w1-fri-chair", label: "Chaise Isométrique — 3 × 45 s", type: "chair", moment: "morning", detail: "Maintien statique à 90°", estimatedMinutes: 10, xp: 15, completed: false },
         { id: "w1-fri-psycho", label: "Psychotechnique — Orientation spatiale", type: "psycho", moment: "psychotechniques", detail: "30-45 min", estimatedMinutes: 35, xp: 20, completed: false },
       ],
     },

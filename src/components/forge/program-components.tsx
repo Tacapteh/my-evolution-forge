@@ -24,7 +24,7 @@ import { Card } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { cn } from "@/lib/utils";
+import { cn, cleanTaskDetail } from "@/lib/utils";
 import type { TrainingDaySummary, TrainingMission, TrainingTask } from "@/types/training";
 
 type ToggleTask = (id: string) => void;
@@ -330,7 +330,7 @@ export function SessionChecklist({
                 {task.label}
               </div>
               <div className="mt-0.5 flex flex-wrap gap-x-2 gap-y-1 text-[11px] text-muted-foreground">
-                {task.detail && <span>{task.detail}</span>}
+                {task.detail && <span>{cleanTaskDetail(task.detail)}</span>}
                 {task.rest && <span>Repos {task.rest}</span>}
               </div>
             </div>
@@ -411,7 +411,7 @@ export function FocusSessionPanel({
                 <h2 className="mt-3 text-3xl font-semibold tracking-tight md:text-5xl">
                   {task.label}
                 </h2>
-                {task.detail && <p className="mt-4 text-muted-foreground">{task.detail}</p>}
+                {task.detail && <p className="mt-4 text-muted-foreground">{cleanTaskDetail(task.detail)}</p>}
 
                 <div className="mx-auto mt-6 grid max-w-md gap-2">
                   {(task.steps ?? []).map((step) => (
