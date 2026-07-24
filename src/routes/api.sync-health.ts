@@ -568,7 +568,15 @@ export const Route = createFileRoute("/api/sync-health")({
           await mergeHealthIntoServerStates(payload);
 
           return new Response(
-            JSON.stringify({ success: true, message: "Data synced successfully", date: payload.date }),
+            JSON.stringify({
+              success: true,
+              message: "Data synced successfully",
+              date: dateKey,
+              activeCalories: payload.activeCalories,
+              avgHeartRate: payload.avgHeartRate,
+              health: payload.health,
+              workouts: normalizedWorkouts,
+            }),
             {
               headers: { "Content-Type": "application/json" },
             }

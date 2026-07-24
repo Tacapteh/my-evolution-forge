@@ -65,18 +65,35 @@ export function AppleHealthDataCard({ className, compact = false }: { className?
         }
       }
 
+      let dayAvgHR = h.avgHeartRate;
+      if ((dayAvgHR == null || dayAvgHR === 0) && normalizedW.length > 0) {
+        const hrs = normalizedW
+          .map((w: any) => w.avgHeartRate)
+          .filter((hr: any): hr is number => typeof hr === "number" && hr > 0);
+        if (hrs.length > 0) {
+          dayAvgHR = Math.round(hrs.reduce((a: number, b: number) => a + b, 0) / hrs.length);
+        }
+      }
+
+      let dayActiveCal = h.activeCalories;
+      if ((dayActiveCal == null || dayActiveCal === 0) && normalizedW.length > 0) {
+        const sumCal = normalizedW.reduce((acc: number, w: any) => acc + (w.calories || 0), 0);
+        if (sumCal > 0) dayActiveCal = sumCal;
+      }
+
       const hasData =
         (h.steps != null && h.steps > 0) ||
-        (h.avgHeartRate != null && h.avgHeartRate > 0) ||
+        (dayAvgHR != null && dayAvgHR > 0) ||
+        (dayActiveCal != null && dayActiveCal > 0) ||
         normalizedW.length > 0;
 
       if (hasData) {
         if (h.steps) totalSteps += h.steps;
-        if (h.avgHeartRate) {
-          totalHeartRate += h.avgHeartRate;
+        if (dayAvgHR) {
+          totalHeartRate += dayAvgHR;
           hrCount++;
         }
-        if (h.activeCalories) totalActiveCalories += h.activeCalories;
+        if (dayActiveCal) totalActiveCalories += dayActiveCal;
 
         totalSwimMeters += daySwimMeters;
         totalRunKm += dayRunKm;
@@ -84,8 +101,8 @@ export function AppleHealthDataCard({ className, compact = false }: { className?
         daysWithData.push({
           iso,
           steps: h.steps,
-          avgHeartRate: h.avgHeartRate,
-          activeCalories: h.activeCalories,
+          avgHeartRate: dayAvgHR,
+          activeCalories: dayActiveCal,
           exerciseMinutes: h.exerciseMinutes,
           workouts: normalizedW,
           swimMeters: daySwimMeters,
