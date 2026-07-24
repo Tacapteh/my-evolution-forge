@@ -18,73 +18,6 @@ async function ensureDir() {
   } catch (e) {}
 }
 
-async function readSyncData(): Promise<any[]> {
-  const fileItems: any[] = [];
-  try {
-    await ensureDir();
-    const raw = await fs.readFile(SYNC_FILE, "utf-8");
-    const parsed = JSON.parse(raw);
-    if (Array.isArray(parsed)) fileItems.push(...parsed);
-  } catch (error) {}
-
-  const memQueue = globalThis.__HEALTH_SYNC_QUEUE__ || [];
-
-  const map = new Map<string, any>();
-  for (const item of fileItems) {
-    if (item && typeof item === "object") {
-      const key = item.date ? String(item.date).slice(0, 10) : JSON.stringify(item);
-      map.set(key, item);
-    }
-  }
-  for (const item of memQueue) {
-    if (item && typeof item === "object") {
-      const key = item.date ? String(item.date).slice(0, 10) : JSON.stringify(item);
-      const existing = map.get(key) || {};
-      map.set(key, { ...existing, ...item });
-    }
-  }
-
-  const rawList = map.size > 0 ? Array.from(map.values()) : memQueue;
-
-  return rawList.map((item) => {
-    const workouts = item.workouts ?? item.health?.workouts ?? [];
-    const rawCal = item.activeCalories ?? item.health?.activeCalories ?? item.calories ?? item.moveCalories ?? item.activeEnergyBurned;
-    const activeCalories = rawCal != null && !isNaN(Number(rawCal)) ? Number(rawCal) : undefined;
-
-    return {
-      date: item.date ?? new Date().toISOString().slice(0, 10),
-      steps: item.steps ?? item.health?.steps,
-      avgHeartRate: item.avgHeartRate ?? item.health?.avgHeartRate,
-      activeCalories,
-      exerciseMinutes: item.exerciseMinutes ?? item.health?.exerciseMinutes,
-      workouts: workouts,
-      health: item.health
-        ? {
-            ...item.health,
-            activeCalories: activeCalories ?? item.health.activeCalories,
-            workouts: workouts,
-          }
-        : {
-            steps: item.steps,
-            avgHeartRate: item.avgHeartRate,
-            activeCalories,
-            exerciseMinutes: item.exerciseMinutes,
-            workouts: workouts,
-          },
-    };
-  });
-}
-
-async function writeSyncData(data: any[]) {
-  globalThis.__HEALTH_SYNC_QUEUE__ = data;
-  await ensureDir();
-  try {
-    await fs.writeFile(SYNC_FILE, JSON.stringify(data, null, 2), "utf-8");
-  } catch (error) {
-    console.error("Failed to write health sync file:", error);
-  }
-}
-
 function normalizeWorkoutsServer(rawWorkouts: any): any[] {
   if (!rawWorkouts) return [];
 
@@ -122,8 +55,21 @@ function normalizeWorkoutsServer(rawWorkouts: any): any[] {
   for (const w of workoutList) {
     if (!w || typeof w !== "object") continue;
 
+    // 1. Strict Calories extraction - NEVER fallback to distance
     let calories: number | undefined = undefined;
-    const rawActiveCal = String(w.activeCalories ?? w.calories ?? w.activeEnergyBurned ?? "");
+    const rawActiveCal = String(
+      w.activeCalories ??
+        w.calories ??
+        w.activeEnergyBurned ??
+        w.activeEnergy ??
+        w.energyBurned ??
+        w.totalEnergyBurned ??
+        w.workoutCalories ??
+        w.totalCalories ??
+        w.active_calories ??
+        w.active_energy_burned ??
+        ""
+    );
     if (rawActiveCal) {
       const numMatch = rawActiveCal.replace(",", ".").match(/(\d+(?:\.\d+)?)/);
       if (numMatch) {
@@ -132,8 +78,29 @@ function normalizeWorkoutsServer(rawWorkouts: any): any[] {
       }
     }
 
+    // 2. Heart Rate extraction from workout object
+    let avgHeartRate: number | undefined = undefined;
+    const rawHR = String(
+      w.avgHeartRate ??
+        w.heartRate ??
+        w.averageHeartRate ??
+        w.meanHeartRate ??
+        w.bpm ??
+        w.heartRateAvg ??
+        w.avg_heart_rate ??
+        w.heart_rate ??
+        ""
+    );
+    if (rawHR) {
+      const numMatch = rawHR.replace(",", ".").match(/(\d+(?:\.\d+)?)/);
+      if (numMatch) {
+        const val = Math.round(parseFloat(numMatch[1]));
+        if (val > 0 && val < 250) avgHeartRate = val;
+      }
+    }
+
     let rawType = String(
-      w.type ?? w.activityType ?? w.workoutActivityType ?? w.name ?? w.workoutType ?? w.title ?? "",
+      w.type ?? w.activityType ?? w.workoutActivityType ?? w.name ?? w.workoutType ?? w.title ?? ""
     ).trim();
 
     if (rawType.startsWith("{")) {
@@ -143,6 +110,10 @@ function normalizeWorkoutsServer(rawWorkouts: any): any[] {
           if (parsedType.activeCalories && !calories) {
             const numMatch = String(parsedType.activeCalories).replace(",", ".").match(/(\d+(?:\.\d+)?)/);
             if (numMatch) calories = Math.round(parseFloat(numMatch[1]));
+          }
+          if (parsedType.avgHeartRate && !avgHeartRate) {
+            const numMatch = String(parsedType.avgHeartRate).replace(",", ".").match(/(\d+(?:\.\d+)?)/);
+            if (numMatch) avgHeartRate = Math.round(parseFloat(numMatch[1]));
           }
           rawType = String(parsedType.type ?? parsedType.name ?? "");
         }
@@ -194,7 +165,7 @@ function normalizeWorkoutsServer(rawWorkouts: any): any[] {
 
     let durationMinutes: number | undefined = undefined;
     const rawDur = Number(
-      w.durationMinutes ?? w.duration ?? w.durationInMinutes ?? w.elapsedTime ?? w.totalDuration ?? 0,
+      w.durationMinutes ?? w.duration ?? w.durationInMinutes ?? w.elapsedTime ?? w.totalDuration ?? 0
     );
     if (w.durationSec != null && Number(w.durationSec) > 0) {
       durationMinutes = Math.round(Number(w.durationSec) / 60);
@@ -224,14 +195,14 @@ function normalizeWorkoutsServer(rawWorkouts: any): any[] {
         w.distanceSwimmingMeters ??
         w.HKQuantityTypeIdentifierDistanceSwimming ??
         w.HKQuantityTypeIdentifierDistanceSwimmingMeters ??
-        w.distanceWalkingRunningMeters,
+        w.distanceWalkingRunningMeters
     );
     const dKm = parseDistNum(
       w.distanceKm ??
         w.distanceInKm ??
         w.swimmingDistanceKm ??
         w.distanceSwimmingKm ??
-        w.distanceWalkingRunning,
+        w.distanceWalkingRunning
     );
     const dGen = parseDistNum(w.distance ?? w.totalDistance);
 
@@ -257,10 +228,108 @@ function normalizeWorkoutsServer(rawWorkouts: any): any[] {
       distanceKm,
       distanceMeters,
       calories,
+      avgHeartRate,
     });
   }
 
   return results;
+}
+
+async function readSyncData(): Promise<any[]> {
+  const fileItems: any[] = [];
+  try {
+    await ensureDir();
+    const raw = await fs.readFile(SYNC_FILE, "utf-8");
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed)) fileItems.push(...parsed);
+  } catch (error) {}
+
+  const memQueue = globalThis.__HEALTH_SYNC_QUEUE__ || [];
+
+  const map = new Map<string, any>();
+  for (const item of fileItems) {
+    if (item && typeof item === "object") {
+      const key = item.date ? String(item.date).slice(0, 10) : JSON.stringify(item);
+      map.set(key, item);
+    }
+  }
+  for (const item of memQueue) {
+    if (item && typeof item === "object") {
+      const key = item.date ? String(item.date).slice(0, 10) : JSON.stringify(item);
+      const existing = map.get(key) || {};
+      map.set(key, { ...existing, ...item });
+    }
+  }
+
+  const rawList = map.size > 0 ? Array.from(map.values()) : memQueue;
+
+  return rawList.map((item) => {
+    const rawWorkouts = item.workouts ?? item.health?.workouts ?? [];
+    const workouts = normalizeWorkoutsServer(rawWorkouts);
+
+    // Active Calories extraction / fallback calculation from workouts
+    const rawCal =
+      item.activeCalories ??
+      item.health?.activeCalories ??
+      item.calories ??
+      item.moveCalories ??
+      item.activeEnergyBurned;
+    let activeCalories = rawCal != null && !isNaN(Number(rawCal)) && Number(rawCal) > 0 ? Number(rawCal) : undefined;
+
+    if (activeCalories == null && workouts.length > 0) {
+      const sumCal = workouts.reduce((acc: number, w: any) => acc + (w.calories || 0), 0);
+      if (sumCal > 0) activeCalories = sumCal;
+    }
+
+    // Average Heart Rate extraction / fallback calculation from workouts
+    const rawHR =
+      item.avgHeartRate ??
+      item.health?.avgHeartRate ??
+      item.heartRate ??
+      item.averageHeartRate ??
+      item.meanHeartRate;
+    let avgHeartRate = rawHR != null && !isNaN(Number(rawHR)) && Number(rawHR) > 0 ? Number(rawHR) : undefined;
+
+    if (avgHeartRate == null && workouts.length > 0) {
+      const hrs = workouts.map((w: any) => w.avgHeartRate).filter((hr: any): hr is number => typeof hr === "number" && hr > 0);
+      if (hrs.length > 0) {
+        avgHeartRate = Math.round(hrs.reduce((a: number, b: number) => a + b, 0) / hrs.length);
+      }
+    }
+
+    return {
+      date: item.date ?? new Date().toISOString().slice(0, 10),
+      steps: item.steps ?? item.health?.steps,
+      avgHeartRate,
+      activeCalories,
+      exerciseMinutes: item.exerciseMinutes ?? item.health?.exerciseMinutes,
+      workouts,
+      health: item.health
+        ? {
+            ...item.health,
+            avgHeartRate: avgHeartRate ?? item.health.avgHeartRate,
+            activeCalories: activeCalories ?? item.health.activeCalories,
+            workouts,
+          }
+        : {
+            steps: item.steps,
+            avgHeartRate,
+            activeCalories,
+            exerciseMinutes: item.exerciseMinutes,
+            workouts,
+          },
+    };
+  });
+}
+
+async function writeSyncData(data: any[]) {
+  globalThis.__HEALTH_SYNC_QUEUE__ = data;
+  await ensureDir();
+  try {
+    await fs.writeFile(SYNC_FILE, JSON.stringify(data, null, 2), "utf-8");
+  } catch (error) {
+    console.error("Failed to write health sync file:", error);
+  }
 }
 
 async function mergeHealthIntoServerStates(payload: any) {
@@ -269,13 +338,39 @@ async function mergeHealthIntoServerStates(payload: any) {
     const rawDate = payload.date ? String(payload.date).trim() : todayISO;
     const date = rawDate.length >= 10 ? rawDate.slice(0, 10) : todayISO;
 
-    const steps = payload.health?.steps ?? payload.steps ?? payload.stepCount;
-    const avgHeartRate = payload.health?.avgHeartRate ?? payload.avgHeartRate ?? payload.heartRate;
-    const activeCalories = payload.health?.activeCalories ?? payload.activeCalories ?? payload.calories ?? payload.moveCalories;
-    const exerciseMinutes = payload.health?.exerciseMinutes ?? payload.exerciseMinutes ?? payload.exerciseTime ?? payload.workoutMinutes;
-    const standHours = payload.health?.standHours ?? payload.standHours ?? payload.appleStandHours ?? payload.standTime;
     const rawWorkouts = payload.workouts ?? payload.health?.workouts ?? [];
     const normalizedWorkouts = normalizeWorkoutsServer(rawWorkouts);
+
+    const steps = payload.health?.steps ?? payload.steps ?? payload.stepCount;
+
+    let avgHeartRate =
+      payload.health?.avgHeartRate ??
+      payload.avgHeartRate ??
+      payload.heartRate ??
+      payload.averageHeartRate ??
+      payload.meanHeartRate;
+    if (avgHeartRate == null || isNaN(Number(avgHeartRate))) {
+      const hrs = normalizedWorkouts
+        .map((w: any) => w.avgHeartRate)
+        .filter((hr: any): hr is number => typeof hr === "number" && hr > 0);
+      if (hrs.length > 0) {
+        avgHeartRate = Math.round(hrs.reduce((a: number, b: number) => a + b, 0) / hrs.length);
+      }
+    }
+
+    let activeCalories =
+      payload.health?.activeCalories ??
+      payload.activeCalories ??
+      payload.calories ??
+      payload.moveCalories ??
+      payload.activeEnergyBurned;
+    if (activeCalories == null || isNaN(Number(activeCalories))) {
+      const sumCal = normalizedWorkouts.reduce((acc: number, w: any) => acc + (w.calories || 0), 0);
+      if (sumCal > 0) activeCalories = sumCal;
+    }
+
+    const exerciseMinutes = payload.health?.exerciseMinutes ?? payload.exerciseMinutes ?? payload.exerciseTime ?? payload.workoutMinutes;
+    const standHours = payload.health?.standHours ?? payload.standHours ?? payload.appleStandHours ?? payload.standTime;
 
     const dirsToSearch = [SYNC_DIR, "/tmp"];
     for (const dir of dirsToSearch) {
@@ -323,23 +418,28 @@ export const Route = createFileRoute("/api/sync-health")({
 
       POST: async ({ request }) => {
         try {
-          let payload: any = null;
+          let body: any = null;
           try {
-            payload = await request.json();
+            body = await request.json();
           } catch (e) {
             const text = await request.text().catch(() => "");
             if (text) {
               try {
-                payload = JSON.parse(text);
+                body = JSON.parse(text);
               } catch (err) {}
             }
           }
 
-          if (typeof payload === "string") {
-            try { payload = JSON.parse(payload); } catch (e) {}
+          if (typeof body === "string") {
+            try {
+              body = JSON.parse(body);
+            } catch (e) {}
           }
 
-          if (!payload || typeof payload !== "object") {
+          // Debug log as requested
+          console.log("Payload reçu sync-health:", JSON.stringify(body, null, 2));
+
+          if (!body || typeof body !== "object") {
             return new Response(
               JSON.stringify({ error: "Invalid payload format" }),
               {
@@ -349,7 +449,9 @@ export const Route = createFileRoute("/api/sync-health")({
             );
           }
 
-          // Normalize workouts and update payload before adding to queue or writing
+          const payload = body;
+
+          // Normalize workouts strictly without fallback to distance
           const rawWorkouts = payload.workouts ?? payload.health?.workouts ?? [];
           const normalizedWorkouts = normalizeWorkoutsServer(rawWorkouts);
           payload.workouts = normalizedWorkouts;
@@ -358,10 +460,52 @@ export const Route = createFileRoute("/api/sync-health")({
           }
           payload.health.workouts = normalizedWorkouts;
 
+          // Compute global activeCalories from workouts if missing at root
+          let globalActiveCal =
+            payload.health?.activeCalories ??
+            payload.activeCalories ??
+            payload.calories ??
+            payload.moveCalories ??
+            payload.activeEnergyBurned;
+          if (globalActiveCal == null || isNaN(Number(globalActiveCal))) {
+            const sumCal = normalizedWorkouts.reduce((acc: number, w: any) => acc + (w.calories || 0), 0);
+            if (sumCal > 0) {
+              globalActiveCal = sumCal;
+            }
+          }
+          if (globalActiveCal != null && !isNaN(Number(globalActiveCal))) {
+            payload.activeCalories = Number(globalActiveCal);
+            payload.health.activeCalories = Number(globalActiveCal);
+          }
+
+          // Compute global avgHeartRate from workouts if missing at root
+          let globalAvgHR =
+            payload.health?.avgHeartRate ??
+            payload.avgHeartRate ??
+            payload.heartRate ??
+            payload.averageHeartRate ??
+            payload.meanHeartRate;
+          if (globalAvgHR == null || isNaN(Number(globalAvgHR))) {
+            const hrs = normalizedWorkouts
+              .map((w: any) => w.avgHeartRate)
+              .filter((hr: any): hr is number => typeof hr === "number" && hr > 0);
+            if (hrs.length > 0) {
+              globalAvgHR = Math.round(hrs.reduce((a: number, b: number) => a + b, 0) / hrs.length);
+            }
+          }
+          if (globalAvgHR != null && !isNaN(Number(globalAvgHR))) {
+            payload.avgHeartRate = Number(globalAvgHR);
+            payload.health.avgHeartRate = Number(globalAvgHR);
+          }
+
           // Push/update in memory queue
           const queue = globalThis.__HEALTH_SYNC_QUEUE__ || [];
-          const dateKey = payload.date ? String(payload.date).slice(0, 10) : new Date().toISOString().slice(0, 10);
-          const existingIdx = queue.findIndex((q: any) => q && q.date && String(q.date).slice(0, 10) === dateKey);
+          const dateKey = payload.date
+            ? String(payload.date).slice(0, 10)
+            : new Date().toISOString().slice(0, 10);
+          const existingIdx = queue.findIndex(
+            (q: any) => q && q.date && String(q.date).slice(0, 10) === dateKey
+          );
 
           if (existingIdx >= 0) {
             queue[existingIdx] = {
@@ -411,3 +555,4 @@ export const Route = createFileRoute("/api/sync-health")({
     },
   },
 });
+

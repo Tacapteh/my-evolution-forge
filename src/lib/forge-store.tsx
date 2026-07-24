@@ -296,15 +296,27 @@ export function ForgeProvider({ children }: { children: ReactNode }) {
             const day = updatedState.days[date] ?? { checked: {} };
 
             const steps = item.health?.steps ?? item.steps ?? item.stepCount ?? day.health?.steps;
-            const avgHeartRate = item.health?.avgHeartRate ?? item.avgHeartRate ?? item.heartRate ?? day.health?.avgHeartRate;
             const rawWorkouts = item.workouts ?? item.health?.workouts ?? day.health?.workouts ?? [];
             const normalizedWorkoutsList = normalizeWorkouts(rawWorkouts);
             const mergedWorkouts = normalizedWorkoutsList.length > 0 ? normalizedWorkoutsList : day.health?.workouts ?? [];
+
+            let activeCalories = item.health?.activeCalories ?? item.activeCalories ?? item.calories ?? item.moveCalories ?? day.health?.activeCalories;
+            if ((activeCalories == null || isNaN(Number(activeCalories))) && mergedWorkouts.length > 0) {
+              const sumCal = mergedWorkouts.reduce((acc: number, w: any) => acc + (w.calories || 0), 0);
+              if (sumCal > 0) activeCalories = sumCal;
+            }
+
+            let avgHeartRate = item.health?.avgHeartRate ?? item.avgHeartRate ?? item.heartRate ?? item.averageHeartRate ?? item.meanHeartRate ?? day.health?.avgHeartRate;
+            if ((avgHeartRate == null || isNaN(Number(avgHeartRate))) && mergedWorkouts.length > 0) {
+              const hrs = mergedWorkouts.map((w: any) => w.avgHeartRate).filter((hr: any): hr is number => typeof hr === "number" && hr > 0);
+              if (hrs.length > 0) avgHeartRate = Math.round(hrs.reduce((a: number, b: number) => a + b, 0) / hrs.length);
+            }
 
             const health = {
               ...day.health,
               steps: steps != null ? Number(steps) : undefined,
               avgHeartRate: avgHeartRate != null ? Number(avgHeartRate) : undefined,
+              activeCalories: activeCalories != null ? Number(activeCalories) : undefined,
               workouts: mergedWorkouts,
             };
 
@@ -600,6 +612,7 @@ export function normalizeWorkouts(rawWorkouts: any): Array<{
   distanceKm?: number;
   distanceMeters?: number;
   calories?: number;
+  avgHeartRate?: number;
 }> {
   if (!rawWorkouts) return [];
 
@@ -638,14 +651,27 @@ export function normalizeWorkouts(rawWorkouts: any): Array<{
     distanceKm?: number;
     distanceMeters?: number;
     calories?: number;
+    avgHeartRate?: number;
   }> = [];
 
   for (const w of workoutList) {
     if (!w || typeof w !== "object") continue;
 
-    // 1. Calories extraction
+    // 1. Calories extraction - STRICTLY from calorie fields, NEVER from distance
     let calories: number | undefined = undefined;
-    const rawActiveCal = String(w.activeCalories ?? w.calories ?? "");
+    const rawActiveCal = String(
+      w.activeCalories ??
+        w.calories ??
+        w.activeEnergyBurned ??
+        w.activeEnergy ??
+        w.energyBurned ??
+        w.totalEnergyBurned ??
+        w.workoutCalories ??
+        w.totalCalories ??
+        w.active_calories ??
+        w.active_energy_burned ??
+        ""
+    );
     if (rawActiveCal) {
       const numMatch = rawActiveCal.replace(",", ".").match(/(\d+(?:\.\d+)?)/);
       if (numMatch) {
@@ -654,7 +680,28 @@ export function normalizeWorkouts(rawWorkouts: any): Array<{
       }
     }
 
-    // 2. Type resolution & cleaning
+    // 2. Heart Rate extraction from workout
+    let avgHeartRate: number | undefined = undefined;
+    const rawHR = String(
+      w.avgHeartRate ??
+        w.heartRate ??
+        w.averageHeartRate ??
+        w.meanHeartRate ??
+        w.bpm ??
+        w.heartRateAvg ??
+        w.avg_heart_rate ??
+        w.heart_rate ??
+        ""
+    );
+    if (rawHR) {
+      const numMatch = rawHR.replace(",", ".").match(/(\d+(?:\.\d+)?)/);
+      if (numMatch) {
+        const val = Math.round(parseFloat(numMatch[1]));
+        if (val > 0 && val < 250) avgHeartRate = val;
+      }
+    }
+
+    // 3. Type resolution & cleaning
     let rawType = String(
       w.type ?? w.activityType ?? w.workoutActivityType ?? w.name ?? w.workoutType ?? w.title ?? "",
     ).trim();
@@ -666,6 +713,10 @@ export function normalizeWorkouts(rawWorkouts: any): Array<{
           if (parsedType.activeCalories && !calories) {
             const numMatch = String(parsedType.activeCalories).replace(",", ".").match(/(\d+(?:\.\d+)?)/);
             if (numMatch) calories = Math.round(parseFloat(numMatch[1]));
+          }
+          if (parsedType.avgHeartRate && !avgHeartRate) {
+            const numMatch = String(parsedType.avgHeartRate).replace(",", ".").match(/(\d+(?:\.\d+)?)/);
+            if (numMatch) avgHeartRate = Math.round(parseFloat(numMatch[1]));
           }
           rawType = String(parsedType.type ?? parsedType.name ?? "");
         }
@@ -715,7 +766,7 @@ export function normalizeWorkouts(rawWorkouts: any): Array<{
       type = rawType;
     }
 
-    // 3. Duration
+    // 4. Duration
     let durationMinutes: number | undefined = undefined;
     const rawDur = Number(
       w.durationMinutes ?? w.duration ?? w.durationInMinutes ?? w.elapsedTime ?? w.totalDuration ?? 0,
@@ -726,7 +777,7 @@ export function normalizeWorkouts(rawWorkouts: any): Array<{
       durationMinutes = rawDur > 300 ? Math.round(rawDur / 60) : rawDur;
     }
 
-    // 4. Distance (ignore non-numbers or "kcal")
+    // 5. Distance (ignore non-numbers or "kcal")
     let distanceKm: number | undefined = undefined;
     let distanceMeters: number | undefined = undefined;
 
@@ -785,6 +836,7 @@ export function normalizeWorkouts(rawWorkouts: any): Array<{
       distanceKm,
       distanceMeters,
       calories,
+      avgHeartRate,
     });
   }
 
