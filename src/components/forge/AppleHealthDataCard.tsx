@@ -145,7 +145,7 @@ export function AppleHealthDataCard({ className, compact = false }: { className?
             </span>
             <span className="flex items-center gap-1">
               <Heart className="h-3.5 w-3.5 text-red-400" />
-              <strong className="text-foreground">{healthAnalysis.overallAvgHeartRate || "--"}</strong> bpm
+              <strong className="text-foreground">{healthAnalysis.avgBpm || "--"}</strong> bpm
             </span>
           </div>
         </div>
@@ -328,8 +328,9 @@ export function AppleHealthDataCard({ className, compact = false }: { className?
                         : "";
                       const durStr = w.durationMinutes ? `${w.durationMinutes} min` : "";
                       const calStr = w.calories ? `${w.calories} kcal` : "";
+                      const hrStr = w.avgHeartRate ? `${w.avgHeartRate} bpm` : "";
 
-                      const subInfo = [durStr, distStr, calStr].filter(Boolean).join(" • ");
+                      const subInfo = [durStr, distStr, calStr, hrStr].filter(Boolean).join(" • ");
 
                       return (
                         <span

@@ -78,7 +78,7 @@ function normalizeWorkoutsServer(rawWorkouts: any): any[] {
       }
     }
 
-    // 2. Heart Rate extraction from workout object
+    // 2. Heart Rate extraction from workout object or sample array
     let avgHeartRate: number | undefined = undefined;
     const rawHR = String(
       w.avgHeartRate ??
@@ -89,6 +89,7 @@ function normalizeWorkoutsServer(rawWorkouts: any): any[] {
         w.heartRateAvg ??
         w.avg_heart_rate ??
         w.heart_rate ??
+        w.HKQuantityTypeIdentifierHeartRate ??
         ""
     );
     if (rawHR) {
@@ -96,6 +97,18 @@ function normalizeWorkoutsServer(rawWorkouts: any): any[] {
       if (numMatch) {
         const val = Math.round(parseFloat(numMatch[1]));
         if (val > 0 && val < 250) avgHeartRate = val;
+      }
+    }
+
+    if (!avgHeartRate) {
+      const samples = w.heartRateSamples || w.heartRates || w.samples || w.heart_rate_samples;
+      if (Array.isArray(samples)) {
+        const arr = samples
+          .map((s: any) => (typeof s === "number" ? s : Number(s?.value ?? s?.bpm ?? s?.quantity ?? 0)))
+          .filter((n: number) => typeof n === "number" && n > 40 && n < 220);
+        if (arr.length > 0) {
+          avgHeartRate = Math.round(arr.reduce((a: number, b: number) => a + b, 0) / arr.length);
+        }
       }
     }
 
@@ -219,6 +232,31 @@ function normalizeWorkoutsServer(rawWorkouts: any): any[] {
       } else {
         distanceKm = dGen;
         distanceMeters = Math.round(dGen * 1000);
+      }
+    }
+
+    // Realistic Calorie Fallback Estimation when HealthKit active energy is missing
+    if (!calories) {
+      if (type === "Natation") {
+        if (distanceMeters && distanceMeters > 0) {
+          calories = Math.round(distanceMeters * 0.25); // ~250 kcal for 1000m swim
+        } else if (durationMinutes && durationMinutes > 0) {
+          calories = Math.round(durationMinutes * 6.0); // ~270 kcal for 45 min swim
+        }
+      } else if (type === "Course") {
+        if (distanceKm && distanceKm > 0) {
+          calories = Math.round(distanceKm * 65); // ~325 kcal for 5 km run
+        } else if (durationMinutes && durationMinutes > 0) {
+          calories = Math.round(durationMinutes * 10.0);
+        }
+      } else if (type === "Marche") {
+        if (distanceKm && distanceKm > 0) {
+          calories = Math.round(distanceKm * 45);
+        } else if (durationMinutes && durationMinutes > 0) {
+          calories = Math.round(durationMinutes * 4.5);
+        }
+      } else if (durationMinutes && durationMinutes > 0) {
+        calories = Math.round(durationMinutes * 5.0);
       }
     }
 
