@@ -8,9 +8,10 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { LineChart, Line, ResponsiveContainer, XAxis, YAxis, Tooltip } from "recharts";
 import { useForge, todayISO } from "@/lib/forge-store";
-import { Trash2 } from "lucide-react";
+import { Trash2, Sparkles, Filter, Check } from "lucide-react";
 import { BADGES, unlockBadges } from "@/lib/forge-store";
 import { AppleHealthDataCard } from "@/components/forge/AppleHealthDataCard";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/performances")({
   component: PerformancesPage,
@@ -40,11 +41,66 @@ const TYPES = [
   { v: "sleep", l: "Sommeil (h)" },
 ] as const;
 
+interface CatalogExercise {
+  type: (typeof TYPES)[number]["v"];
+  label: string;
+  category: "pull" | "push" | "legs" | "core" | "cardio" | "health";
+  unit: string;
+  fallback: number;
+  icon: string;
+  step?: string;
+}
+
+const ALL_CATALOG_EXERCISES: CatalogExercise[] = [
+  // Tirage
+  { type: "pull", label: "Tractions Pronation", category: "pull", unit: "reps", fallback: 10, icon: "🏋️" },
+  { type: "pull_lsit", label: "Tractions L-Sit", category: "pull", unit: "reps", fallback: 6, icon: "🦵" },
+  { type: "pull_supine_iso", label: "Supination Iso 90°", category: "pull", unit: "s", fallback: 30, icon: "⏱️" },
+  { type: "pull_supine_neg", label: "Supination Négatives", category: "pull", unit: "reps", fallback: 8, icon: "⏳" },
+
+  // Poussée
+  { type: "push_military", label: "Pompes Militaires", category: "push", unit: "reps", fallback: 25, icon: "💥" },
+  { type: "push_diamond", label: "Pompes Diamant", category: "push", unit: "reps", fallback: 20, icon: "💎" },
+  { type: "push_declined", label: "Pompes Déclinées", category: "push", unit: "reps", fallback: 20, icon: "🪑" },
+  { type: "push_triceps", label: "Extensions Triceps Sol", category: "push", unit: "reps", fallback: 15, icon: "💪" },
+
+  // Bas du corps
+  { type: "chair", label: "Chaise au Mur", category: "legs", unit: "s", fallback: 60, icon: "🧱" },
+  { type: "squat", label: "Squats", category: "legs", unit: "reps", fallback: 40, icon: "🦵" },
+  { type: "lunge", label: "Fentes", category: "legs", unit: "reps", fallback: 20, icon: "🏃" },
+  { type: "calves", label: "Extensions Mollets", category: "legs", unit: "reps", fallback: 30, icon: "🦶" },
+
+  // Core
+  { type: "commando", label: "Gainage Commando", category: "core", unit: "s", fallback: 90, icon: "⚡" },
+
+  // Cardio
+  { type: "luc", label: "Luc Léger", category: "cardio", unit: "palier", fallback: 7.0, icon: "🔊", step: "0.5" },
+  { type: "vma", label: "VMA estimée", category: "cardio", unit: "km/h", fallback: 14.5, icon: "🏃", step: "0.1" },
+  { type: "run5", label: "5 km Chrono", category: "cardio", unit: "min", fallback: 25, icon: "⏱️" },
+  { type: "run10", label: "10 km Chrono", category: "cardio", unit: "min", fallback: 52, icon: "🏁" },
+
+  // Santé
+  { type: "weight", label: "Poids", category: "health", unit: "kg", fallback: 75, icon: "⚖️", step: "0.5" },
+  { type: "hr", label: "Fréquence Cardiaque Repos", category: "health", unit: "bpm", fallback: 60, icon: "❤️" },
+  { type: "sleep", label: "Sommeil", category: "health", unit: "h", fallback: 8, icon: "😴", step: "0.5" },
+];
+
+const CATEGORIES = [
+  { id: "all", label: "Tous les exos", icon: "🔥" },
+  { id: "pull", label: "Tirage / Dos", icon: "🏋️" },
+  { id: "push", label: "Poussée / Bras", icon: "💥" },
+  { id: "legs", label: "Bas du corps", icon: "🧱" },
+  { id: "core", label: "Core & Abdo", icon: "⚡" },
+  { id: "cardio", label: "Cardio & VMA", icon: "🏃" },
+  { id: "health", label: "Santé", icon: "🩺" },
+] as const;
+
 function PerformancesPage() {
   const { state, addPerf, removePerf } = useForge();
   const [type, setType] = useState<(typeof TYPES)[number]["v"]>("pull");
   const [value, setValue] = useState("");
   const [date, setDate] = useState(todayISO());
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
 
   const seriesFor = (t: string) =>
     state.perf
@@ -54,16 +110,115 @@ function PerformancesPage() {
 
   const unlocked = new Set(unlockBadges(state));
 
+  const filteredExercises = ALL_CATALOG_EXERCISES.filter(
+    (ex) => selectedCategory === "all" || ex.category === selectedCategory
+  );
+
   return (
     <div>
-      <PageHeader title="Performances" subtitle="Historique des records, données réelles et courbes d'évolution." />
+      <PageHeader title="Performances" subtitle="Historique des records, données réelles et ajustement des maxis." />
 
       <div className="px-4 md:px-8 pb-10 space-y-6">
         {/* Apple Health Real Data Card Compact */}
         <AppleHealthDataCard compact={true} />
 
-        {/* Add form */}
+        {/* Catalog Quick Max Entry for ALL exercises in the app */}
+        <Card className="rounded-xl border border-primary/30 bg-primary/10 p-4 md:p-5 space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div>
+              <h3 className="text-base font-bold text-foreground flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-primary" /> Tous les Exercices & Maxis de l'Application
+              </h3>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Renseigne directement tes répétitions et performances ci-dessous pour recalculer ton entraînement.
+              </p>
+            </div>
+            <div className="text-xs text-primary font-semibold shrink-0">
+              {ALL_CATALOG_EXERCISES.length} exercices configurés
+            </div>
+          </div>
+
+          {/* Category Filter Tabs */}
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar">
+            {CATEGORIES.map((cat) => {
+              const active = selectedCategory === cat.id;
+              return (
+                <button
+                  key={cat.id}
+                  onClick={() => setSelectedCategory(cat.id)}
+                  className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
+                    active
+                      ? "bg-primary text-primary-foreground shadow-sm"
+                      : "bg-background/60 text-muted-foreground hover:bg-background hover:text-foreground"
+                  }`}
+                >
+                  <span>{cat.icon}</span>
+                  <span>{cat.label}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Grid of exercise cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 pt-1">
+            {filteredExercises.map((item) => {
+              const currentMax = (() => {
+                const list = state.perf.filter((p) => p.type === item.type).map((p) => p.value);
+                return list.length > 0 ? Math.max(...list) : item.fallback;
+              })();
+
+              return (
+                <div key={item.type} className="rounded-lg border border-border bg-background/90 p-3 space-y-2 hover:border-primary/40 transition-colors">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-semibold text-foreground flex items-center gap-1.5 truncate">
+                      <span>{item.icon}</span> <span className="truncate">{item.label}</span>
+                    </span>
+                    <span className="text-primary font-bold shrink-0">
+                      {currentMax} {item.unit}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <Input
+                      type="number"
+                      step={item.step || "1"}
+                      placeholder={`Nouveau (${item.unit})`}
+                      className="h-8 text-xs bg-card"
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          const val = parseFloat((e.target as HTMLInputElement).value);
+                          if (!isNaN(val) && val > 0) {
+                            addPerf({ type: item.type as any, value: val, date: todayISO() });
+                            (e.target as HTMLInputElement).value = "";
+                            toast.success(`${item.label} mis à jour : ${val} ${item.unit}`);
+                          }
+                        }
+                      }}
+                    />
+                    <Button
+                      size="sm"
+                      className="h-8 text-xs shrink-0 px-2.5"
+                      onClick={(e) => {
+                        const inputEl = (e.currentTarget.previousElementSibling as HTMLInputElement);
+                        const val = parseFloat(inputEl.value);
+                        if (!isNaN(val) && val > 0) {
+                          addPerf({ type: item.type as any, value: val, date: todayISO() });
+                          inputEl.value = "";
+                          toast.success(`${item.label} mis à jour : ${val} ${item.unit}`);
+                        }
+                      }}
+                    >
+                      Save
+                    </Button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </Card>
+
+        {/* Standard Add form */}
         <Card className="card-forge p-5">
+          <div className="text-[11px] uppercase tracking-wider text-muted-foreground mb-3">Enregistrer une date personnalisée</div>
           <div className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_1fr_auto] gap-3 items-end">
             <div>
               <Label className="text-xs">Type</Label>
@@ -90,6 +245,7 @@ function PerformancesPage() {
                 if (!isNaN(n)) {
                   addPerf({ type: type as any, value: n, date });
                   setValue("");
+                  toast.success("Performance enregistrée avec succès");
                 }
               }}
             >

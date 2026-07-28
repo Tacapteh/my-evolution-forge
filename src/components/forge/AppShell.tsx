@@ -16,11 +16,11 @@ import { useForge, computeStreak } from "@/lib/forge-store";
 const NAV = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard, primary: true },
   { to: "/programme", label: "Programme", icon: CalendarDays, primary: true },
+  { to: "/performances", label: "Performances", icon: Trophy, primary: true },
   { to: "/progression", label: "Progression", icon: TrendingUp, primary: true },
-  { to: "/performances", label: "Performances", icon: Trophy, primary: false },
-  { to: "/psychotechniques", label: "Psychotechniques", icon: Brain, primary: false },
   { to: "/journal", label: "Journal", icon: BookOpen, primary: true },
-  { to: "/parametres", label: "Parametres", icon: Settings, primary: true },
+  { to: "/parametres", label: "Paramètres", icon: Settings, primary: true },
+  { to: "/psychotechniques", label: "Psychotechniques", icon: Brain, primary: false },
 ] as const;
 
 export function AppShell({ children }: { children: ReactNode }) {
@@ -74,7 +74,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       <main className="min-w-0 flex-1 pb-20 md:pb-0">{children}</main>
 
       <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card/95 backdrop-blur md:hidden">
-        <div className="grid grid-cols-5">
+        <div className="grid grid-cols-6">
           {NAV.filter((item) => item.primary).map((item) => {
             const active = item.to === "/" ? pathname === "/" : pathname.startsWith(item.to);
             return (
@@ -82,12 +82,12 @@ export function AppShell({ children }: { children: ReactNode }) {
                 key={item.to}
                 to={item.to}
                 className={cn(
-                  "flex flex-col items-center justify-center gap-1 py-2.5 text-[10px] transition-colors",
-                  active ? "text-primary" : "text-muted-foreground",
+                  "flex flex-col items-center justify-center gap-1 py-2 text-[10px] transition-colors",
+                  active ? "text-primary font-semibold" : "text-muted-foreground",
                 )}
               >
                 <item.icon className="h-4 w-4" />
-                <span className="max-w-[64px] truncate">{item.label}</span>
+                <span className="max-w-[56px] truncate text-[9px] sm:text-[10px]">{item.label}</span>
               </Link>
             );
           })}
