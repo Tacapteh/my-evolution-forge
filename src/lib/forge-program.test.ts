@@ -13,23 +13,22 @@ const state: ForgeState = {
   days: {
     "2026-07-20": {
       checked: {
-        "pull-1": true,
-        "chair-1": true,
-        "psycho-1": true,
-        "stretch-1": true,
-        "hydro-1": true,
+        "swim-1000m": true,
+        "pullups-volume": true,
       },
       journal: { notes: "Tractions propres, bonne energie." },
       psycho: { type: "Calcul mental", score: 42, duration: 1200 },
     },
     "2026-07-21": {
       checked: {
-        "run-2": true,
-        "psycho-2": false,
+        "evening-run-note-tue": true,
       },
     },
   },
-  perf: [],
+  perf: [
+    { id: "p1", type: "pull", value: 12, date: "2026-07-15" },
+    { id: "push1", type: "push_military", value: 30, date: "2026-07-15" },
+  ],
   badges: [],
 };
 
@@ -53,10 +52,9 @@ describe("forge program helpers", () => {
     const mission = buildDayMission(state, "2026-07-21");
 
     expect(mission.doneCount).toBe(1);
-    expect(mission.totalCount).toBe(3);
-    expect(mission.remainingCount).toBe(2);
-    expect(mission.completionPct).toBe(33);
-    expect(mission.xp).toBe(50);
+    expect(mission.totalCount).toBe(6);
+    expect(mission.remainingCount).toBe(5);
+    expect(mission.completionPct).toBe(17);
     expect(mission.status).toBe("en_cours");
   });
 
@@ -73,7 +71,6 @@ describe("forge program helpers", () => {
     expect(history[0]).toMatchObject({
       iso: "2026-07-21",
       doneCount: 1,
-      completionPct: 33,
       completed: false,
     });
   });

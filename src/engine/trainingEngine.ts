@@ -216,6 +216,8 @@ const TRAINING_WEEKS = militarySeptemberProgram.weeks;
 const TRAINING_START = new Date("2026-07-20T12:00:00");
 const DAY_LABELS = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
 
+import { generateWeeklyProgram, getUserStatsFromState } from "./weeklyProgramGenerator";
+
 export function getUserMaxes(state: ForgeState) {
   const perfs = state.perf ?? [];
   const getMax = (type: string, fallback: number) => {
@@ -268,31 +270,93 @@ export function createTrainingEngine(
 ) {
   const todayISO = options.todayISO ?? toISO(new Date());
 
-  const getTrainingWeek = (dateISO: string) => {
+  const buildMission = (dateISO: string): TrainingMission => {
+    const userStats = getUserStatsFromState(state);
+    const weeklyProg = generateWeeklyProgram(userStats);
+
     const date = new Date(`${dateISO}T12:00:00`);
     const dayIndex = (date.getDay() + 6) % 7;
-    const diffDays = Math.floor((date.getTime() - TRAINING_START.getTime()) / 86400000);
-    const weekIndex = Math.max(0, Math.min(TRAINING_WEEKS.length - 1, Math.floor(diffDays / 7)));
-    const week = TRAINING_WEEKS[weekIndex] ?? TRAINING_WEEKS[0];
-    return { week, dayIndex, weekIndex };
-  };
+    const dayProg = weeklyProg.schedule[dayIndex] ?? weeklyProg.schedule[0];
+    const week = { id: "week-1", label: "Semaine 1" };
+    const definition = {
+      name: dayProg.dayName,
+      title: `${dayProg.dayName} — ${dayProg.focus}`,
+      objective: dayProg.focus,
+      priority: "Normale" as const,
+    };
 
-  const buildMission = (dateISO: string): TrainingMission => {
-    const { week, dayIndex, weekIndex } = getTrainingWeek(dateISO);
-    
+    const rawTasks: any[] = [];
+    const momentMap: Record<string, string> = {
+      "MATIN": "morning",
+      "APRÈS-MIDI": "afternoon",
+      "SOIR": "evening",
+    };
+
+    dayProg.sessions.forEach((session) => {
+      const moment = momentMap[session.moment] ?? "afternoon";
+      session.exercises.forEach((ex) => {
+        const typeMap: Record<string, string> = {
+          swim: "swim",
+          pull: "pull",
+          push: "pull",
+          legs: "chair",
+          core: "chair",
+          cardio: "run",
+          mobility: "stretch",
+        };
+
+        rawTasks.push({
+          id: ex.id,
+          label: ex.name,
+          detail: ex.detail,
+          type: typeMap[ex.category] ?? "custom",
+          moment,
+          estimatedMinutes:
+            ex.category === "swim"
+              ? 45
+              : ex.category === "cardio"
+              ? 30
+              : ex.category === "mobility"
+              ? 20
+              : 15,
+          rest: `${ex.restSeconds}s`,
+          steps: ex.instructions,
+          xp:
+            ex.category === "swim"
+              ? 35
+              : ex.category === "cardio"
+              ? 50
+              : ex.category === "pull" || ex.category === "push"
+              ? 25
+              : ex.category === "legs" || ex.category === "core"
+              ? 20
+              : 15,
+        });
+      });
+    });
+
+    const psychoLabels: Record<number, string> = {
+      0: "Psychotechniques — Calcul mental",
+      1: "Psychotechniques — Logique",
+      2: "Psychotechniques — Mémoire",
+      3: "Psychotechniques — Suites numériques",
+      4: "Psychotechniques — Orientation spatiale",
+      5: "Psychotechniques — Test complet chronométré",
+      6: "Psychotechniques — Correction des erreurs",
+    };
+
+    rawTasks.push({
+      id: `psycho-day-${dayIndex}`,
+      label: psychoLabels[dayIndex] ?? "Psychotechniques",
+      detail: "20-30 min d'entraînement aux tests d'aptitude militaire",
+      type: "psycho",
+      moment: "psychotechniques",
+      estimatedMinutes: 20,
+      xp: 20,
+      steps: ["Timer 20 min", "Série de tests d'attention", "Noter le score"],
+    });
+
     const userMaxes = getUserMaxes(state);
-    const userMaxPull = userMaxes.userMaxPull;
-    const userMaxPush = userMaxes.userMaxPushMilitary;
-    const userMaxChair = userMaxes.userMaxChair;
-    const userMaxLuc = userMaxes.userMaxLuc;
-
-    const isTestMaxDay = dayIndex === 6 && (weekIndex + 1) % 2 === 0;
-
-    const definition = week.days[dayIndex] ?? week.days[0];
-    const rawTasks = (definition?.tasks ?? []).length
-      ? definition.tasks ?? []
-      : (definition?.sessions ?? []).flatMap((session) => session.exercises);
-
     const dayRecord = state.days[dateISO];
     const checkedMap = dayRecord?.checked ?? {};
     const swapsMap = dayRecord?.swaps ?? {};
@@ -312,171 +376,12 @@ export function createTrainingEngine(
 
     const hasMorningSwim = hasRawSwim || isSwimChecked || isSwimSwapped || hasHealthSwim;
 
-    let tasks = rawTasks.map((task, index) => {
-      let label = task.label;
-      let detail = task.detail;
-      let steps = task.steps;
-
-      if (task.type === "pull") {
-        if (isTestMaxDay) {
-          label = "⚠️ TEST MAX TRACTIONS (Obligatoire — Cycle 2 semaines)";
-          detail = `1 série à l'échec strict • Tempo 2010 • Saisis ton score pour adapter les séances futures (Max: ${userMaxPull} / Obj: 17-20)`;
-          steps = ["Échauffement haut du corps et mobilité des épaules", "1 série unique à l'échec strict (Tempo 2010)", "Saisir le score dans l'application"];
-        } else if (dayIndex === 3) {
-          label = "Tractions (Pré-activation) — 4 × 3 reps (Sous-maximales)";
-          detail = `Pré-activation du haut du corps sans échec (RIR 3-4) • Conserver la fraîcheur avant le cardio de l'après-midi`;
-          steps = [
-            "Échauffement articulaire et mobilité des épaules",
-            "4 séries de 3 à 4 tractions sous-maximales contrôlées (Tempo 2010, RIR 3-4)",
-            "Ne pas aller à l'échec : pré-activation pure",
-            "Repos strict : 90s entre les séries",
-          ];
-        } else if (hasMorningSwim) {
-          const reps = Math.max(3, Math.round(userMaxPull * 0.55));
-          label = `Tractions (Maintien / Technique) — 4 × ${reps} reps (RIR 2-3)`;
-          detail = `Programme Maintien & Technique (post-natation, RIR 2-3) • 50-60% du Max (${userMaxPull}) • Tempo 2010`;
-          steps = [
-            "Échauffement articulaire et mobilité des épaules post-natation",
-            `4 séries droites de ${reps} tractions sous-maximales (RIR 2-3)`,
-            "Tempo 2010 : 2s descente freinée, 1s montée contrôlée",
-            "Repos strict : 90s entre les séries",
-          ];
-        } else {
-          // Séries Droites (RIR 1-2) pour l'entraînement principal (Lundi, Mercredi, Vendredi)
-          let numSets = 4;
-          let targetReps = Math.max(3, Math.round(userMaxPull * 0.70));
-
-          const matchSetsReps = task.label.match(/(\d+)\s*[\timesx×]\s*(\d+)/i);
-          if (matchSetsReps) {
-            numSets = parseInt(matchSetsReps[1], 10);
-            targetReps = Math.max(targetReps, parseInt(matchSetsReps[2], 10));
-          }
-
-          label = `Tractions (Séries Droites RIR 1-2) — ${numSets} × ${targetReps} reps`;
-          detail = `${numSets} séries droites de ${targetReps} reps (RIR 1-2 • Max: ${userMaxPull}) • Tempo 2010 • Test RIR sur dernière série`;
-          steps = [
-            "Échauffement haut du corps et mobilité des épaules",
-            `${numSets} séries droites de ${targetReps} reps irréprochables (Tempo 2010)`,
-            "Conserver 1 à 2 répétitions en réserve (RIR 1-2) sur chaque série",
-            "Sur la dernière série : valider les reps et enregistrer si nouveau max",
-            "Repos strict : 90s entre les séries",
-          ];
-        }
-      } else if (task.type === "chair") {
-        if (isTestMaxDay) {
-          label = "⚠️ TEST MAX CHAISE (Obligatoire — Cycle 2 semaines)";
-          detail = `1 série max à 90° jusqu'à l'échec strict • Tempo Isométrie 1000 • (Record: ${userMaxChair}s / Obj: 168s)`;
-          steps = ["Dos collé au mur à 90°", "Chronométrer jusqu'à l'échec strict", "Saisir le temps en secondes dans l'application"];
-        } else if (dayIndex === 3) {
-          label = "Pré-activation Bas du corps & Stabilité — Chaise 3 × 30s";
-          detail = "Activation bas du corps légère sans charge lourde et sans échec • Préserve la fraîcheur des jambes avant le cardio";
-          steps = [
-            "Placement à 90° contre le mur sans charge lourde",
-            "3 séries de 30 secondes de maintien statique léger (sans échec)",
-            "Mobilité des chevilles et éveil neuromusculaire des fessiers",
-            "Repos strict : 60s entre les séries",
-          ];
-        } else {
-          // Séries Droites Isométrie Chaise (Lundi, Mercredi, Vendredi)
-          let numSets = 3;
-          let targetSecs = Math.max(30, Math.round(userMaxChair * 0.75));
-
-          const matchChairSecs = task.label.match(/(\d+)\s*[\timesx×]\s*(\d+)\s*s/i);
-          if (matchChairSecs) {
-            numSets = parseInt(matchChairSecs[1], 10);
-            targetSecs = Math.max(targetSecs, parseInt(matchChairSecs[2], 10));
-          }
-
-          label = `Chaise Isométrique — ${numSets} × ${targetSecs} s`;
-          detail = `${numSets} séries droites de ${targetSecs}s à 90° (Record: ${userMaxChair}s) • Tempo Isométrie 1000`;
-          steps = [
-            "Dos bien à plat contre le mur, genoux à 90° exacts",
-            `${numSets} séries de ${targetSecs} secondes de maintien statique continu`,
-            "Tempo Isométrie 1000 : verrouillage postural continu",
-            "Repos strict : 60s entre les séries",
-          ];
-        }
-      } else if (task.type === "custom") {
-        if (hasMorningSwim) {
-          label = "Gainage Commando — 3 × 45s (Planche Coudes ↔ Bras tendus)";
-          detail = "Passage dynamique coudes à bras tendus en gainage";
-          steps = [
-            "Position de départ : Planche sur les coudes, corps parfaitement droit",
-            "Monter alternativement main droite puis gauche sur bras tendus, puis redescendre sur les coudes",
-            "Bassin fixe sans balancement, verrouillage abdominal et fessiers",
-            "3 séries de 45 secondes de mouvement continu • Repos strict : 60s",
-          ];
-        } else if (dayIndex === 3) {
-          label = "Gainage & Mobilité (Pré-activation Core) — 3 × 45s";
-          detail = "Activation du tronc & gainage statique pour stabiliser les changements de direction • Pré-activation sans échec";
-          steps = [
-            "Planche statique ou gainage latéral contrôlé sans surtaxer le bas du corps",
-            "3 séries de 45 secondes de maintien neutre et contrôlé",
-            "Pré-activation de la ceinture abdominale pour stabiliser les relances du Luc Léger de l'après-midi",
-            "Repos strict : 60s entre les séries",
-          ];
-        } else {
-          label = "Gainage Abdominal Planche — 4 × 60s";
-          detail = "Verrouillage abdominal et fessiers • Tempo Isométrie 1000";
-          steps = [
-            "Coudes sous les épaules, corps parfaitement aligné",
-            "4 séries de 60 secondes de maintien statique",
-            "Repos strict : 60s entre les séries",
-          ];
-        }
-      } else if (task.type === "run") {
-        const isThursday = dayIndex === 3;
-        if (isThursday && isTestMaxDay) {
-          label = "⚠️ TEST MAX LUC LÉGER (Bi-hebdomadaire — Cycle 2 semaines)";
-          detail = `Test navette 20m avec bande sonore du jeudi • Focus : Cardio haute intensité & changements de direction (Actuel: Palier ${userMaxLuc} / Obj: Palier 12)`;
-          steps = [
-            "Échauffement cardio 10 min & mobilité dynamique des chevilles",
-            "Test navettes 20m au rythme des bips sonores avec relances explosives et changements de direction à 180°",
-            "Arrêt au 2ème manquement consécutif",
-            "Saisir le Palier atteint dans l'application",
-          ];
-        } else if (isThursday) {
-          const targetPalier = Math.min(12, +(userMaxLuc + 0.5).toFixed(1));
-          label = `Test / Séance Luc Léger — Allure Palier ${targetPalier}`;
-          detail = `Séance spécifique Luc Léger (Navettes 20m) • Focus : Cardio haute intensité et changements de direction rapides (Palier cible ${targetPalier} vs Max ${userMaxLuc})`;
-          steps = [
-            "Échauffement cardio 10 min & mobilité dynamique des chevilles",
-            `Navettes 20m au rythme Palier ${targetPalier} avec relances explosives et changements de direction rapides`,
-            "Montée progressive d'intensité au bip sonore",
-            "5 min récupération active et étirements régressifs",
-          ];
-        } else if (dayIndex === 1) {
-          const targetPalier = Math.min(12, +(userMaxLuc + 0.5).toFixed(1));
-          label = `Fractionné VMA 30/30 — 12 reps à l'allure Palier ${targetPalier}`;
-          detail = `Allure sur-optimisée (+0.5 palier vs max ${userMaxLuc}) • 30s effort / 30s trotté`;
-        } else if (dayIndex === 5) {
-          const pMax = Math.min(12, +(userMaxLuc + 1.0).toFixed(1));
-          label = `Fractionné Pyramidal — 1'-2'-3'-2'-1' (Allure Palier ${userMaxLuc} à ${pMax})`;
-          detail = `Montée progressive d'intensité VMA • Repos = Temps d'effort`;
-        } else {
-          const endurancePalier = Math.max(5.0, +(userMaxLuc * 0.75).toFixed(1));
-          label = `Endurance Fondamentale — 45 min à l'allure Palier ${endurancePalier}`;
-          detail = `Aisance respiratoire (75% VMA) • Base cardiorespiratoire`;
-        }
-      }
-
-      let moment = task.moment ?? inferMoment(task.type, index);
-      if (dayIndex === 3) {
-        if (task.type === "pull" || task.type === "chair" || task.type === "custom") {
-          moment = "morning";
-        } else if (task.type === "run" && !label.includes("Footing")) {
-          moment = "afternoon";
-        }
-      }
-
+    let tasks = rawTasks.map((task) => {
       return {
         ...task,
-        label,
-        detail,
-        moment,
         estimatedMinutes: task.estimatedMinutes ?? defaultDuration(task.type),
         rest: task.rest ?? defaultRest(task.type),
-        steps: steps ?? defaultSteps(task),
+        steps: task.steps ?? defaultSteps(task),
       };
     });
 
@@ -809,16 +714,24 @@ function buildSummary(doneCount: number, totalCount: number, remainingCount: num
   return `${doneCount}/${totalCount} terminés — ${remainingCount} restant${remainingCount > 1 ? "s" : ""}.`;
 }
 
-function isTaskDone(task: { id: string }, checked: Record<string, boolean>) {
+function isTaskDone(task: { id: string; type?: string }, checked: Record<string, boolean>) {
   if (checked[task.id]) return true;
 
   const legacyAliases: Record<string, string[]> = {
-    "w1-mon-pull": ["pull-1"],
-    "w1-mon-chair": ["chair-1"],
-    "w1-mon-psycho": ["psycho-1", "stretch-1", "hydro-1"],
-    "w1-tue-run": ["run-2"],
-    "w1-tue-psycho": ["psycho-2"],
+    "pullups-volume": ["pull-1", "w1-mon-pull"],
+    "pushups-military": ["push-1", "w1-tue-push"],
+    "evening-run-note-tue": ["run-2", "w1-tue-run"],
+    "commando-mardi": ["w1-tue-core"],
+    "pullups-lsit": ["w1-wed-pull"],
+    "psycho-day-0": ["psycho-1", "stretch-1", "hydro-1"],
+    "psycho-day-1": ["psycho-2"],
+    "psycho-day-2": ["psycho-3"],
+    "psycho-day-3": ["psycho-4"],
+    "psycho-day-4": ["psycho-5"],
+    "psycho-day-5": ["psycho-6"],
+    "psycho-day-6": ["psycho-7"],
   };
 
-  return (legacyAliases[task.id] ?? []).some((alias) => checked[alias]);
+  const aliases = legacyAliases[task.id] ?? [];
+  return aliases.some((alias) => checked[alias]);
 }

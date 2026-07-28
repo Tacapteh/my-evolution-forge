@@ -57,6 +57,32 @@ export interface WeeklyProgram {
 }
 
 /**
+ * Extrait l'objet UserStats à partir de l'état global ForgeState (state.perf)
+ */
+export function getUserStatsFromState(state: { perf?: Array<{ type: string; value: number }> }): UserStats {
+  const perfs = state?.perf ?? [];
+  const getMax = (type: string, fallback: number) => {
+    const list = perfs.filter((p) => p.type === type).map((p) => p.value);
+    return list.length > 0 ? Math.max(...list) : fallback;
+  };
+
+  const userMaxPull = getMax("pull", 10);
+  const userMaxPush = getMax("push_military", 25);
+  const userMaxChair = getMax("chair", 60);
+  const userMaxCommando = getMax("commando", 90);
+  const userMaxLuc = getMax("luc", 7.0);
+  const vma = getMax("vma", +(userMaxLuc * 1.5 + 4).toFixed(1));
+
+  return {
+    maxPullups: userMaxPull,
+    maxPushups: userMaxPush,
+    maxWallSitSeconds: userMaxChair,
+    maxPlankSeconds: userMaxCommando,
+    vma,
+  };
+}
+
+/**
  * Calcul dynamique des répétitions pour exercices dynamiques (Pompes, Tractions, Squats)
  * Formula: Math.round(userMax * intensityPercentage)
  */
