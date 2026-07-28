@@ -5,10 +5,9 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { LineChart, Line, ResponsiveContainer, XAxis, YAxis, Tooltip } from "recharts";
 import { useForge, todayISO } from "@/lib/forge-store";
-import { Trash2, Sparkles, Filter, Check } from "lucide-react";
+import { Trash2, Sparkles, Calendar, Check, Clock } from "lucide-react";
 import { BADGES, unlockBadges } from "@/lib/forge-store";
 import { AppleHealthDataCard } from "@/components/forge/AppleHealthDataCard";
 import { toast } from "sonner";
@@ -97,10 +96,11 @@ const CATEGORIES = [
 
 function PerformancesPage() {
   const { state, addPerf, removePerf } = useForge();
-  const [type, setType] = useState<(typeof TYPES)[number]["v"]>("pull");
-  const [value, setValue] = useState("");
-  const [date, setDate] = useState(todayISO());
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [useCustomDate, setUseCustomDate] = useState(false);
+  const [customDate, setCustomDate] = useState(todayISO());
+
+  const activeDate = useCustomDate ? customDate : todayISO();
 
   const seriesFor = (t: string) =>
     state.perf
@@ -122,19 +122,54 @@ function PerformancesPage() {
         {/* Apple Health Real Data Card Compact */}
         <AppleHealthDataCard compact={true} />
 
-        {/* Catalog Quick Max Entry for ALL exercises in the app */}
+        {/* Universal Quick Max & Performance Entry Widget */}
         <Card className="rounded-xl border border-primary/30 bg-primary/10 p-4 md:p-5 space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-2 border-b border-primary/20">
             <div>
               <h3 className="text-base font-bold text-foreground flex items-center gap-2">
-                <Sparkles className="h-4 w-4 text-primary" /> Tous les Exercices & Maxis de l'Application
+                <Sparkles className="h-4 w-4 text-primary" /> Mes Répétitions & Performances
               </h3>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Renseigne directement tes répétitions et performances ci-dessous pour recalculer ton entraînement.
+                Saisis directement tes performances pour recalculer dynamiquement le volume de tes entraînements.
               </p>
             </div>
-            <div className="text-xs text-primary font-semibold shrink-0">
-              {ALL_CATALOG_EXERCISES.length} exercices configurés
+
+            {/* Date Selection Option (Today vs Specific Date) */}
+            <div className="flex items-center gap-2 bg-background/70 p-1.5 rounded-lg border border-border shrink-0 self-start md:self-auto">
+              <button
+                type="button"
+                onClick={() => setUseCustomDate(false)}
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-medium transition-all ${
+                  !useCustomDate
+                    ? "bg-primary text-primary-foreground font-semibold shadow-xs"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <Clock className="h-3.5 w-3.5" />
+                <span>Aujourd'hui</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setUseCustomDate(true)}
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-medium transition-all ${
+                  useCustomDate
+                    ? "bg-primary text-primary-foreground font-semibold shadow-xs"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <Calendar className="h-3.5 w-3.5" />
+                <span>Autre date</span>
+              </button>
+
+              {useCustomDate && (
+                <Input
+                  type="date"
+                  value={customDate}
+                  onChange={(e) => setCustomDate(e.target.value)}
+                  className="h-7 w-32 text-xs bg-card border-primary/40 px-2"
+                />
+              )}
             </div>
           </div>
 
@@ -167,8 +202,22 @@ function PerformancesPage() {
                 return list.length > 0 ? Math.max(...list) : item.fallback;
               })();
 
+              const handleSave = (inputEl: HTMLInputElement) => {
+                const val = parseFloat(inputEl.value);
+                if (!isNaN(val) && val > 0) {
+                  addPerf({ type: item.type as any, value: val, date: activeDate });
+                  inputEl.value = "";
+                  toast.success(
+                    `${item.label} mis à jour : ${val} ${item.unit} (${useCustomDate ? customDate : "Aujourd'hui"})`
+                  );
+                }
+              };
+
               return (
-                <div key={item.type} className="rounded-lg border border-border bg-background/90 p-3 space-y-2 hover:border-primary/40 transition-colors">
+                <div
+                  key={item.type}
+                  className="rounded-lg border border-border bg-background/90 p-3 space-y-2 hover:border-primary/40 transition-colors"
+                >
                   <div className="flex items-center justify-between text-xs">
                     <span className="font-semibold text-foreground flex items-center gap-1.5 truncate">
                       <span>{item.icon}</span> <span className="truncate">{item.label}</span>
@@ -185,12 +234,7 @@ function PerformancesPage() {
                       className="h-8 text-xs bg-card"
                       onKeyDown={(e) => {
                         if (e.key === "Enter") {
-                          const val = parseFloat((e.target as HTMLInputElement).value);
-                          if (!isNaN(val) && val > 0) {
-                            addPerf({ type: item.type as any, value: val, date: todayISO() });
-                            (e.target as HTMLInputElement).value = "";
-                            toast.success(`${item.label} mis à jour : ${val} ${item.unit}`);
-                          }
+                          handleSave(e.target as HTMLInputElement);
                         }
                       }}
                     />
@@ -198,13 +242,8 @@ function PerformancesPage() {
                       size="sm"
                       className="h-8 text-xs shrink-0 px-2.5"
                       onClick={(e) => {
-                        const inputEl = (e.currentTarget.previousElementSibling as HTMLInputElement);
-                        const val = parseFloat(inputEl.value);
-                        if (!isNaN(val) && val > 0) {
-                          addPerf({ type: item.type as any, value: val, date: todayISO() });
-                          inputEl.value = "";
-                          toast.success(`${item.label} mis à jour : ${val} ${item.unit}`);
-                        }
+                        const inputEl = e.currentTarget.previousElementSibling as HTMLInputElement;
+                        handleSave(inputEl);
                       }}
                     >
                       Save
@@ -213,44 +252,6 @@ function PerformancesPage() {
                 </div>
               );
             })}
-          </div>
-        </Card>
-
-        {/* Standard Add form */}
-        <Card className="card-forge p-5">
-          <div className="text-[11px] uppercase tracking-wider text-muted-foreground mb-3">Enregistrer une date personnalisée</div>
-          <div className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_1fr_auto] gap-3 items-end">
-            <div>
-              <Label className="text-xs">Type</Label>
-              <Select value={type} onValueChange={(v) => setType(v as any)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {TYPES.map((t) => (
-                    <SelectItem key={t.v} value={t.v}>{t.l}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label className="text-xs">Valeur</Label>
-              <Input type="number" step="0.1" value={value} onChange={(e) => setValue(e.target.value)} />
-            </div>
-            <div>
-              <Label className="text-xs">Date</Label>
-              <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
-            </div>
-            <Button
-              onClick={() => {
-                const n = parseFloat(value);
-                if (!isNaN(n)) {
-                  addPerf({ type: type as any, value: n, date });
-                  setValue("");
-                  toast.success("Performance enregistrée avec succès");
-                }
-              }}
-            >
-              Enregistrer
-            </Button>
           </div>
         </Card>
 
