@@ -19,37 +19,14 @@ export interface UnifiedExercise extends Exercise {
 
 export async function loadUnifiedExerciseCatalog(): Promise<UnifiedExercise[]> {
   try {
-    const [resPrimary, resSupplement] = await Promise.allSettled([
-      fetch("/data/exercises.json"),
-      fetch("/data/exercises-supplement.json"),
-    ]);
-
-    let primaryList: Exercise[] = [];
-    if (resPrimary.status === "fulfilled" && resPrimary.value.ok) {
-      primaryList = await resPrimary.value.json();
+    const res = await fetch("/data/exercises.json");
+    if (!res.ok) {
+      throw new Error("Impossible de charger le fichier /data/exercises.json");
     }
-
-    let supplementList: Exercise[] = [];
-    if (resSupplement.status === "fulfilled" && resSupplement.value.ok) {
-      supplementList = await resSupplement.value.json();
-    }
-
-    const combinedRaw = [...supplementList, ...primaryList];
-
-    // Deduplication map by normalized name
-    const seenMap = new Map<string, Exercise>();
-
-    combinedRaw.forEach((ex) => {
-      const normalizedKey = ex.name.toLowerCase().trim().replace(/[^a-z0-9]/g, "");
-      if (!seenMap.has(normalizedKey)) {
-        seenMap.set(normalizedKey, ex);
-      }
-    });
-
-    const uniqueExercises = Array.from(seenMap.values());
+    const rawList: Exercise[] = await res.json();
 
     // Enrich with French translations & search keys
-    return uniqueExercises.map((ex) => {
+    return rawList.map((ex) => {
       const { frName, aliases } = translateExerciseName(ex.name);
       const primaryMusclesFr = (ex.primaryMuscles || []).map(translateMuscle);
       const secondaryMusclesFr = (ex.secondaryMuscles || []).map(translateMuscle);
@@ -82,7 +59,7 @@ export async function loadUnifiedExerciseCatalog(): Promise<UnifiedExercise[]> {
       };
     });
   } catch (error) {
-    console.error("Erreur lors du chargement du catalogue d'exercices unifié :", error);
+    console.error("Erreur lors du chargement du catalogue d'exercices :", error);
     return [];
   }
 }
