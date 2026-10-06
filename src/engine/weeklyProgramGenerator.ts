@@ -511,7 +511,7 @@ export function generateWeeklyProgram(userStats: UserStats): WeeklyProgram {
     // ================= VENDREDI =================
     {
       dayName: "Vendredi",
-      focus: "Tirage Excentrique & Core Statique",
+      focus: "Tirage Excentrique, Renforcement Bas du Corps (Post-Natation) & Core Statique",
       sessions: [
         {
           moment: "MATIN",
@@ -538,8 +538,72 @@ export function generateWeeklyProgram(userStats: UserStats): WeeklyProgram {
         },
         {
           moment: "APRÈS-MIDI",
-          title: "Session Core Statique",
+          title: "Session Renforcement Bas du Corps (Poids de Corps) & Core",
           exercises: [
+            {
+              id: "friday-squats",
+              name: "Squats au Poids de Corps",
+              category: "legs",
+              type: "dynamic",
+              targetReps: calculateDynamicReps(userStats.maxSquat ?? 40, 0.45, 18),
+              sets: 4,
+              intensityPercentage: 0.45,
+              restSeconds: 60,
+              detail: "3 à 4 séries × 15-20 reps • Poids de corps (15-20 min)",
+              instructions: [
+                "Pieds largeur d'épaules, cuisses parallèles au sol",
+                "Poussée fluide sur les talons et dos droit",
+                "3 à 4 séries de 15 à 20 répétitions • Repos : 60s",
+              ],
+            },
+            {
+              id: "friday-lunges",
+              name: "Fentes Avancées au Poids de Corps",
+              category: "legs",
+              type: "dynamic",
+              targetReps: 12,
+              sets: 3,
+              intensityPercentage: 0.50,
+              restSeconds: 60,
+              detail: "3 séries × 10-12 reps par jambe • Poids de corps",
+              instructions: [
+                "Grand pas en avant, genou arrière effleurant le sol sans toucher brutalement",
+                "Buste droit, poussée sur le talon avant pour revenir en position initiale",
+                "3 séries de 10 à 12 répétitions par jambe • Repos : 60s",
+              ],
+            },
+            {
+              id: "friday-calves",
+              name: "Extensions Mollets (Debout)",
+              category: "legs",
+              type: "dynamic",
+              targetReps: 22,
+              sets: 4,
+              intensityPercentage: 0.60,
+              restSeconds: 45,
+              detail: "3 à 4 séries × 20-25 reps • Poids de corps",
+              instructions: [
+                "Montée maximale sur la pointe des pieds avec contraction 1s en haut",
+                "Descente freinée jusqu'à étirement du tendon d'Achille",
+                "3 à 4 séries de 20 à 25 répétitions • Repos : 45s",
+              ],
+            },
+            {
+              id: "friday-wallsit",
+              name: "Chaise Isométrique au Mur (90°)",
+              category: "legs",
+              type: "isometric",
+              targetDurationSeconds: calculateIsometricDuration(maxWallSitSeconds, 0.60, 50),
+              sets: 3,
+              intensityPercentage: 0.60,
+              restSeconds: 60,
+              detail: `3 séries × 45 à 60s de maintien (60% Max Chaise: ${maxWallSitSeconds}s)`,
+              instructions: [
+                "Dos plaqué contre le mur, cuisses à 90° exacts",
+                "Maintien statique sans appui des mains sur les cuisses",
+                "3 séries de 45 à 60 secondes • Repos strict : 60s",
+              ],
+            },
             {
               id: "plank-friday",
               name: "Gainage Abdominal Planche (Statique)",

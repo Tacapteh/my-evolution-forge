@@ -18,6 +18,19 @@ export interface TaskRealization {
 export interface DayRecord {
   checked: Record<string, boolean>; // taskId -> done
   taskRealizations?: Record<string, TaskRealization>; // taskId -> realization
+  customTasks?: Array<{
+    id: string;
+    label: string;
+    type: "pull" | "chair" | "run" | "swim" | "stretch" | "psycho" | "custom";
+    detail?: string;
+    moment: "morning" | "afternoon" | "evening" | "psychotechniques";
+    estimatedMinutes?: number;
+    rest?: string;
+    steps?: string[];
+    xp: number;
+    completed?: boolean;
+    exerciseId?: string;
+  }>;
   session?: {
     startedAt?: string;
     completedAt?: string;
@@ -120,6 +133,19 @@ interface Ctx {
   setMomentSwap: (date: string, moment: string, activityId: string) => void;
   setTaskSwap: (date: string, taskId: string, activityId: string) => void;
   setTaskRealization: (date: string, taskId: string, realization: TaskRealization) => void;
+  addCustomTask: (dateISO: string, task: {
+    id?: string;
+    label: string;
+    type?: "pull" | "chair" | "run" | "swim" | "stretch" | "psycho" | "custom";
+    detail?: string;
+    moment: "morning" | "afternoon" | "evening" | "psychotechniques";
+    estimatedMinutes?: number;
+    rest?: string;
+    steps?: string[];
+    xp?: number;
+    exerciseId?: string;
+  }) => void;
+  removeCustomTask: (dateISO: string, taskId: string) => void;
   addPerf: (entry: Omit<PerfEntry, "id">) => void;
   removePerf: (id: string) => void;
   reset: () => void;
