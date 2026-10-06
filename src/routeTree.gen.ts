@@ -9,45 +9,20 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as PsychotechniquesRouteImport } from './routes/psychotechniques'
-import { Route as ProgressionRouteImport } from './routes/progression'
-import { Route as ProgrammeRouteImport } from './routes/programme'
-import { Route as PerformancesRouteImport } from './routes/performances'
-import { Route as ParametresRouteImport } from './routes/parametres'
-import { Route as JournalRouteImport } from './routes/journal'
-import { Route as CatalogueRouteImport } from './routes/catalogue'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as ApiSyncStateRouteImport } from './routes/api.sync-state'
+import { Route as CatalogueRouteImport } from './routes/catalogue'
+import { Route as JournalRouteImport } from './routes/journal'
+import { Route as ParametresRouteImport } from './routes/parametres'
+import { Route as PerformancesRouteImport } from './routes/performances'
+import { Route as ProgrammeRouteImport } from './routes/programme'
+import { Route as ProgressionRouteImport } from './routes/progression'
+import { Route as PsychotechniquesRouteImport } from './routes/psychotechniques'
 import { Route as ApiSyncHealthRouteImport } from './routes/api.sync-health'
+import { Route as ApiSyncStateRouteImport } from './routes/api.sync-state'
 
-const PsychotechniquesRoute = PsychotechniquesRouteImport.update({
-  id: '/psychotechniques',
-  path: '/psychotechniques',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ProgressionRoute = ProgressionRouteImport.update({
-  id: '/progression',
-  path: '/progression',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ProgrammeRoute = ProgrammeRouteImport.update({
-  id: '/programme',
-  path: '/programme',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PerformancesRoute = PerformancesRouteImport.update({
-  id: '/performances',
-  path: '/performances',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ParametresRoute = ParametresRouteImport.update({
-  id: '/parametres',
-  path: '/parametres',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const JournalRoute = JournalRouteImport.update({
-  id: '/journal',
-  path: '/journal',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CatalogueRoute = CatalogueRouteImport.update({
@@ -55,19 +30,44 @@ const CatalogueRoute = CatalogueRouteImport.update({
   path: '/catalogue',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const JournalRoute = JournalRouteImport.update({
+  id: '/journal',
+  path: '/journal',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiSyncStateRoute = ApiSyncStateRouteImport.update({
-  id: '/api/sync-state',
-  path: '/api/sync-state',
+const ParametresRoute = ParametresRouteImport.update({
+  id: '/parametres',
+  path: '/parametres',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PerformancesRoute = PerformancesRouteImport.update({
+  id: '/performances',
+  path: '/performances',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProgrammeRoute = ProgrammeRouteImport.update({
+  id: '/programme',
+  path: '/programme',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProgressionRoute = ProgressionRouteImport.update({
+  id: '/progression',
+  path: '/progression',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PsychotechniquesRoute = PsychotechniquesRouteImport.update({
+  id: '/psychotechniques',
+  path: '/psychotechniques',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiSyncHealthRoute = ApiSyncHealthRouteImport.update({
   id: '/api/sync-health',
   path: '/api/sync-health',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiSyncStateRoute = ApiSyncStateRouteImport.update({
+  id: '/api/sync-state',
+  path: '/api/sync-state',
   getParentRoute: () => rootRouteImport,
 } as any)
 
@@ -162,46 +162,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/psychotechniques': {
-      id: '/psychotechniques'
-      path: '/psychotechniques'
-      fullPath: '/psychotechniques'
-      preLoaderRoute: typeof PsychotechniquesRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/progression': {
-      id: '/progression'
-      path: '/progression'
-      fullPath: '/progression'
-      preLoaderRoute: typeof ProgressionRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/programme': {
-      id: '/programme'
-      path: '/programme'
-      fullPath: '/programme'
-      preLoaderRoute: typeof ProgrammeRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/performances': {
-      id: '/performances'
-      path: '/performances'
-      fullPath: '/performances'
-      preLoaderRoute: typeof PerformancesRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/parametres': {
-      id: '/parametres'
-      path: '/parametres'
-      fullPath: '/parametres'
-      preLoaderRoute: typeof ParametresRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/journal': {
-      id: '/journal'
-      path: '/journal'
-      fullPath: '/journal'
-      preLoaderRoute: typeof JournalRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/catalogue': {
@@ -211,18 +176,46 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CatalogueRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+    '/journal': {
+      id: '/journal'
+      path: '/journal'
+      fullPath: '/journal'
+      preLoaderRoute: typeof JournalRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/sync-state': {
-      id: '/api/sync-state'
-      path: '/api/sync-state'
-      fullPath: '/api/sync-state'
-      preLoaderRoute: typeof ApiSyncStateRouteImport
+    '/parametres': {
+      id: '/parametres'
+      path: '/parametres'
+      fullPath: '/parametres'
+      preLoaderRoute: typeof ParametresRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/performances': {
+      id: '/performances'
+      path: '/performances'
+      fullPath: '/performances'
+      preLoaderRoute: typeof PerformancesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/programme': {
+      id: '/programme'
+      path: '/programme'
+      fullPath: '/programme'
+      preLoaderRoute: typeof ProgrammeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/progression': {
+      id: '/progression'
+      path: '/progression'
+      fullPath: '/progression'
+      preLoaderRoute: typeof ProgressionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/psychotechniques': {
+      id: '/psychotechniques'
+      path: '/psychotechniques'
+      fullPath: '/psychotechniques'
+      preLoaderRoute: typeof PsychotechniquesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/sync-health': {
@@ -230,6 +223,13 @@ declare module '@tanstack/react-router' {
       path: '/api/sync-health'
       fullPath: '/api/sync-health'
       preLoaderRoute: typeof ApiSyncHealthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/sync-state': {
+      id: '/api/sync-state'
+      path: '/api/sync-state'
+      fullPath: '/api/sync-state'
+      preLoaderRoute: typeof ApiSyncStateRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
