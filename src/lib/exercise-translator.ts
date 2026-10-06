@@ -45,12 +45,13 @@ const EQUIPMENT_TRANSLATIONS: Record<string, string> = {
 const CATEGORY_TRANSLATIONS: Record<string, string> = {
   strength: "Force & Musculation",
   stretching: "Souplesse & Étirements",
-  cardio: "Cardio & Endurance",
-  plyometrics: "Pliométrie & Explosivité",
-  powerlifting: "Powerlifting",
-  strongman: "Strongman",
-  olympic_weightlifting: "Haltérophilie",
-  calisthenics: "Calisthenics & Poids du corps",
+  cardio: "🏃 Cardio & Endurance / VMA",
+  plyometrics: "⚡ Pliométrie & Explosivité",
+  powerlifting: "🏋️ Powerlifting",
+  strongman: "🗿 Strongman",
+  olympic_weightlifting: "🏋️ Haltérophilie",
+  "olympic weightlifting": "🏋️ Haltérophilie",
+  calisthenics: "💪 Calisthenics & Poids du corps",
 };
 
 const LEVEL_TRANSLATIONS: Record<string, string> = {
@@ -97,6 +98,21 @@ const EXERCISE_NAME_TRANSLATIONS: Record<string, { fr: string; aliases: string[]
   "triceps pushdown": { fr: "Extension Triceps à la Poulie", aliases: ["Pushdown triceps"] },
   "lat pulldown": { fr: "Tirage Vertical à la Poulie (Lat Pulldown)", aliases: ["Tirage poitrine"] },
   "seated cable row": { fr: "Tirage Horizontal à la Poulie (Seated Row)", aliases: ["Tirage horizontal"] },
+  // Running, Cardio & VMA
+  "running, treadmill": { fr: "Course à Pied / VMA (Tapis / Extérieur)", aliases: ["Running", "Sprint", "VMA", "Course a pied", "Cardio", "Fractionne", "Luc leger"] },
+  "jogging, treadmill": { fr: "Jogging sur Tapis de Course", aliases: ["Footing", "Running", "Cardio", "Tapis", "Endurance"] },
+  "trail running/walking": { fr: "Trail & Course / Marche en Nature", aliases: ["Trail", "Randonnee", "Running", "Cardio", "Course a pied"] },
+  "rope jumping": { fr: "Corde à Sauter", aliases: ["Jump rope", "Cardio", "VMA", "Saut à la corde"] },
+  "rowing, stationary": { fr: "Rameur Ergomètre (Concept2)", aliases: ["Rowing machine", "Rameur", "Cardio", "VMA", "Ergometre"] },
+  "bicycling, stationary": { fr: "Vélo d'Appartement / Ergomètre", aliases: ["Velo indoor", "Spinning", "Cardio", "Ergometre"] },
+  bicycling: { fr: "Cyclisme / Vélo d'Extérieur", aliases: ["Velo de route", "VTT", "Cardio", "Endurance"] },
+  "elliptical trainer": { fr: "Vélo Elliptique", aliases: ["Elliptique", "Cardio"] },
+  "prowler sprint": { fr: "Sprint Chariot Prowler", aliases: ["Sled push", "Sprint", "VMA"] },
+  "recumbent bike": { fr: "Vélo Allongé Ergomètre", aliases: ["Velo assis", "Cardio"] },
+  skating: { fr: "Roller / Patinage", aliases: ["Cardio", "Patinage"] },
+  stairmaster: { fr: "Stairmaster (Monte-Escalier)", aliases: ["Step machine", "Escalier", "Cardio"] },
+  "step mill": { fr: "Escalier Ergomètre (Step Mill)", aliases: ["Stair climber", "Cardio"] },
+  "walking, treadmill": { fr: "Marche Active / Inclinée", aliases: ["Marche tapis", "Walking", "Cardio"] },
 };
 
 export function translateMuscle(muscle: string): string {

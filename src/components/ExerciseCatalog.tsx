@@ -18,6 +18,7 @@ export function ExerciseCatalog() {
 
   // Filter States
   const [searchQuery, setSearchQuery] = useState<string>("");
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [selectedMuscle, setSelectedMuscle] = useState<string>("all");
   const [selectedEquipment, setSelectedEquipment] = useState<string>("all");
   const [selectedLevel, setSelectedLevel] = useState<string>("all");
@@ -42,7 +43,15 @@ export function ExerciseCatalog() {
     loadData();
   }, []);
 
-  // Extract unique muscles (French) & equipment (French) for faceting
+  // Extract unique categories (French), muscles (French) & equipment (French) for faceting
+  const allCategoriesFr = useMemo(() => {
+    const set = new Set<string>();
+    exercises.forEach((ex) => {
+      if (ex.categoryFr) set.add(ex.categoryFr);
+    });
+    return Array.from(set).sort();
+  }, [exercises]);
+
   const allMusclesFr = useMemo(() => {
     const set = new Set<string>();
     exercises.forEach((ex) => {
@@ -68,6 +77,11 @@ export function ExerciseCatalog() {
         return false;
       }
 
+      // Category Filter (French)
+      if (selectedCategory !== "all" && ex.categoryFr !== selectedCategory) {
+        return false;
+      }
+
       // Muscle Filter (French)
       if (selectedMuscle !== "all" && !ex.primaryMusclesFr.includes(selectedMuscle)) {
         return false;
@@ -85,7 +99,7 @@ export function ExerciseCatalog() {
 
       return true;
     });
-  }, [exercises, searchQuery, selectedMuscle, selectedEquipment, selectedLevel]);
+  }, [exercises, searchQuery, selectedCategory, selectedMuscle, selectedEquipment, selectedLevel]);
 
   // Pagination logic to prevent mobile DOM slowdown
   const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE) || 1;
@@ -97,7 +111,7 @@ export function ExerciseCatalog() {
   // Reset pagination on filter change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, selectedMuscle, selectedEquipment, selectedLevel]);
+  }, [searchQuery, selectedCategory, selectedMuscle, selectedEquipment, selectedLevel]);
 
   const handleOpenDetail = (ex: UnifiedExercise) => {
     setSelectedExercise(ex);
@@ -120,7 +134,7 @@ export function ExerciseCatalog() {
           Catalogue d'Exercices (Français & Multi-Sources)
         </h2>
         <p className="text-xs text-muted-foreground max-w-2xl">
-          Retrouve les tractions australiennes, calisthenics, musculation et préparation militaire. Dédupliqué et traduit en Français.
+          Retrouve les tractions australiennes, calisthenics, musculation, cardio & VMA et préparation militaire. Dédupliqué et traduit en Français.
         </p>
       </div>
 
@@ -130,14 +144,34 @@ export function ExerciseCatalog() {
           <Search className="absolute left-3.5 top-3 h-4 w-4 text-muted-foreground" />
           <Input
             type="text"
-            placeholder="Rechercher en Français ou Anglais (ex: Tractions australiennes, Pompes, Squat, Bench Press...)"
+            placeholder="Rechercher en Français ou Anglais (ex: Tractions australiennes, Course à pied, VMA, Tapis, Squat...)"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-10 h-10 text-xs bg-background"
           />
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+          {/* Category Facet Filter (French) */}
+          <div>
+            <label className="text-[11px] font-bold text-muted-foreground uppercase mb-1 block">
+              Catégorie
+            </label>
+            <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+              <SelectTrigger className="h-9 text-xs bg-background">
+                <SelectValue placeholder="Toutes les catégories" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Toutes les catégories</SelectItem>
+                {allCategoriesFr.map((cat) => (
+                  <SelectItem key={cat} value={cat}>
+                    {cat}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
           {/* Muscle Facet Filter (French) */}
           <div>
             <label className="text-[11px] font-bold text-muted-foreground uppercase mb-1 block">
@@ -218,6 +252,7 @@ export function ExerciseCatalog() {
             size="sm"
             onClick={() => {
               setSearchQuery("");
+              setSelectedCategory("all");
               setSelectedMuscle("all");
               setSelectedEquipment("all");
               setSelectedLevel("all");
