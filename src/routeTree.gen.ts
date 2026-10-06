@@ -15,6 +15,7 @@ import { Route as ProgrammeRouteImport } from './routes/programme'
 import { Route as PerformancesRouteImport } from './routes/performances'
 import { Route as ParametresRouteImport } from './routes/parametres'
 import { Route as JournalRouteImport } from './routes/journal'
+import { Route as CatalogueRouteImport } from './routes/catalogue'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ApiSyncStateRouteImport } from './routes/api.sync-state'
 import { Route as ApiSyncHealthRouteImport } from './routes/api.sync-health'
@@ -49,6 +50,11 @@ const JournalRoute = JournalRouteImport.update({
   path: '/journal',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CatalogueRoute = CatalogueRouteImport.update({
+  id: '/catalogue',
+  path: '/catalogue',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -67,6 +73,7 @@ const ApiSyncHealthRoute = ApiSyncHealthRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/catalogue': typeof CatalogueRoute
   '/journal': typeof JournalRoute
   '/parametres': typeof ParametresRoute
   '/performances': typeof PerformancesRoute
@@ -78,6 +85,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/catalogue': typeof CatalogueRoute
   '/journal': typeof JournalRoute
   '/parametres': typeof ParametresRoute
   '/performances': typeof PerformancesRoute
@@ -90,6 +98,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/catalogue': typeof CatalogueRoute
   '/journal': typeof JournalRoute
   '/parametres': typeof ParametresRoute
   '/performances': typeof PerformancesRoute
@@ -103,6 +112,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/catalogue'
     | '/journal'
     | '/parametres'
     | '/performances'
@@ -114,6 +124,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/catalogue'
     | '/journal'
     | '/parametres'
     | '/performances'
@@ -125,6 +136,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/catalogue'
     | '/journal'
     | '/parametres'
     | '/performances'
@@ -137,6 +149,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  CatalogueRoute: typeof CatalogueRoute
   JournalRoute: typeof JournalRoute
   ParametresRoute: typeof ParametresRoute
   PerformancesRoute: typeof PerformancesRoute
@@ -191,6 +204,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof JournalRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/catalogue': {
+      id: '/catalogue'
+      path: '/catalogue'
+      fullPath: '/catalogue'
+      preLoaderRoute: typeof CatalogueRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -217,6 +237,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  CatalogueRoute: CatalogueRoute,
   JournalRoute: JournalRoute,
   ParametresRoute: ParametresRoute,
   PerformancesRoute: PerformancesRoute,

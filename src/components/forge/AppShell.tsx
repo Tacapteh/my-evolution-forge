@@ -9,6 +9,7 @@ import {
   BookOpen,
   Settings,
   Flame,
+  Dumbbell,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useForge, computeStreak } from "@/lib/forge-store";
@@ -16,6 +17,7 @@ import { useForge, computeStreak } from "@/lib/forge-store";
 const NAV = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard, primary: true },
   { to: "/programme", label: "Programme", icon: CalendarDays, primary: true },
+  { to: "/catalogue", label: "Catalogue", icon: Dumbbell, primary: true },
   { to: "/performances", label: "Performances", icon: Trophy, primary: true },
   { to: "/progression", label: "Progression", icon: TrendingUp, primary: true },
   { to: "/journal", label: "Journal", icon: BookOpen, primary: true },
@@ -74,7 +76,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       <main className="min-w-0 flex-1 pb-20 md:pb-0">{children}</main>
 
       <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card/95 backdrop-blur md:hidden">
-        <div className="grid grid-cols-6">
+        <div className="grid grid-cols-7">
           {NAV.filter((item) => item.primary).map((item) => {
             const active = item.to === "/" ? pathname === "/" : pathname.startsWith(item.to);
             return (
@@ -87,7 +89,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 )}
               >
                 <item.icon className="h-4 w-4" />
-                <span className="max-w-[56px] truncate text-[9px] sm:text-[10px]">{item.label}</span>
+                <span className="max-w-[50px] truncate text-[9px]">{item.label}</span>
               </Link>
             );
           })}

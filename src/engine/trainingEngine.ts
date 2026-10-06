@@ -358,6 +358,10 @@ export function createTrainingEngine(
 
     const userMaxes = getUserMaxes(state);
     const dayRecord = state.days[dateISO];
+    if (dayRecord?.customTasks && Array.isArray(dayRecord.customTasks)) {
+      rawTasks.push(...dayRecord.customTasks);
+    }
+
     const checkedMap = dayRecord?.checked ?? {};
     const swapsMap = dayRecord?.swaps ?? {};
 
