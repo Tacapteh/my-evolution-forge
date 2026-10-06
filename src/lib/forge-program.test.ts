@@ -13,16 +13,35 @@ const state: ForgeState = {
   days: {
     "2026-07-20": {
       checked: {
-        "swim-1000m": true,
-        "pullups-volume": true,
+        "custom-pull-1": true,
       },
+      customTasks: [
+        {
+          id: "custom-pull-1",
+          label: "Tractions Pronation",
+          type: "pull",
+          moment: "morning",
+          estimatedMinutes: 15,
+          xp: 25,
+        },
+      ],
       journal: { notes: "Tractions propres, bonne energie." },
       psycho: { type: "Calcul mental", score: 42, duration: 1200 },
     },
     "2026-07-21": {
       checked: {
-        "evening-run-note-tue": true,
+        "custom-run-1": true,
       },
+      customTasks: [
+        {
+          id: "custom-run-1",
+          label: "Footing 5km",
+          type: "run",
+          moment: "evening",
+          estimatedMinutes: 30,
+          xp: 50,
+        },
+      ],
     },
   },
   perf: [
@@ -52,9 +71,9 @@ describe("forge program helpers", () => {
     const mission = buildDayMission(state, "2026-07-21");
 
     expect(mission.doneCount).toBe(1);
-    expect(mission.totalCount).toBe(6);
-    expect(mission.remainingCount).toBe(5);
-    expect(mission.completionPct).toBe(17);
+    expect(mission.totalCount).toBe(2); // custom-run-1 + psycho
+    expect(mission.remainingCount).toBe(1);
+    expect(mission.completionPct).toBe(50);
     expect(mission.status).toBe("en_cours");
   });
 
