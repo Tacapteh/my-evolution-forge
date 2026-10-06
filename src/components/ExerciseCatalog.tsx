@@ -4,15 +4,15 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, Filter, Dumbbell, Sparkles, Layers, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
-import type { Exercise } from "@/types/exercise";
+import { Search, Dumbbell, Sparkles, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 import { getExerciseImageUrl } from "@/types/exercise";
 import { ExerciseDetailModal } from "./ExerciseDetailModal";
+import { loadUnifiedExerciseCatalog, type UnifiedExercise } from "@/lib/exercise-catalog-loader";
 
 const ITEMS_PER_PAGE = 24;
 
 export function ExerciseCatalog() {
-  const [exercises, setExercises] = useState<Exercise[]>([]);
+  const [exercises, setExercises] = useState<UnifiedExercise[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -24,21 +24,17 @@ export function ExerciseCatalog() {
   const [currentPage, setCurrentPage] = useState<number>(1);
 
   // Modal State
-  const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null);
+  const [selectedExercise, setSelectedExercise] = useState<UnifiedExercise | null>(null);
   const [modalOpen, setModalOpen] = useState<boolean>(false);
 
   useEffect(() => {
     async function loadData() {
       try {
         setLoading(true);
-        const res = await fetch("/data/exercises.json");
-        if (!res.ok) {
-          throw new Error("Impossible de charger le fichier /data/exercises.json");
-        }
-        const data: Exercise[] = await res.json();
+        const data = await loadUnifiedExerciseCatalog();
         setExercises(data);
       } catch (err: any) {
-        setError(err.message || "Erreur de chargement");
+        setError(err.message || "Erreur de chargement du catalogue");
       } finally {
         setLoading(false);
       }
@@ -46,38 +42,39 @@ export function ExerciseCatalog() {
     loadData();
   }, []);
 
-  // Extract unique muscles & equipment for faceting
-  const allMuscles = useMemo(() => {
+  // Extract unique muscles (French) & equipment (French) for faceting
+  const allMusclesFr = useMemo(() => {
     const set = new Set<string>();
     exercises.forEach((ex) => {
-      ex.primaryMuscles?.forEach((m) => set.add(m));
+      ex.primaryMusclesFr?.forEach((m) => set.add(m));
     });
     return Array.from(set).sort();
   }, [exercises]);
 
-  const allEquipments = useMemo(() => {
+  const allEquipmentsFr = useMemo(() => {
     const set = new Set<string>();
     exercises.forEach((ex) => {
-      if (ex.equipment) set.add(ex.equipment);
+      if (ex.equipmentFr) set.add(ex.equipmentFr);
     });
     return Array.from(set).sort();
   }, [exercises]);
 
   // Filter exercises
   const filtered = useMemo(() => {
+    const query = searchQuery.toLowerCase().trim();
     return exercises.filter((ex) => {
-      // Name Search
-      if (searchQuery.trim() && !ex.name.toLowerCase().includes(searchQuery.toLowerCase().trim())) {
+      // Search in French name, English name, muscles, equipment, etc.
+      if (query && !ex.searchKey.includes(query)) {
         return false;
       }
 
-      // Muscle Filter
-      if (selectedMuscle !== "all" && !ex.primaryMuscles.includes(selectedMuscle)) {
+      // Muscle Filter (French)
+      if (selectedMuscle !== "all" && !ex.primaryMusclesFr.includes(selectedMuscle)) {
         return false;
       }
 
-      // Equipment Filter
-      if (selectedEquipment !== "all" && ex.equipment !== selectedEquipment) {
+      // Equipment Filter (French)
+      if (selectedEquipment !== "all" && ex.equipmentFr !== selectedEquipment) {
         return false;
       }
 
@@ -102,7 +99,7 @@ export function ExerciseCatalog() {
     setCurrentPage(1);
   }, [searchQuery, selectedMuscle, selectedEquipment, selectedLevel]);
 
-  const handleOpenDetail = (ex: Exercise) => {
+  const handleOpenDetail = (ex: UnifiedExercise) => {
     setSelectedExercise(ex);
     setModalOpen(true);
   };
@@ -111,19 +108,19 @@ export function ExerciseCatalog() {
     <div className="space-y-6">
       {/* Header Banner */}
       <div className="rounded-xl border border-primary/30 bg-primary/10 p-4 md:p-6 space-y-2">
-        <div className="flex items-center justify-between">
-          <Badge variant="outline" className="border-primary/40 text-primary px-3 py-1 text-xs">
-            <Sparkles className="mr-1.5 h-3.5 w-3.5" /> Base Open-Source +800 Exercices
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <Badge variant="outline" className="border-primary/40 text-primary px-3 py-1 text-xs w-fit">
+            <Sparkles className="mr-1.5 h-3.5 w-3.5" /> Base Multi-Sources Complète & Traduite en Français
           </Badge>
           <span className="text-xs font-semibold text-primary">
-            {filtered.length} exercice{filtered.length > 1 ? "s" : ""} trouvé{filtered.length > 1 ? "s" : ""}
+            {filtered.length} exercice{filtered.length > 1 ? "s" : ""} disponible{filtered.length > 1 ? "s" : ""}
           </span>
         </div>
         <h2 className="text-xl md:text-2xl font-bold tracking-tight text-foreground">
-          Catalogue & Workout Builder
+          Catalogue d'Exercices (Français & Multi-Sources)
         </h2>
         <p className="text-xs text-muted-foreground max-w-2xl">
-          Explore l'ensemble de la bibliothèque d'exercices open-source et injecte n'importe quel mouvement dans ton programme d'entraînement FORGE.
+          Retrouve les tractions australiennes, calisthenics, musculation et préparation militaire. Dédupliqué et traduit en Français.
         </p>
       </div>
 
@@ -133,7 +130,7 @@ export function ExerciseCatalog() {
           <Search className="absolute left-3.5 top-3 h-4 w-4 text-muted-foreground" />
           <Input
             type="text"
-            placeholder="Rechercher un exercice (ex: Bench Press, Pullup, Squat...)"
+            placeholder="Rechercher en Français ou Anglais (ex: Tractions australiennes, Pompes, Squat, Bench Press...)"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-10 h-10 text-xs bg-background"
@@ -141,7 +138,7 @@ export function ExerciseCatalog() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
-          {/* Muscle Facet Filter */}
+          {/* Muscle Facet Filter (French) */}
           <div>
             <label className="text-[11px] font-bold text-muted-foreground uppercase mb-1 block">
               Groupe Musculaire
@@ -152,8 +149,8 @@ export function ExerciseCatalog() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Tous les muscles ({exercises.length})</SelectItem>
-                {allMuscles.map((m) => (
-                  <SelectItem key={m} value={m} className="capitalize">
+                {allMusclesFr.map((m) => (
+                  <SelectItem key={m} value={m}>
                     {m}
                   </SelectItem>
                 ))}
@@ -161,7 +158,7 @@ export function ExerciseCatalog() {
             </Select>
           </div>
 
-          {/* Equipment Facet Filter */}
+          {/* Equipment Facet Filter (French) */}
           <div>
             <label className="text-[11px] font-bold text-muted-foreground uppercase mb-1 block">
               Matériel
@@ -172,8 +169,8 @@ export function ExerciseCatalog() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Tout matériel</SelectItem>
-                {allEquipments.map((eq) => (
-                  <SelectItem key={eq} value={eq} className="capitalize">
+                {allEquipmentsFr.map((eq) => (
+                  <SelectItem key={eq} value={eq}>
                     {eq}
                   </SelectItem>
                 ))}
@@ -181,7 +178,7 @@ export function ExerciseCatalog() {
             </Select>
           </div>
 
-          {/* Level Filter */}
+          {/* Level Filter (French) */}
           <div>
             <label className="text-[11px] font-bold text-muted-foreground uppercase mb-1 block">
               Niveau
@@ -192,9 +189,9 @@ export function ExerciseCatalog() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Tous niveaux</SelectItem>
-                <SelectItem value="beginner">Beginner (Débutant)</SelectItem>
-                <SelectItem value="intermediate">Intermediate (Intermédiaire)</SelectItem>
-                <SelectItem value="expert">Expert (Avancé)</SelectItem>
+                <SelectItem value="beginner">Débutant</SelectItem>
+                <SelectItem value="intermediate">Intermédiaire</SelectItem>
+                <SelectItem value="expert">Avancé / Expert</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -205,7 +202,7 @@ export function ExerciseCatalog() {
       {loading ? (
         <div className="py-20 flex flex-col items-center justify-center space-y-3 text-muted-foreground">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          <span className="text-sm font-medium">Chargement du catalogue d'exercices...</span>
+          <span className="text-sm font-medium">Chargement et fusion des sources d'exercices...</span>
         </div>
       ) : error ? (
         <div className="p-8 text-center rounded-xl border border-destructive/40 bg-destructive/10 text-destructive text-sm font-medium">
@@ -244,7 +241,7 @@ export function ExerciseCatalog() {
                   {ex.images && ex.images.length > 0 ? (
                     <img
                       src={getExerciseImageUrl(ex.images[0])}
-                      alt={ex.name}
+                      alt={ex.nameFr}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                       loading="lazy"
                       onError={(e) => {
@@ -252,36 +249,39 @@ export function ExerciseCatalog() {
                       }}
                     />
                   ) : (
-                    <div className="w-full h-full grid place-items-center text-muted-foreground text-xs">
-                      <Dumbbell className="h-6 w-6" />
+                    <div className="w-full h-full grid place-items-center text-muted-foreground text-xs p-3 text-center">
+                      <Dumbbell className="h-6 w-6 mb-1 text-primary opacity-80" />
+                      <span className="text-[10px] text-muted-foreground">Calisthenics / Exercice</span>
                     </div>
                   )}
-                  {ex.level && (
+                  {ex.levelFr && (
                     <Badge className="absolute top-2 right-2 bg-background/80 backdrop-blur text-[9px] text-foreground font-bold border-none uppercase">
-                      {ex.level}
+                      {ex.levelFr}
                     </Badge>
                   )}
                 </div>
 
-                {/* Content */}
+                {/* Content in French */}
                 <div className="space-y-1.5 flex-1 flex flex-col justify-between">
                   <div>
-                    <h3 className="font-bold text-sm text-foreground group-hover:text-primary transition-colors line-clamp-1">
-                      {ex.name}
+                    <h3 className="font-bold text-sm text-foreground group-hover:text-primary transition-colors line-clamp-2">
+                      {ex.nameFr}
                     </h3>
-                    <span className="text-[10px] text-muted-foreground capitalize block mt-0.5">
-                      {ex.category}
-                    </span>
+                    {ex.nameFr !== ex.name && (
+                      <span className="text-[10px] text-muted-foreground/70 block truncate">
+                        ({ex.name})
+                      </span>
+                    )}
                   </div>
 
                   <div className="flex flex-wrap items-center gap-1.5 pt-2">
-                    {ex.primaryMuscles.length > 0 && (
-                      <Badge variant="secondary" className="text-[10px] font-semibold capitalize px-2 py-0.5">
-                        🎯 {ex.primaryMuscles[0]}
+                    {ex.primaryMusclesFr && ex.primaryMusclesFr.length > 0 && (
+                      <Badge variant="secondary" className="text-[10px] font-semibold px-2 py-0.5">
+                        🎯 {ex.primaryMusclesFr[0]}
                       </Badge>
                     )}
-                    <Badge variant="outline" className="text-[10px] border-border text-muted-foreground capitalize px-2 py-0.5">
-                      {ex.equipment || "Poids du corps"}
+                    <Badge variant="outline" className="text-[10px] border-border text-muted-foreground px-2 py-0.5">
+                      {ex.equipmentFr}
                     </Badge>
                   </div>
                 </div>

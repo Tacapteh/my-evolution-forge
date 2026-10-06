@@ -6,14 +6,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Dumbbell, Plus, Calendar, Clock, RotateCcw, Flame, Check, X, Shield } from "lucide-react";
+import { Dumbbell, Plus, Calendar, Clock, Flame, Check, Shield } from "lucide-react";
 import type { Exercise } from "@/types/exercise";
 import { getExerciseImageUrl } from "@/types/exercise";
+import type { UnifiedExercise } from "@/lib/exercise-catalog-loader";
 import { useForge, todayISO, toISO } from "@/lib/forge-store";
 import { toast } from "sonner";
 
 export interface ExerciseDetailModalProps {
-  exercise: Exercise | null;
+  exercise: (Exercise & Partial<UnifiedExercise>) | null;
   open: boolean;
   onClose: () => void;
 }
@@ -49,6 +50,12 @@ export function ExerciseDetailModal({ exercise, open, onClose }: ExerciseDetailM
 
   if (!exercise) return null;
 
+  const displayName = exercise.nameFr || exercise.name;
+  const primaryMusclesList = exercise.primaryMusclesFr || exercise.primaryMuscles || [];
+  const secondaryMusclesList = exercise.secondaryMusclesFr || exercise.secondaryMuscles || [];
+  const equipmentLabel = exercise.equipmentFr || exercise.equipment || "Poids du corps";
+  const categoryLabel = exercise.categoryFr || exercise.category || "Exercice";
+
   // Compute the target ISO date for the selected day of the current week
   const getTargetISODate = (dayIdx: number) => {
     const now = new Date();
@@ -75,13 +82,13 @@ export function ExerciseDetailModal({ exercise, open, onClose }: ExerciseDetailM
     })();
 
     addCustomTask(targetISO, {
-      label: exercise.name,
+      label: displayName,
       type: mappedCategoryType,
       detail: detailString,
       moment,
       estimatedMinutes: 15,
       rest: `${restSeconds}s`,
-      steps: exercise.instructions.length > 0 ? exercise.instructions : [exercise.name],
+      steps: exercise.instructions.length > 0 ? exercise.instructions : [displayName],
       xp: 25,
       exerciseId: exercise.id,
     });
@@ -90,7 +97,7 @@ export function ExerciseDetailModal({ exercise, open, onClose }: ExerciseDetailM
     const momentName = MOMENTS.find((m) => m.id === moment)?.label ?? "Créneau";
 
     toast.success("Exercice ajouté à ton programme !", {
-      description: `"${exercise.name}" ajouté pour ${dayName} (${momentName}).`,
+      description: `"${displayName}" ajouté pour ${dayName} (${momentName}).`,
     });
 
     onClose();
@@ -101,27 +108,27 @@ export function ExerciseDetailModal({ exercise, open, onClose }: ExerciseDetailM
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto border-border/60 bg-card/95 backdrop-blur-xl p-5 md:p-6 space-y-4">
         <DialogHeader className="space-y-1.5">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <Badge variant="outline" className="border-primary/40 text-primary px-2.5 py-0.5 text-xs font-semibold capitalize">
-              {exercise.category || "Exercice"}
+              {categoryLabel}
             </Badge>
-            {exercise.equipment && (
-              <Badge variant="secondary" className="text-xs font-medium capitalize">
-                {exercise.equipment}
-              </Badge>
-            )}
-            {exercise.level && (
+            <Badge variant="secondary" className="text-xs font-medium capitalize">
+              {equipmentLabel}
+            </Badge>
+            {exercise.levelFr && (
               <Badge className="bg-primary/20 text-primary border-none text-[10px] uppercase font-bold">
-                {exercise.level}
+                {exercise.levelFr}
               </Badge>
             )}
           </div>
           <DialogTitle className="text-xl md:text-2xl font-bold tracking-tight text-foreground">
-            {exercise.name}
+            {displayName}
           </DialogTitle>
-          <DialogDescription className="text-xs text-muted-foreground">
-            Fiche technique et ajout au planning hebdomadaire.
-          </DialogDescription>
+          {exercise.nameFr && exercise.nameFr !== exercise.name && (
+            <DialogDescription className="text-xs text-muted-foreground">
+              Titre original : {exercise.name}
+            </DialogDescription>
+          )}
         </DialogHeader>
 
         {/* Tab Navigation */}
@@ -138,24 +145,32 @@ export function ExerciseDetailModal({ exercise, open, onClose }: ExerciseDetailM
           {/* TAB 1: Detail & Visuals */}
           <TabsContent value="detail" className="space-y-4 pt-3">
             {/* Visual Images (Start & End Position) */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {exercise.images.slice(0, 2).map((imgRelative, idx) => (
-                <div key={idx} className="relative aspect-4/3 rounded-xl border border-border/80 bg-background/80 overflow-hidden group">
-                  <img
-                    src={getExerciseImageUrl(imgRelative)}
-                    alt={`${exercise.name} - Position ${idx === 0 ? "départ" : "arrivée"}`}
-                    className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                    loading="lazy"
-                    onError={(e) => {
-                      (e.target as HTMLElement).style.display = "none";
-                    }}
-                  />
-                  <span className="absolute bottom-2 left-2 text-[10px] font-bold px-2 py-0.5 rounded bg-background/80 backdrop-blur text-foreground border border-border/40">
-                    {idx === 0 ? "1. Position Départ" : "2. Position Arrivée"}
-                  </span>
-                </div>
-              ))}
-            </div>
+            {exercise.images && exercise.images.length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {exercise.images.slice(0, 2).map((imgRelative, idx) => (
+                  <div key={idx} className="relative aspect-4/3 rounded-xl border border-border/80 bg-background/80 overflow-hidden group">
+                    <img
+                      src={getExerciseImageUrl(imgRelative)}
+                      alt={`${displayName} - Position ${idx === 0 ? "départ" : "arrivée"}`}
+                      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                      loading="lazy"
+                      onError={(e) => {
+                        (e.target as HTMLElement).style.display = "none";
+                      }}
+                    />
+                    <span className="absolute bottom-2 left-2 text-[10px] font-bold px-2 py-0.5 rounded bg-background/80 backdrop-blur text-foreground border border-border/40">
+                      {idx === 0 ? "1. Position Départ" : "2. Position Arrivée"}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="p-6 rounded-xl border border-border/60 bg-background/40 text-center text-xs text-muted-foreground space-y-1">
+                <Dumbbell className="h-6 w-6 mx-auto text-primary opacity-70" />
+                <p className="font-semibold text-foreground">Exercice au poids du corps / Calisthenics</p>
+                <p>Consultez les consignes ci-dessous pour exécuter le mouvement.</p>
+              </div>
+            )}
 
             {/* Targeted Muscles */}
             <div className="space-y-2 rounded-xl border border-border/60 bg-background/40 p-3.5">
@@ -163,12 +178,12 @@ export function ExerciseDetailModal({ exercise, open, onClose }: ExerciseDetailM
                 <Flame className="h-3.5 w-3.5 text-primary" /> Muscles Sollicités
               </div>
               <div className="flex flex-wrap items-center gap-2 pt-1">
-                {exercise.primaryMuscles.map((muscle) => (
+                {primaryMusclesList.map((muscle) => (
                   <Badge key={muscle} className="bg-primary text-primary-foreground text-xs font-semibold px-2.5 py-1">
                     🎯 {muscle} (Principal)
                   </Badge>
                 ))}
-                {exercise.secondaryMuscles.map((muscle) => (
+                {secondaryMusclesList.map((muscle) => (
                   <Badge key={muscle} variant="outline" className="text-xs border-border text-muted-foreground px-2.5 py-1">
                     {muscle} (Secondaire)
                   </Badge>
@@ -181,7 +196,7 @@ export function ExerciseDetailModal({ exercise, open, onClose }: ExerciseDetailM
               <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
                 <Shield className="h-3.5 w-3.5 text-primary" /> Consignes d'Exécution Numérotées
               </h4>
-              {exercise.instructions.length > 0 ? (
+              {exercise.instructions && exercise.instructions.length > 0 ? (
                 <ol className="space-y-2 text-xs text-foreground/90">
                   {exercise.instructions.map((stepText, idx) => (
                     <li key={idx} className="flex items-start gap-2.5 bg-background/60 p-2.5 rounded-lg border border-border/40">
