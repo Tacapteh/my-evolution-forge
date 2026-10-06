@@ -564,6 +564,54 @@ export function ForgeProvider({ children }: { children: ReactNode }) {
             },
           };
         }),
+      addCustomTask: (dateISO, task) =>
+        setLocalState((prev) => {
+          const day = prev.days[dateISO] ?? { checked: {} };
+          const customTasks = day.customTasks ? [...day.customTasks] : [];
+          const newTask = {
+            id: task.id || `custom-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+            label: task.label,
+            type: task.type || "custom",
+            detail: task.detail || "",
+            moment: task.moment,
+            estimatedMinutes: task.estimatedMinutes || 15,
+            rest: task.rest || "60s",
+            steps: task.steps || [],
+            xp: task.xp || 20,
+            completed: false,
+            exerciseId: task.exerciseId,
+          };
+          customTasks.push(newTask);
+          return {
+            ...prev,
+            days: {
+              ...prev.days,
+              [dateISO]: {
+                ...day,
+                customTasks,
+              },
+            },
+          };
+        }),
+      removeCustomTask: (dateISO, taskId) =>
+        setLocalState((prev) => {
+          const day = prev.days[dateISO];
+          if (!day || !day.customTasks) return prev;
+          const customTasks = day.customTasks.filter((t) => t.id !== taskId);
+          const checked = { ...day.checked };
+          delete checked[taskId];
+          return {
+            ...prev,
+            days: {
+              ...prev.days,
+              [dateISO]: {
+                ...day,
+                checked,
+                customTasks,
+              },
+            },
+          };
+        }),
       addPerf: (entry) =>
         setLocalState((prev) => {
           const withEntry = [...prev.perf, { ...entry, id: crypto.randomUUID() }];

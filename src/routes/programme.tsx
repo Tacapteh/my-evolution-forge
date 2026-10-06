@@ -1,8 +1,7 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { PageHeader } from "@/components/forge/AppShell";
 import { FocusSessionPanel, ProgramHeader } from "@/components/forge/program-components";
-import { ExerciseSwapModal } from "@/components/forge/ExerciseSwapModal";
 import { useForge, todayISO, toISO } from "@/lib/forge-store";
 import { createTrainingEngine } from "@/engine/trainingEngine";
 import { toast } from "sonner";
@@ -30,6 +29,8 @@ import {
   Calendar,
   Award,
   PlusCircle,
+  Plus,
+  Trash2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -64,19 +65,12 @@ const TASK_ICONS = {
 };
 
 function ProgrammePage() {
-  const { state, hydrated, toggleTask, startSession, addPerf, setMomentSwap, setTaskSwap, setTaskRealization } = useForge();
+  const { state, hydrated, toggleTask, startSession, addPerf, removeCustomTask, setTaskRealization } = useForge();
   const today = todayISO();
   const [viewMode, setViewMode] = useState<"today" | "week">("today");
   const [anchor, setAnchor] = useState(() => new Date());
   const [focusOpen, setFocusOpen] = useState(false);
   const [focusISO, setFocusISO] = useState(today);
-
-  const [swapModalState, setSwapModalState] = useState<{
-    open: boolean;
-    dateISO: string;
-    moment: string;
-    task?: any;
-  }>({ open: false, dateISO: "", moment: "" });
 
   const handleLogDistance = (task: any, dateISO: string) => {
     const targetDist = task.targetDistance ?? 5;
@@ -118,36 +112,9 @@ function ProgrammePage() {
     }
   };
 
-  const handleSwapTask = (date: string, task: any) => {
-    setSwapModalState({ open: true, dateISO: date, moment: task.moment, task });
-  };
-
-  const handleSwapMoment = (date: string, moment: string) => {
-    setSwapModalState({ open: true, dateISO: date, moment, task: null });
-  };
-
-  const handleSelectSwap = (swapId: string) => {
-    if (!swapModalState.dateISO) return;
-    if (swapModalState.task?.id) {
-      setTaskSwap(swapModalState.dateISO, swapModalState.task.id, swapId);
-    } else if (swapModalState.moment) {
-      setMomentSwap(swapModalState.dateISO, swapModalState.moment, swapId);
-    }
-    toast.success("Exercice remplacé avec succès !", {
-      description: `L'alternative préserve l'intention de la séance et s'adapte à vos Max.`,
-    });
-  };
-
-  const handleResetSwap = () => {
-    if (!swapModalState.dateISO) return;
-    if (swapModalState.task?.id) {
-      setTaskSwap(swapModalState.dateISO, swapModalState.task.id, "");
-    } else if (swapModalState.moment) {
-      setMomentSwap(swapModalState.dateISO, swapModalState.moment, "");
-    }
-    toast.info("Exercice d'origine restauré.", {
-      description: `La programmation initiale a été rétablie pour cet exercice.`,
-    });
+  const handleDeleteTask = (dateISO: string, taskId: string, label: string) => {
+    removeCustomTask(dateISO, taskId);
+    toast.info(`Exercice "${label}" supprimé.`);
   };
 
   const engine = useMemo(
@@ -363,15 +330,16 @@ function ProgrammePage() {
                             <Icon className="h-4 w-4 text-muted-foreground/50" />
                             <span>{label}</span>
                           </div>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-6 text-[10px] px-2 text-primary hover:text-primary gap-1"
-                            onClick={() => handleSwapMoment(today, momentKey)}
-                            title="Ajouter une activité"
-                          >
-                            <Pencil className="h-3 w-3" /> + Ajouter
-                          </Button>
+                          <Link to="/catalogue">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 text-[10px] px-2 text-primary hover:text-primary gap-1"
+                              title="Ajouter un exercice depuis le catalogue"
+                            >
+                              <Plus className="h-3 w-3" /> + Ajouter
+                            </Button>
+                          </Link>
                         </div>
                         <p className="text-[11px] text-muted-foreground/70 italic">Aucune activité programmée.</p>
                       </div>
@@ -385,15 +353,16 @@ function ProgrammePage() {
                           <Icon className="h-4 w-4 text-primary" />
                           <span>{label}</span>
                         </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-6 text-[10px] px-2 text-muted-foreground hover:text-primary gap-1"
-                          onClick={() => handleSwapMoment(today, momentKey)}
-                          title="Modifier l'activité de ce moment"
-                        >
-                          <Pencil className="h-3 w-3" /> Modifier
-                        </Button>
+                        <Link to="/catalogue">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 text-[10px] px-2 text-muted-foreground hover:text-primary gap-1"
+                            title="Ajouter un exercice depuis le catalogue"
+                          >
+                            <Plus className="h-3 w-3" /> + Ajouter
+                          </Button>
+                        </Link>
                       </div>
                       <ul className="space-y-2">
                         {tasks.map((task) => {
@@ -467,14 +436,14 @@ function ProgrammePage() {
                                   <Button
                                     variant="ghost"
                                     size="icon"
-                                    className="h-6 w-6 text-muted-foreground/60 hover:text-primary hover:bg-primary/10"
+                                    className="h-6 w-6 text-muted-foreground/60 hover:text-destructive hover:bg-destructive/10"
                                     onClick={(e) => {
                                       e.stopPropagation();
-                                      handleSwapTask(today, task);
+                                      handleDeleteTask(today, task.id, task.label);
                                     }}
-                                    title="Modifier cet exercice indépendamment"
+                                    title="Supprimer cet exercice de la séance"
                                   >
-                                    <Pencil className="h-3 w-3" />
+                                    <Trash2 className="h-3.5 w-3.5" />
                                   </Button>
 
                                   <span
@@ -613,14 +582,16 @@ function ProgrammePage() {
                                 <Icon className="h-3 w-3 text-muted-foreground/40" />
                                 <span>{label}</span>
                               </div>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-5 text-[9px] px-1 text-primary hover:text-primary gap-0.5"
-                                onClick={() => handleSwapMoment(day.iso, key)}
-                              >
-                                <Pencil className="h-2.5 w-2.5" /> + Ajouter
-                              </Button>
+                              <Link to="/catalogue">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-5 text-[9px] px-1 text-primary hover:text-primary gap-0.5"
+                                  title="Ajouter un exercice depuis le catalogue"
+                                >
+                                  <Plus className="h-2.5 w-2.5" /> + Ajouter
+                                </Button>
+                              </Link>
                             </div>
                           );
                         }
@@ -632,15 +603,16 @@ function ProgrammePage() {
                                 <Icon className="h-3 w-3 text-primary" />
                                 <span>{label}</span>
                               </div>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-5 text-[9px] px-1.5 text-muted-foreground hover:text-primary gap-1"
-                                onClick={() => handleSwapMoment(day.iso, key)}
-                                title="Modifier l'activité de ce moment"
-                              >
-                                <Pencil className="h-2.5 w-2.5" /> Modifier
-                              </Button>
+                              <Link to="/catalogue">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-5 text-[9px] px-1.5 text-muted-foreground hover:text-primary gap-1"
+                                  title="Ajouter un exercice depuis le catalogue"
+                                >
+                                  <Plus className="h-2.5 w-2.5" /> + Ajouter
+                                </Button>
+                              </Link>
                             </div>
 
                             <ul className="space-y-1.5">
@@ -715,14 +687,14 @@ function ProgrammePage() {
                                         <Button
                                           variant="ghost"
                                           size="icon"
-                                          className="h-5 w-5 text-muted-foreground/60 hover:text-primary hover:bg-primary/10"
+                                          className="h-5 w-5 text-muted-foreground/60 hover:text-destructive hover:bg-destructive/10"
                                           onClick={(e) => {
                                             e.stopPropagation();
-                                            handleSwapTask(day.iso, task);
+                                            handleDeleteTask(day.iso, task.id, task.label);
                                           }}
-                                          title="Modifier cet exercice indépendamment"
+                                          title="Supprimer cet exercice de la séance"
                                         >
-                                          <Pencil className="h-2.5 w-2.5" />
+                                          <Trash2 className="h-2.5 w-2.5" />
                                         </Button>
 
                                         <span className={cn(
@@ -795,20 +767,6 @@ function ProgrammePage() {
         checked={focusChecked}
         onToggle={(taskId) => handleToggleForISO(taskId, focusISO)}
         onClose={() => setFocusOpen(false)}
-      />
-
-      <ExerciseSwapModal
-        open={swapModalState.open}
-        onClose={() => setSwapModalState((prev) => ({ ...prev, open: false }))}
-        dateISO={swapModalState.dateISO}
-        moment={swapModalState.moment}
-        momentLabel={MOMENT_LABELS[swapModalState.moment as keyof typeof MOMENT_LABELS] ?? swapModalState.moment}
-        currentTask={swapModalState.task}
-        userMaxPull={Math.max(6, ...(state.perf?.filter((p) => p.type === "pull").map((p) => p.value) ?? []))}
-        userMaxChair={Math.max(60, ...(state.perf?.filter((p) => p.type === "chair").map((p) => p.value) ?? []))}
-        userMaxPush={Math.max(15, ...(state.perf?.filter((p: any) => p.type === "push").map((p: any) => p.value) ?? []))}
-        onSelectAlternative={handleSelectSwap}
-        onReset={handleResetSwap}
       />
     </div>
   );
