@@ -5,6 +5,7 @@ import {
   translateCategory,
   translateLevel,
   translateExerciseName,
+  translateInstructions,
 } from "./exercise-translator";
 
 export interface UnifiedExercise extends Exercise {
@@ -14,6 +15,7 @@ export interface UnifiedExercise extends Exercise {
   equipmentFr: string;
   categoryFr: string;
   levelFr: string;
+  instructionsFr: string[];
   searchKey: string;
 }
 
@@ -33,6 +35,7 @@ export async function loadUnifiedExerciseCatalog(): Promise<UnifiedExercise[]> {
       const equipmentFr = translateEquipment(ex.equipment);
       const categoryFr = translateCategory(ex.category);
       const levelFr = translateLevel(ex.level);
+      const instructionsFr = translateInstructions(ex.instructions || []);
 
       const searchKey = [
         frName,
@@ -55,6 +58,7 @@ export async function loadUnifiedExerciseCatalog(): Promise<UnifiedExercise[]> {
         equipmentFr,
         categoryFr,
         levelFr,
+        instructionsFr,
         searchKey,
       };
     });

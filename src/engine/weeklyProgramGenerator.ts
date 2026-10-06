@@ -117,7 +117,7 @@ export function generateWeeklyProgram(userStats: UserStats): WeeklyProgram {
 
   const schedule: DayProgram[] = days.map((dayName) => ({
     dayName,
-    focus: "Programme Vierge — À construire sur-mesure",
+    focus: "Repos & Récupération",
     sessions: [],
   }));
 

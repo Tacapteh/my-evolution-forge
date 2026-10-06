@@ -507,13 +507,22 @@ let thuRunCount = 0;
     const psychoTask = finalTasks.find((task) => task.type === "psycho");
     const psychoDone = psychoTask ? isTaskDone(psychoTask, checked) : false;
 
+    const workoutTasks = finalTasks.filter((t) => t.type !== "psycho");
+    const hasWorkout = workoutTasks.length > 0;
+    const dynamicTitle = hasWorkout
+      ? `${definition.name} — Séance d'entraînement (${workoutTasks.length} exercice${workoutTasks.length > 1 ? "s" : ""})`
+      : `${definition.name} — Journée de Repos`;
+    const dynamicObjective = hasWorkout
+      ? `${workoutTasks.length} exercice${workoutTasks.length > 1 ? "s" : ""} au programme`
+      : "Aucun exercice physique programmé aujourd'hui";
+
     return {
       programId: militarySeptemberProgram.id,
       weekId: week.id,
       iso: dateISO,
       dayName: definition.name,
-      title: definition.title ?? `${definition.name} - ${definition.objective}`,
-      objective: definition.objective,
+      title: dynamicTitle,
+      objective: dynamicObjective,
       priority: definition.priority ?? "Normale",
       tasks: finalTasks,
       doneCount,
