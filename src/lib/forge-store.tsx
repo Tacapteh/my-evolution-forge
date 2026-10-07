@@ -165,6 +165,12 @@ interface Ctx {
       fallbackEngine?: any;
     }
   ) => void;
+  clearWeekTasks: (
+    mondayISO: string,
+    options?: {
+      durationWeeks?: number;
+    }
+  ) => void;
   addPerf: (entry: Omit<PerfEntry, "id">) => void;
   removePerf: (id: string) => void;
   reset: () => void;
@@ -781,6 +787,29 @@ export function ForgeProvider({ children }: { children: ReactNode }) {
               newDays[tgtISO] = {
                 ...existingDay,
                 customTasks: finalCustomTasks,
+              };
+            }
+          }
+
+          return {
+            ...prev,
+            days: newDays,
+          };
+        }),
+      clearWeekTasks: (mondayISO, options) =>
+        setLocalState((prev) => {
+          const durationWeeks = Math.max(1, options?.durationWeeks ?? 1);
+          const newDays = { ...prev.days };
+
+          for (let w = 0; w < durationWeeks; w++) {
+            const weekMonday = addDaysISO(mondayISO, w * 7);
+            for (let i = 0; i < 7; i++) {
+              const tgtISO = addDaysISO(weekMonday, i);
+              const existingDay = newDays[tgtISO] ?? { checked: {} };
+              newDays[tgtISO] = {
+                ...existingDay,
+                customTasks: [],
+                checked: {},
               };
             }
           }

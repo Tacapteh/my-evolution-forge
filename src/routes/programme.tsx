@@ -5,6 +5,7 @@ import { FocusSessionPanel, ProgramHeader } from "@/components/forge/program-com
 import { useForge, todayISO, toISO, getMondayISO } from "@/lib/forge-store";
 import { createTrainingEngine } from "@/engine/trainingEngine";
 import { CopyWeekModal } from "@/components/CopyWeekModal";
+import { ClearWeekModal } from "@/components/ClearWeekModal";
 import { toast } from "sonner";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -75,6 +76,7 @@ function ProgrammePage() {
   const [focusOpen, setFocusOpen] = useState(false);
   const [focusISO, setFocusISO] = useState(today);
   const [copyModalOpen, setCopyModalOpen] = useState(false);
+  const [clearModalOpen, setClearModalOpen] = useState(false);
 
   const currentMondayISO = useMemo(() => getMondayISO(anchor), [anchor]);
 
@@ -335,41 +337,29 @@ function ProgrammePage() {
       <div className="px-4 md:px-8 space-y-6 max-w-7xl mx-auto">
         {/* En-tête avec sélecteur de Vue (Aujourd'hui vs Semaine complète) */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="flex items-center gap-1.5 p-1 bg-card border border-border/80 rounded-xl shadow-sm">
-              <button
-                onClick={() => setViewMode("today")}
-                className={cn(
-                  "px-4 py-2 text-xs font-bold rounded-lg transition-all flex items-center gap-2",
-                  viewMode === "today"
-                    ? "bg-primary text-primary-foreground shadow-md"
-                    : "text-muted-foreground hover:text-foreground"
-                )}
-              >
-                <Sun className="h-4 w-4" /> Aujourd'hui
-              </button>
-              <button
-                onClick={() => setViewMode("week")}
-                className={cn(
-                  "px-4 py-2 text-xs font-bold rounded-lg transition-all flex items-center gap-2",
-                  viewMode === "week"
-                    ? "bg-primary text-primary-foreground shadow-md"
-                    : "text-muted-foreground hover:text-foreground"
-                )}
-              >
-                <Calendar className="h-4 w-4" /> Semaine complète
-              </button>
-            </div>
-
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setCopyModalOpen(true)}
-              className="h-10 text-xs font-bold gap-1.5 border-primary/40 text-primary hover:bg-primary/10 shadow-sm"
-              title="Dupliquer toute la semaine vers la semaine suivante ou sur plusieurs mois"
+          <div className="flex items-center gap-1.5 p-1 bg-card border border-border/80 rounded-xl shadow-sm">
+            <button
+              onClick={() => setViewMode("today")}
+              className={cn(
+                "px-4 py-2 text-xs font-bold rounded-lg transition-all flex items-center gap-2",
+                viewMode === "today"
+                  ? "bg-primary text-primary-foreground shadow-md"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
             >
-              <Copy className="h-4 w-4" /> Dupliquer la Semaine
-            </Button>
+              <Sun className="h-4 w-4" /> Aujourd'hui
+            </button>
+            <button
+              onClick={() => setViewMode("week")}
+              className={cn(
+                "px-4 py-2 text-xs font-bold rounded-lg transition-all flex items-center gap-2",
+                viewMode === "week"
+                  ? "bg-primary text-primary-foreground shadow-md"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              <Calendar className="h-4 w-4" /> Semaine complète
+            </button>
           </div>
 
           <div className="flex flex-wrap items-center gap-2 text-xs">
@@ -649,14 +639,25 @@ function ProgrammePage() {
                 onToday={() => setAnchor(new Date())}
               />
 
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setCopyModalOpen(true)}
-                className="h-10 px-4 text-xs font-bold gap-2 border-primary/40 text-primary hover:bg-primary/10 shadow-sm"
-              >
-                <Copy className="h-4 w-4" /> Dupliquer la Semaine
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCopyModalOpen(true)}
+                  className="h-8 px-3 text-xs text-muted-foreground hover:text-foreground border-border/60 hover:border-border font-medium gap-1.5 transition-colors"
+                >
+                  <Copy className="h-3.5 w-3.5" /> Dupliquer la Semaine
+                </Button>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setClearModalOpen(true)}
+                  className="h-8 px-3 text-xs text-muted-foreground hover:text-destructive hover:border-destructive/40 hover:bg-destructive/10 font-medium gap-1.5 transition-colors"
+                >
+                  <Trash2 className="h-3.5 w-3.5" /> Effacer
+                </Button>
+              </div>
             </div>
 
             {/* Grille des jours de la semaine */}
@@ -955,6 +956,12 @@ function ProgrammePage() {
         onClose={() => setCopyModalOpen(false)}
         sourceMondayISO={currentMondayISO}
         engine={engine}
+      />
+
+      <ClearWeekModal
+        open={clearModalOpen}
+        onClose={() => setClearModalOpen(false)}
+        mondayISO={currentMondayISO}
       />
     </div>
   );

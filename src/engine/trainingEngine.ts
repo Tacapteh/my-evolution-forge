@@ -345,7 +345,9 @@ export function createTrainingEngine(
       6: "Psychotechniques — Correction des erreurs",
     };
 
-    rawTasks.push({
+    const userMaxes = getUserMaxes(state);
+    const dayRecord = state.days[dateISO];
+    const psychoTask = {
       id: `psycho-day-${dayIndex}`,
       label: psychoLabels[dayIndex] ?? "Psychotechniques",
       detail: "20-30 min d'entraînement aux tests d'aptitude militaire",
@@ -354,15 +356,17 @@ export function createTrainingEngine(
       estimatedMinutes: 20,
       xp: 20,
       steps: ["Timer 20 min", "Série de tests d'attention", "Noter le score"],
-    });
+    };
 
-    const userMaxes = getUserMaxes(state);
-    const dayRecord = state.days[dateISO];
-    if (dayRecord?.customTasks && Array.isArray(dayRecord.customTasks) && dayRecord.customTasks.length > 0) {
-      const customTaskIds = new Set(dayRecord.customTasks.map((ct) => ct.id));
-      const remainingBaseTasks = rawTasks.filter((rt) => !customTaskIds.has(rt.id));
+    if (dayRecord?.customTasks && Array.isArray(dayRecord.customTasks)) {
       rawTasks.length = 0;
-      rawTasks.push(...dayRecord.customTasks, ...remainingBaseTasks);
+      rawTasks.push(...dayRecord.customTasks);
+      if (!dayRecord.customTasks.some((t) => t.type === "psycho" || t.moment === "psychotechniques")) {
+        rawTasks.push(psychoTask);
+      }
+    } else {
+      rawTasks.length = 0;
+      rawTasks.push(psychoTask);
     }
 
     const checkedMap = dayRecord?.checked ?? {};
@@ -507,8 +511,8 @@ let thuRunCount = 0;
     const completionPct = totalCount ? Math.round((doneCount / totalCount) * 100) : 0;
     const remainingCount = Math.max(0, totalCount - doneCount);
     const status = doneCount === 0 ? "a_faire" : remainingCount === 0 ? "termine" : "en_cours";
-    const psychoTask = finalTasks.find((task) => task.type === "psycho");
-    const psychoDone = psychoTask ? isTaskDone(psychoTask, checked) : false;
+    const foundPsychoTask = finalTasks.find((task) => task.type === "psycho");
+    const psychoDone = foundPsychoTask ? isTaskDone(foundPsychoTask, checked) : false;
 
     const workoutTasks = finalTasks.filter((t) => t.type !== "psycho");
     const hasWorkout = workoutTasks.length > 0;
