@@ -4,17 +4,25 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, Dumbbell, Sparkles, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
+import { Search, Dumbbell, Sparkles, ChevronLeft, ChevronRight, Loader2, Star } from "lucide-react";
 import { getExerciseImageUrl } from "@/types/exercise";
 import { ExerciseDetailModal } from "./ExerciseDetailModal";
 import { loadUnifiedExerciseCatalog, type UnifiedExercise } from "@/lib/exercise-catalog-loader";
+import { useForge } from "@/lib/forge-store";
+import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 const ITEMS_PER_PAGE = 24;
 
 export function ExerciseCatalog() {
+  const { state, toggleFavoriteExercise } = useForge();
   const [exercises, setExercises] = useState<UnifiedExercise[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Favorites state
+  const favoriteSet = useMemo(() => new Set(state.favoriteExercises ?? []), [state.favoriteExercises]);
+  const [onlyFavorites, setOnlyFavorites] = useState<boolean>(false);
 
   // Filter States
   const [searchQuery, setSearchQuery] = useState<string>("");
@@ -72,6 +80,11 @@ export function ExerciseCatalog() {
   const filtered = useMemo(() => {
     const query = searchQuery.toLowerCase().trim();
     return exercises.filter((ex) => {
+      // Only favorites filter
+      if (onlyFavorites && !favoriteSet.has(ex.id)) {
+        return false;
+      }
+
       // Search in French name, English name, muscles, equipment, etc.
       if (query && !ex.searchKey.includes(query)) {
         return false;
@@ -99,7 +112,7 @@ export function ExerciseCatalog() {
 
       return true;
     });
-  }, [exercises, searchQuery, selectedCategory, selectedMuscle, selectedEquipment, selectedLevel]);
+  }, [exercises, searchQuery, selectedCategory, selectedMuscle, selectedEquipment, selectedLevel, onlyFavorites, favoriteSet]);
 
   // Pagination logic to prevent mobile DOM slowdown
   const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE) || 1;
@@ -111,7 +124,7 @@ export function ExerciseCatalog() {
   // Reset pagination on filter change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, selectedCategory, selectedMuscle, selectedEquipment, selectedLevel]);
+  }, [searchQuery, selectedCategory, selectedMuscle, selectedEquipment, selectedLevel, onlyFavorites]);
 
   const handleOpenDetail = (ex: UnifiedExercise) => {
     setSelectedExercise(ex);
@@ -140,15 +153,33 @@ export function ExerciseCatalog() {
 
       {/* Search Bar & Faceted Filters */}
       <Card className="p-4 md:p-5 border-border/80 bg-card/60 backdrop-blur space-y-4">
-        <div className="relative">
-          <Search className="absolute left-3.5 top-3 h-4 w-4 text-muted-foreground" />
-          <Input
-            type="text"
-            placeholder="Rechercher en Français ou Anglais (ex: Tractions australiennes, Course à pied, VMA, Tapis, Squat...)"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10 h-10 text-xs bg-background"
-          />
+        <div className="flex flex-col sm:flex-row items-center gap-3">
+          <div className="relative flex-1 w-full">
+            <Search className="absolute left-3.5 top-3 h-4 w-4 text-muted-foreground" />
+            <Input
+              type="text"
+              placeholder="Rechercher en Français ou Anglais (ex: Tractions australiennes, Course à pied, VMA, Tapis, Squat...)"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10 h-10 text-xs bg-background"
+            />
+          </div>
+
+          <Button
+            type="button"
+            variant={onlyFavorites ? "default" : "outline"}
+            size="sm"
+            onClick={() => setOnlyFavorites((prev) => !prev)}
+            className={cn(
+              "h-10 px-4 text-xs font-bold gap-2 shrink-0 transition-all w-full sm:w-auto",
+              onlyFavorites
+                ? "bg-amber-500 text-black hover:bg-amber-400 shadow-md"
+                : "border-amber-500/40 text-amber-400 hover:bg-amber-500/10"
+            )}
+          >
+            <Star className={cn("h-4 w-4", onlyFavorites ? "fill-black" : "fill-amber-400 text-amber-400")} />
+            <span>Mes Favoris ({favoriteSet.size})</span>
+          </Button>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 text-xs">
@@ -246,7 +277,11 @@ export function ExerciseCatalog() {
         <div className="p-12 text-center rounded-xl border border-border bg-card/40 text-muted-foreground space-y-2">
           <Dumbbell className="h-8 w-8 mx-auto opacity-50" />
           <p className="text-sm font-semibold">Aucun exercice ne correspond à ta recherche.</p>
-          <p className="text-xs">Essaie de réinitialiser tes filtres ou la barre de recherche.</p>
+          <p className="text-xs">
+            {onlyFavorites
+              ? "Tu n'as pas encore d’exercice marqué en favori. Clique sur l'étoile d'un exercice pour l'ajouter."
+              : "Essaie de réinitialiser tes filtres ou la barre de recherche."}
+          </p>
           <Button
             variant="outline"
             size="sm"
@@ -256,6 +291,7 @@ export function ExerciseCatalog() {
               setSelectedMuscle("all");
               setSelectedEquipment("all");
               setSelectedLevel("all");
+              setOnlyFavorites(false);
             }}
             className="text-xs mt-2"
           >
@@ -265,36 +301,57 @@ export function ExerciseCatalog() {
       ) : (
         <div className="space-y-6">
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {paginatedExercises.map((ex) => (
-              <Card
-                key={ex.id}
-                onClick={() => handleOpenDetail(ex)}
-                className="group border-border/70 bg-card/50 hover:bg-card hover:border-primary/50 transition-all cursor-pointer overflow-hidden flex flex-col justify-between space-y-3 p-3"
-              >
-                {/* Thumbnail Image */}
-                <div className="relative aspect-4/3 rounded-lg bg-background/80 overflow-hidden border border-border/40">
-                  {ex.images && ex.images.length > 0 ? (
-                    <img
-                      src={getExerciseImageUrl(ex.images[0])}
-                      alt={ex.nameFr}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                      loading="lazy"
-                      onError={(e) => {
-                        (e.target as HTMLElement).style.display = "none";
+            {paginatedExercises.map((ex) => {
+              const isFavorite = favoriteSet.has(ex.id);
+              return (
+                <Card
+                  key={ex.id}
+                  onClick={() => handleOpenDetail(ex)}
+                  className="group border-border/70 bg-card/50 hover:bg-card hover:border-primary/50 transition-all cursor-pointer overflow-hidden flex flex-col justify-between space-y-3 p-3 relative"
+                >
+                  {/* Thumbnail Image */}
+                  <div className="relative aspect-4/3 rounded-lg bg-background/80 overflow-hidden border border-border/40">
+                    {/* Favorite Star Button */}
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleFavoriteExercise(ex.id);
+                        toast.success(isFavorite ? "Retiré des favoris" : "Ajouté aux favoris ⭐", { duration: 1500 });
                       }}
-                    />
-                  ) : (
-                    <div className="w-full h-full grid place-items-center text-muted-foreground text-xs p-3 text-center">
-                      <Dumbbell className="h-6 w-6 mb-1 text-primary opacity-80" />
-                      <span className="text-[10px] text-muted-foreground">Calisthenics / Exercice</span>
-                    </div>
-                  )}
-                  {ex.levelFr && (
-                    <Badge className="absolute top-2 right-2 bg-background/80 backdrop-blur text-[9px] text-foreground font-bold border-none uppercase">
-                      {ex.levelFr}
-                    </Badge>
-                  )}
-                </div>
+                      className="absolute top-2 left-2 z-10 p-1.5 rounded-full bg-background/80 backdrop-blur border border-border/40 hover:scale-110 active:scale-95 transition-all shadow-sm group/star"
+                      title={isFavorite ? "Retirer des favoris" : "Ajouter aux favoris"}
+                    >
+                      <Star
+                        className={cn(
+                          "h-3.5 w-3.5 transition-colors",
+                          isFavorite ? "fill-amber-400 text-amber-400" : "text-muted-foreground group-hover/star:text-amber-400"
+                        )}
+                      />
+                    </button>
+
+                    {ex.images && ex.images.length > 0 ? (
+                      <img
+                        src={getExerciseImageUrl(ex.images[0])}
+                        alt={ex.nameFr}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        loading="lazy"
+                        onError={(e) => {
+                          (e.target as HTMLElement).style.display = "none";
+                        }}
+                      />
+                    ) : (
+                      <div className="w-full h-full grid place-items-center text-muted-foreground text-xs p-3 text-center">
+                        <Dumbbell className="h-6 w-6 mb-1 text-primary opacity-80" />
+                        <span className="text-[10px] text-muted-foreground">Calisthenics / Exercice</span>
+                      </div>
+                    )}
+                    {ex.levelFr && (
+                      <Badge className="absolute top-2 right-2 bg-background/80 backdrop-blur text-[9px] text-foreground font-bold border-none uppercase">
+                        {ex.levelFr}
+                      </Badge>
+                    )}
+                  </div>
 
                 {/* Content in French */}
                 <div className="space-y-1.5 flex-1 flex flex-col justify-between">
@@ -321,8 +378,9 @@ export function ExerciseCatalog() {
                   </div>
                 </div>
               </Card>
-            ))}
-          </div>
+            );
+          })}
+        </div>
 
           {/* Pagination Controls */}
           {totalPages > 1 && (

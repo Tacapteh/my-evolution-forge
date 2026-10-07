@@ -6,12 +6,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Dumbbell, Plus, Calendar, Clock, Flame, Check, Shield } from "lucide-react";
+import { Dumbbell, Plus, Calendar, Clock, Flame, Check, Shield, Star, Zap } from "lucide-react";
 import type { Exercise } from "@/types/exercise";
 import { getExerciseImageUrl } from "@/types/exercise";
 import type { UnifiedExercise } from "@/lib/exercise-catalog-loader";
 import { useForge, todayISO, toISO } from "@/lib/forge-store";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 export interface ExerciseDetailModalProps {
   exercise: (Exercise & Partial<UnifiedExercise>) | null;
@@ -78,7 +79,7 @@ export function isCardioExercise(exercise: (Exercise & Partial<UnifiedExercise>)
 }
 
 export function ExerciseDetailModal({ exercise, open, onClose }: ExerciseDetailModalProps) {
-  const { addCustomTask } = useForge();
+  const { state, addCustomTask, toggleFavoriteExercise } = useForge();
   const [activeTab, setActiveTab] = useState<"detail" | "add">("detail");
 
   // Form State for Workout Builder
@@ -87,6 +88,7 @@ export function ExerciseDetailModal({ exercise, open, onClose }: ExerciseDetailM
   const [mode, setMode] = useState<"reps" | "duration">("reps");
   const [sets, setSets] = useState<number>(3);
   const [reps, setReps] = useState<number>(12);
+  const [isMaxReps, setIsMaxReps] = useState<boolean>(false);
   const [durationSeconds, setDurationSeconds] = useState<number>(45);
 
   // Rest Time State (Minutes & Seconds)
@@ -101,6 +103,7 @@ export function ExerciseDetailModal({ exercise, open, onClose }: ExerciseDetailM
   if (!exercise) return null;
 
   const isCardio = isCardioExercise(exercise);
+  const isFavorite = (state.favoriteExercises ?? []).includes(exercise.id);
 
   const displayName = exercise.nameFr || exercise.name;
   const primaryMusclesList = exercise.primaryMusclesFr || exercise.primaryMuscles || [];
@@ -152,10 +155,13 @@ export function ExerciseDetailModal({ exercise, open, onClose }: ExerciseDetailM
       restStr = "Aisance respiratoire";
     } else {
       restStr = formatRestString();
-      detailString =
-        mode === "reps"
-          ? `${sets} séries × ${reps} reps • Repos : ${restStr}`
-          : `${sets} séries × ${durationSeconds}s d'isométrie • Repos : ${restStr}`;
+      if (mode === "reps") {
+        detailString = isMaxReps
+          ? `${sets} séries × MAX reps (à l'échec) • Repos : ${restStr}`
+          : `${sets} séries × ${reps} reps • Repos : ${restStr}`;
+      } else {
+        detailString = `${sets} séries × ${durationSeconds}s d'isométrie • Repos : ${restStr}`;
+      }
     }
 
     const mappedCategoryType = (() => {
@@ -202,20 +208,42 @@ export function ExerciseDetailModal({ exercise, open, onClose }: ExerciseDetailM
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto border-border/60 bg-card/95 backdrop-blur-xl p-5 md:p-6 space-y-4">
-        <DialogHeader className="space-y-1.5">
-          <div className="flex items-center gap-2 flex-wrap">
-            <Badge variant="outline" className="border-primary/40 text-primary px-2.5 py-0.5 text-xs font-semibold capitalize">
-              {categoryLabel}
-            </Badge>
-            <Badge variant="secondary" className="text-xs font-medium capitalize">
-              {equipmentLabel}
-            </Badge>
-            {exercise.levelFr && (
-              <Badge className="bg-primary/20 text-primary border-none text-[10px] uppercase font-bold">
-                {exercise.levelFr}
+        <DialogHeader className="space-y-2">
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            <div className="flex items-center gap-2 flex-wrap">
+              <Badge variant="outline" className="border-primary/40 text-primary px-2.5 py-0.5 text-xs font-semibold capitalize">
+                {categoryLabel}
               </Badge>
-            )}
+              <Badge variant="secondary" className="text-xs font-medium capitalize">
+                {equipmentLabel}
+              </Badge>
+              {exercise.levelFr && (
+                <Badge className="bg-primary/20 text-primary border-none text-[10px] uppercase font-bold">
+                  {exercise.levelFr}
+                </Badge>
+              )}
+            </div>
+
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                toggleFavoriteExercise(exercise.id);
+                toast.success(isFavorite ? "Retiré des favoris" : "Ajouté aux favoris ⭐", { duration: 1500 });
+              }}
+              className={cn(
+                "h-7 text-xs font-bold gap-1.5 px-2.5 transition-all border-amber-500/40",
+                isFavorite
+                  ? "bg-amber-500/20 text-amber-300 border-amber-500/60"
+                  : "text-muted-foreground hover:text-amber-400 hover:border-amber-500/40"
+              )}
+            >
+              <Star className={cn("h-3.5 w-3.5", isFavorite ? "fill-amber-400 text-amber-400" : "")} />
+              <span>{isFavorite ? "Favori" : "Favori"}</span>
+            </Button>
           </div>
+
           <DialogTitle className="text-xl md:text-2xl font-bold tracking-tight text-foreground">
             {displayName}
           </DialogTitle>
@@ -532,15 +560,51 @@ export function ExerciseDetailModal({ exercise, open, onClose }: ExerciseDetailM
                     {/* Reps or Duration */}
                     {mode === "reps" ? (
                       <div className="space-y-1.5">
-                        <Label className="text-xs font-bold text-foreground">Répétitions par Série</Label>
-                        <Input
-                          type="number"
-                          min="1"
-                          max="100"
-                          value={reps}
-                          onChange={(e) => setReps(parseInt(e.target.value, 10) || 1)}
-                          className="h-10 text-xs bg-background"
-                        />
+                        <div className="flex items-center justify-between">
+                          <Label className="text-xs font-bold text-foreground">Répétitions par Série</Label>
+                          <Button
+                            type="button"
+                            variant={isMaxReps ? "default" : "outline"}
+                            size="sm"
+                            className={cn(
+                              "h-6 text-[10px] px-2 font-bold gap-1 transition-all",
+                              isMaxReps
+                                ? "bg-amber-500 text-black hover:bg-amber-400 shadow-sm"
+                                : "border-amber-500/40 text-amber-400 hover:bg-amber-500/10"
+                            )}
+                            onClick={() => setIsMaxReps((prev) => !prev)}
+                          >
+                            <Zap className="h-3 w-3" />
+                            {isMaxReps ? "Mode MAX (Échec)" : "Passer en MAX"}
+                          </Button>
+                        </div>
+
+                        {isMaxReps ? (
+                          <div className="h-10 px-3 rounded-md border border-amber-500/50 bg-amber-500/15 text-amber-300 font-bold text-xs flex items-center justify-between">
+                            <span className="flex items-center gap-1.5">
+                              <Zap className="h-3.5 w-3.5 text-amber-400 fill-amber-400" />
+                              <span>MAX reps (Jusqu'à l'échec strict)</span>
+                            </span>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setIsMaxReps(false)}
+                              className="h-6 text-[10px] px-1.5 text-amber-300 hover:text-white hover:bg-amber-500/20"
+                            >
+                              Saisir un nombre
+                            </Button>
+                          </div>
+                        ) : (
+                          <Input
+                            type="number"
+                            min="1"
+                            max="100"
+                            value={reps}
+                            onChange={(e) => setReps(parseInt(e.target.value, 10) || 1)}
+                            className="h-10 text-xs bg-background"
+                          />
+                        )}
                       </div>
                     ) : (
                       <div className="space-y-1.5">

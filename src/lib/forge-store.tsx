@@ -99,6 +99,7 @@ export interface ForgeState {
   days: Record<string, DayRecord>; // yyyy-mm-dd
   perf: PerfEntry[];
   badges: string[]; // ids unlocked
+  favoriteExercises?: string[]; // IDs of favorited exercises
   activeSession?: {
     date: string;
     startedAt: string;
@@ -115,6 +116,7 @@ const initial: ForgeState = {
   days: {},
   perf: [],
   badges: [],
+  favoriteExercises: [],
   healthToken: "my-super-secret-token",
   updatedAt: new Date("2026-07-20T12:00:00").toISOString(),
 };
@@ -133,6 +135,7 @@ interface Ctx {
   setMomentSwap: (date: string, moment: string, activityId: string) => void;
   setTaskSwap: (date: string, taskId: string, activityId: string) => void;
   setTaskRealization: (date: string, taskId: string, realization: TaskRealization) => void;
+  toggleFavoriteExercise: (exerciseId: string) => void;
   addCustomTask: (dateISO: string, task: {
     id?: string;
     label: string;
@@ -187,6 +190,7 @@ export function ForgeProvider({ children }: { children: ReactNode }) {
           days: parsed.days && typeof parsed.days === "object" ? parsed.days : {},
           perf: Array.isArray(parsed.perf) ? parsed.perf : [],
           badges: Array.isArray(parsed.badges) ? parsed.badges : [],
+          favoriteExercises: Array.isArray(parsed.favoriteExercises) ? parsed.favoriteExercises : [],
         });
       }
     } catch {
@@ -248,6 +252,7 @@ export function ForgeProvider({ children }: { children: ReactNode }) {
               days: serverState.days && typeof serverState.days === "object" ? serverState.days : {},
               perf: Array.isArray(serverState.perf) ? serverState.perf : [],
               badges: Array.isArray(serverState.badges) ? serverState.badges : [],
+              favoriteExercises: Array.isArray(serverState.favoriteExercises) ? serverState.favoriteExercises : [],
             });
             import("sonner").then(({ toast }) => {
               toast.info("Données synchronisées", {
@@ -569,6 +574,19 @@ export function ForgeProvider({ children }: { children: ReactNode }) {
                 taskRealizations,
               },
             },
+          };
+        }),
+      toggleFavoriteExercise: (exerciseId) =>
+        setLocalState((prev) => {
+          const favorites = new Set(prev.favoriteExercises ?? []);
+          if (favorites.has(exerciseId)) {
+            favorites.delete(exerciseId);
+          } else {
+            favorites.add(exerciseId);
+          }
+          return {
+            ...prev,
+            favoriteExercises: Array.from(favorites),
           };
         }),
       addCustomTask: (dateISO, task) =>
