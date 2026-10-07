@@ -84,6 +84,7 @@ export function ExerciseDetailModal({ exercise, open, onClose }: ExerciseDetailM
 
   // Form State for Workout Builder
   const [selectedDays, setSelectedDays] = useState<number[]>([0]); // 0 = Lundi
+  const [programDurationWeeks, setProgramDurationWeeks] = useState<number>(1); // 1, 4, 8, 12...
   const [moment, setMoment] = useState<"morning" | "afternoon" | "evening">("afternoon");
   const [mode, setMode] = useState<"reps" | "duration">("reps");
   const [sets, setSets] = useState<number>(3);
@@ -129,11 +130,11 @@ export function ExerciseDetailModal({ exercise, open, onClose }: ExerciseDetailM
     return `${restSecondsValue}s`;
   };
 
-  // Compute the target ISO date for a given day index of the current week
-  const getTargetISODate = (dayIdx: number) => {
+  // Compute the target ISO date for a given day index and week offset
+  const getTargetISODate = (dayIdx: number, weekOffset: number = 0) => {
     const now = new Date();
     const currentDay = (now.getDay() + 6) % 7; // Monday = 0
-    const diffDays = dayIdx - currentDay;
+    const diffDays = (dayIdx - currentDay) + (weekOffset * 7);
     const targetDate = new Date(now);
     targetDate.setDate(now.getDate() + diffDays);
     return toISO(targetDate);
@@ -175,21 +176,25 @@ export function ExerciseDetailModal({ exercise, open, onClose }: ExerciseDetailM
       return "pull";
     })();
 
-    // Loop and add exercise to all selected days
-    selectedDays.forEach((dayIdx) => {
-      const targetISO = getTargetISODate(dayIdx);
-      addCustomTask(targetISO, {
-        label: displayName,
-        type: mappedCategoryType,
-        detail: detailString,
-        moment,
-        estimatedMinutes,
-        rest: restStr,
-        steps: instructionsList.length > 0 ? instructionsList : [displayName],
-        xp: isCardio ? 35 : 25,
-        exerciseId: exercise.id,
+    // Loop and add exercise to all selected days across selected number of weeks
+    let totalAdded = 0;
+    for (let w = 0; w < programDurationWeeks; w++) {
+      selectedDays.forEach((dayIdx) => {
+        const targetISO = getTargetISODate(dayIdx, w);
+        addCustomTask(targetISO, {
+          label: displayName,
+          type: mappedCategoryType,
+          detail: detailString,
+          moment,
+          estimatedMinutes,
+          rest: restStr,
+          steps: instructionsList.length > 0 ? instructionsList : [displayName],
+          xp: isCardio ? 35 : 25,
+          exerciseId: exercise.id,
+        });
+        totalAdded++;
       });
-    });
+    }
 
     const dayLabels = selectedDays
       .map((dIdx) => DAYS_OF_WEEK.find((d) => d.id === dIdx)?.label)
@@ -197,8 +202,20 @@ export function ExerciseDetailModal({ exercise, open, onClose }: ExerciseDetailM
       .join(", ");
     const momentName = MOMENTS.find((m) => m.id === moment)?.label ?? "Créneau";
 
-    toast.success("Exercice ajouté à ton programme !", {
-      description: `"${displayName}" ajouté pour ${dayLabels} (${momentName}).`,
+    const durationText =
+      programDurationWeeks === 1
+        ? "1 semaine"
+        : programDurationWeeks === 4
+        ? "1 mois (4 semaines)"
+        : programDurationWeeks === 8
+        ? "2 mois (8 semaines)"
+        : programDurationWeeks === 12
+        ? "3 mois (12 semaines)"
+        : `${programDurationWeeks} semaines`;
+
+    toast.success(`✅ Exercice ajouté sur ${durationText} !`, {
+      description: `"${displayName}" ajouté pour ${dayLabels} (${momentName} • ${totalAdded} séance${totalAdded > 1 ? "s" : ""}).`,
+      duration: 4000,
     });
 
     onClose();
@@ -414,6 +431,37 @@ export function ExerciseDetailModal({ exercise, open, onClose }: ExerciseDetailM
                     ))}
                   </SelectContent>
                 </Select>
+              </div>
+
+              {/* Program Duration (Multi-week / Multi-month) */}
+              <div className="space-y-1.5 p-3 rounded-xl border border-border/60 bg-background/40">
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs font-bold text-foreground">Durée du Programme / Répéter sur</Label>
+                  <span className="text-[11px] font-bold text-primary">
+                    {programDurationWeeks >= 4
+                      ? `${Math.round(programDurationWeeks / 4)} mois (${programDurationWeeks} sem)`
+                      : `${programDurationWeeks} semaine${programDurationWeeks > 1 ? "s" : ""}`}
+                  </span>
+                </div>
+                <div className="grid grid-cols-4 gap-1.5 pt-1">
+                  {[
+                    { label: "1 Semaine", weeks: 1 },
+                    { label: "1 Mois", weeks: 4 },
+                    { label: "2 Mois", weeks: 8 },
+                    { label: "3 Mois", weeks: 12 },
+                  ].map((p) => (
+                    <Button
+                      key={p.weeks}
+                      type="button"
+                      variant={programDurationWeeks === p.weeks ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setProgramDurationWeeks(p.weeks)}
+                      className="text-xs h-8 font-semibold"
+                    >
+                      {p.label}
+                    </Button>
+                  ))}
+                </div>
               </div>
 
               {/* CARDIO MODE vs STRENGTH MODE */}

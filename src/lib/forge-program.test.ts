@@ -93,4 +93,14 @@ describe("forge program helpers", () => {
       completed: false,
     });
   });
+
+  test("getMondayISO and addDaysISO calculate exact dates", () => {
+    const { getMondayISO, addDaysISO } = require("./forge-store");
+    expect(getMondayISO("2026-10-14")).toBe("2026-10-12"); // Wednesday -> Monday
+    expect(getMondayISO("2026-10-12")).toBe("2026-10-12"); // Monday -> Monday
+    expect(getMondayISO("2026-10-18")).toBe("2026-10-12"); // Sunday -> Monday
+
+    expect(addDaysISO("2026-10-12", 7)).toBe("2026-10-19"); // +1 week
+    expect(addDaysISO("2026-10-12", 28)).toBe("2026-11-09"); // +4 weeks (1 month)
+  });
 });

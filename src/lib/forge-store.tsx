@@ -156,6 +156,15 @@ interface Ctx {
     overTaskId?: string,
     fallbackTasks?: any[]
   ) => void;
+  copyWeekTasks: (
+    sourceMondayISO: string,
+    targetMondayISO: string,
+    options?: {
+      overwrite?: boolean;
+      repeatWeeks?: number;
+      fallbackEngine?: any;
+    }
+  ) => void;
   addPerf: (entry: Omit<PerfEntry, "id">) => void;
   removePerf: (id: string) => void;
   reset: () => void;
@@ -712,6 +721,75 @@ export function ForgeProvider({ children }: { children: ReactNode }) {
             },
           };
         }),
+      copyWeekTasks: (sourceMondayISO, targetMondayISO, options) =>
+        setLocalState((prev) => {
+          const overwrite = options?.overwrite ?? false;
+          const repeatWeeks = Math.max(1, options?.repeatWeeks ?? 1);
+          const fallbackEngine = options?.fallbackEngine;
+
+          const newDays = { ...prev.days };
+
+          // Step 1: Collect tasks for each of the 7 days of the source week
+          const sourceWeekTasks: Array<any[]> = [];
+          for (let i = 0; i < 7; i++) {
+            const srcISO = addDaysISO(sourceMondayISO, i);
+            const dayRecord = prev.days[srcISO];
+            let tasks = dayRecord?.customTasks ? [...dayRecord.customTasks] : [];
+
+            if (tasks.length === 0 && fallbackEngine) {
+              const mission = fallbackEngine.getMission(srcISO);
+              tasks = (mission.tasks || []).map((t: any) => ({
+                id: t.id,
+                label: t.label,
+                type: t.type || "custom",
+                detail: t.detail || "",
+                moment: t.moment || "morning",
+                estimatedMinutes: t.estimatedMinutes || 15,
+                rest: t.rest || "60s",
+                steps: t.steps || [],
+                xp: t.xp || 20,
+                completed: false,
+                exerciseId: t.exerciseId,
+              }));
+            }
+            sourceWeekTasks.push(tasks);
+          }
+
+          // Step 2: Copy to target week(s)
+          for (let w = 0; w < repeatWeeks; w++) {
+            const weekTargetMonday = addDaysISO(targetMondayISO, w * 7);
+            for (let i = 0; i < 7; i++) {
+              const tgtISO = addDaysISO(weekTargetMonday, i);
+              const dayTasks = sourceWeekTasks[i] ?? [];
+
+              const clonedTasks = dayTasks.map((t) => ({
+                ...t,
+                id: `custom-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+                completed: false,
+              }));
+
+              const existingDay = newDays[tgtISO] ?? { checked: {} };
+              let finalCustomTasks: any[];
+
+              if (overwrite) {
+                finalCustomTasks = clonedTasks;
+              } else {
+                const existingCustom = existingDay.customTasks ? [...existingDay.customTasks] : [];
+                finalCustomTasks = [...existingCustom, ...clonedTasks];
+              }
+
+              newDays[tgtISO] = {
+                ...existingDay,
+                customTasks: finalCustomTasks,
+              };
+            }
+          }
+
+          return {
+            ...prev,
+            days: newDays,
+          };
+        }),
       addPerf: (entry) =>
         setLocalState((prev) => {
           const withEntry = [...prev.perf, { ...entry, id: crypto.randomUUID() }];
@@ -751,6 +829,21 @@ export function toISO(d: Date) {
 
 export function todayISO() {
   return toISO(new Date());
+}
+
+export function getMondayISO(dateInput: Date | string = new Date()): string {
+  const d = typeof dateInput === "string" ? new Date(dateInput + "T12:00:00") : new Date(dateInput);
+  d.setHours(12, 0, 0, 0);
+  const day = d.getDay();
+  const diff = day === 0 ? -6 : 1 - day;
+  d.setDate(d.getDate() + diff);
+  return toISO(d);
+}
+
+export function addDaysISO(dateISO: string, days: number): string {
+  const d = new Date(dateISO + "T12:00:00");
+  d.setDate(d.getDate() + days);
+  return toISO(d);
 }
 
 export function normalizeDateISO(inputDate?: any): string {
