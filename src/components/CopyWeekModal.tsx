@@ -45,7 +45,7 @@ export function CopyWeekModal({ open, onClose, sourceMondayISO, engine }: CopyWe
 
   const handleCopy = () => {
     copyWeekTasks(sourceMondayISO, targetMondayISO, {
-      overwrite,
+      overwrite: true,
       repeatWeeks: durationWeeks,
       fallbackEngine: engine,
     });
@@ -62,7 +62,7 @@ export function CopyWeekModal({ open, onClose, sourceMondayISO, engine }: CopyWe
         : `${durationWeeks} semaines`;
 
     toast.success("✅ Programme dupliqué avec succès !", {
-      description: `Programme copié sur ${periodText} (du ${formatShort(targetMondayISO)} au ${formatShort(targetLastSundayISO)}).`,
+      description: `Les séances des semaines cibles ont été remplacées (du ${formatShort(targetMondayISO)} au ${formatShort(targetLastSundayISO)}).`,
       duration: 4000,
     });
 
@@ -166,40 +166,12 @@ export function CopyWeekModal({ open, onClose, sourceMondayISO, engine }: CopyWe
             </div>
           </div>
 
-          {/* Merge vs Overwrite Mode */}
-          <div className="space-y-2 p-3 rounded-xl border border-border/60 bg-background/50">
-            <Label className="text-xs font-bold text-foreground block">Mode de Transfert</Label>
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={() => setOverwrite(false)}
-                className={`p-2.5 rounded-lg border text-left text-xs font-semibold transition-all ${
-                  !overwrite
-                    ? "border-primary bg-primary/10 text-foreground"
-                    : "border-border/60 bg-background text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                <div className="font-bold">➕ Fusionner / Ajouter</div>
-                <div className="text-[10px] opacity-80 font-normal mt-0.5">
-                  Conserve les exercices existants et ajoute la copie.
-                </div>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setOverwrite(true)}
-                className={`p-2.5 rounded-lg border text-left text-xs font-semibold transition-all ${
-                  overwrite
-                    ? "border-amber-500 bg-amber-500/10 text-foreground"
-                    : "border-border/60 bg-background text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                <div className="font-bold text-amber-400">🔄 Remplacer</div>
-                <div className="text-[10px] opacity-80 font-normal mt-0.5">
-                  Écrase et remplace les séances des semaines cibles.
-                </div>
-              </button>
-            </div>
+          {/* Overwrite Notification */}
+          <div className="p-3 rounded-xl border border-amber-500/30 bg-amber-500/10 text-amber-300 text-xs flex items-start gap-2">
+            <AlertCircle className="h-4 w-4 shrink-0 mt-0.5 text-amber-400" />
+            <span>
+              <strong>Note de duplication :</strong> Les semaines de destination seront complètement écrasées et remplacées par les séances de la semaine source.
+            </span>
           </div>
         </div>
 

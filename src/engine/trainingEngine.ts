@@ -396,41 +396,11 @@ export function createTrainingEngine(
       };
     });
 
-    // Éviter d'avoir deux Luc Léger le Jeudi : le soir est un footing léger
-let thuRunCount = 0;
-    tasks = tasks.map((t) => {
-      if (dayIndex === 3 && t.type === "run") {
-        thuRunCount++;
-        if (thuRunCount > 1) {
-          return {
-            ...t,
-            label: "Course en duo — Footing de récupération léger",
-            detail: "Footing très doux à allure confortable (Pas de Luc Léger le soir)",
-            steps: ["Footing très doux 20-30 min", "Respiration aisée", "Étirements"],
-          };
-        }
-      }
-      return t;
-    });
-
-    // Interdiction stricte de la course à pied le même jour que la natation (ex: Vendredi)
-    if (hasMorningSwim) {
-      tasks = tasks.filter((t) => t.type !== "run");
-    }
-
-    // Appliquer les réagencements / modifications d'activités personnalisés (Intention héritée)
     const swaps = state.days[dateISO]?.swaps ?? {};
     let finalTasks: any[] = [];
-    const processedMoments = new Set<string>();
 
     for (const t of tasks) {
-      let moment = t.moment;
-      const lowerLabel = String(t.label || "").toLowerCase();
-      if (lowerLabel.includes("duo") || lowerLabel.includes("footing")) {
-        moment = "evening";
-        t.moment = "evening";
-      }
-
+      const moment = t.moment ?? "afternoon";
       const taskId = t.id;
       const swapId = swaps[taskId] ?? swaps[moment];
 
@@ -439,7 +409,7 @@ let thuRunCount = 0;
           resolveSmartSwappedTask(t, dateISO, moment, swapId, userMaxes)
         );
       } else {
-        finalTasks.push(t);
+        finalTasks.push({ ...t, moment });
       }
     }
 

@@ -729,7 +729,7 @@ export function ForgeProvider({ children }: { children: ReactNode }) {
         }),
       copyWeekTasks: (sourceMondayISO, targetMondayISO, options) =>
         setLocalState((prev) => {
-          const overwrite = options?.overwrite ?? false;
+          const overwrite = options?.overwrite ?? true;
           const repeatWeeks = Math.max(1, options?.repeatWeeks ?? 1);
           const fallbackEngine = options?.fallbackEngine;
 
