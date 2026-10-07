@@ -62,6 +62,8 @@ const LEVEL_TRANSLATIONS: Record<string, string> = {
 
 // Dictionnaire spécifique pour les noms d'exercices courants
 const EXERCISE_NAME_TRANSLATIONS: Record<string, { fr: string; aliases: string[] }> = {
+  natation: { fr: "Natation", aliases: ["Swimming", "Nage", "Crawl", "Brasse", "Eau libre", "Piscine"] },
+  swimming: { fr: "Natation", aliases: ["Nage", "Crawl", "Brasse", "Eau libre", "Piscine"] },
   "inverted row": { fr: "Tractions Australiennes (Rowing poids du corps)", aliases: ["Australian pullup", "Bodyweight row", "Rowing inversé"] },
   "australian pull-up": { fr: "Tractions Australiennes", aliases: ["Inverted row", "Bodyweight row"] },
   "bodyweight row": { fr: "Tractions Australiennes", aliases: ["Inverted row"] },

@@ -23,5 +23,8 @@ export interface WorkoutExerciseItem {
 
 export function getExerciseImageUrl(imagePath?: string): string {
   if (!imagePath) return "";
+  if (imagePath.startsWith("http://") || imagePath.startsWith("https://") || imagePath.startsWith("/")) {
+    return imagePath;
+  }
   return `https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/${imagePath}`;
 }
