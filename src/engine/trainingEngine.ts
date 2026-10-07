@@ -358,8 +358,11 @@ export function createTrainingEngine(
 
     const userMaxes = getUserMaxes(state);
     const dayRecord = state.days[dateISO];
-    if (dayRecord?.customTasks && Array.isArray(dayRecord.customTasks)) {
-      rawTasks.push(...dayRecord.customTasks);
+    if (dayRecord?.customTasks && Array.isArray(dayRecord.customTasks) && dayRecord.customTasks.length > 0) {
+      const customTaskIds = new Set(dayRecord.customTasks.map((ct) => ct.id));
+      const remainingBaseTasks = rawTasks.filter((rt) => !customTaskIds.has(rt.id));
+      rawTasks.length = 0;
+      rawTasks.push(...dayRecord.customTasks, ...remainingBaseTasks);
     }
 
     const checkedMap = dayRecord?.checked ?? {};

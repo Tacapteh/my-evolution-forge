@@ -146,6 +146,13 @@ interface Ctx {
     exerciseId?: string;
   }) => void;
   removeCustomTask: (dateISO: string, taskId: string) => void;
+  reorderCustomTasks: (
+    dateISO: string,
+    activeTaskId: string,
+    targetMoment: "morning" | "afternoon" | "evening" | "psychotechniques",
+    overTaskId?: string,
+    fallbackTasks?: any[]
+  ) => void;
   addPerf: (entry: Omit<PerfEntry, "id">) => void;
   removePerf: (id: string) => void;
   reset: () => void;
@@ -608,6 +615,81 @@ export function ForgeProvider({ children }: { children: ReactNode }) {
                 ...day,
                 checked,
                 customTasks,
+              },
+            },
+          };
+        }),
+      reorderCustomTasks: (dateISO, activeTaskId, targetMoment, overTaskId, fallbackTasks = []) =>
+        setLocalState((prev) => {
+          const day = prev.days[dateISO] ?? { checked: {} };
+          let list = day.customTasks ? [...day.customTasks] : [];
+
+          if (list.length === 0 || !list.some((t) => t.id === activeTaskId)) {
+            const existingIds = new Set(list.map((t) => t.id));
+            for (const ft of fallbackTasks) {
+              if (!existingIds.has(ft.id)) {
+                list.push({
+                  id: ft.id,
+                  label: ft.label,
+                  type: ft.type || "custom",
+                  detail: ft.detail || "",
+                  moment: ft.moment || "morning",
+                  estimatedMinutes: ft.estimatedMinutes || 15,
+                  rest: ft.rest || "60s",
+                  steps: ft.steps || [],
+                  xp: ft.xp || 20,
+                  completed: !!ft.completed,
+                  exerciseId: ft.exerciseId,
+                });
+                existingIds.add(ft.id);
+              }
+            }
+          }
+
+          const activeIndex = list.findIndex((t) => t.id === activeTaskId);
+          if (activeIndex === -1) return prev;
+
+          const [movedItem] = list.splice(activeIndex, 1);
+          const updatedItem = { ...movedItem, moment: targetMoment };
+
+          if (overTaskId && overTaskId !== activeTaskId) {
+            const overIndex = list.findIndex((t) => t.id === overTaskId);
+            if (overIndex !== -1) {
+              list.splice(overIndex, 0, updatedItem);
+            } else {
+              list.push(updatedItem);
+            }
+          } else {
+            let lastIndex = -1;
+            for (let i = 0; i < list.length; i++) {
+              if (list[i].moment === targetMoment) {
+                lastIndex = i;
+              }
+            }
+            if (lastIndex !== -1) {
+              list.splice(lastIndex + 1, 0, updatedItem);
+            } else {
+              const momentOrder = { morning: 1, afternoon: 2, evening: 3, psychotechniques: 4 };
+              const targetOrder = momentOrder[targetMoment] ?? 5;
+              let insertIndex = list.length;
+              for (let i = 0; i < list.length; i++) {
+                const mOrder = momentOrder[list[i].moment as keyof typeof momentOrder] ?? 5;
+                if (mOrder > targetOrder) {
+                  insertIndex = i;
+                  break;
+                }
+              }
+              list.splice(insertIndex, 0, updatedItem);
+            }
+          }
+
+          return {
+            ...prev,
+            days: {
+              ...prev.days,
+              [dateISO]: {
+                ...day,
+                customTasks: list,
               },
             },
           };

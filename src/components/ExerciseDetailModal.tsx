@@ -35,6 +35,48 @@ const MOMENTS = [
   { id: "evening", label: "Soir", icon: "🌙" },
 ];
 
+export function isCardioExercise(exercise: (Exercise & Partial<UnifiedExercise>) | null): boolean {
+  if (!exercise) return false;
+  const cat = (exercise.category || "").toLowerCase();
+  const catFr = (exercise.categoryFr || "").toLowerCase();
+  const name = (exercise.name || "").toLowerCase();
+  const nameFr = (exercise.nameFr || "").toLowerCase();
+
+  if (
+    cat.includes("cardio") ||
+    catFr.includes("cardio") ||
+    catFr.includes("vma") ||
+    cat.includes("swim") ||
+    cat.includes("running")
+  ) {
+    return true;
+  }
+
+  const cardioKeywords = [
+    "running",
+    "jogging",
+    "trail",
+    "marche",
+    "course",
+    "cyclisme",
+    "bicycling",
+    "velo",
+    "swimming",
+    "natation",
+    "luc leger",
+    "vma",
+    "sprint",
+    "ergometre",
+    "stairmaster",
+    "elliptical",
+    "rope jumping",
+    "corde à sauter",
+    "rowing machine",
+    "rameur",
+  ];
+  return cardioKeywords.some((kw) => name.includes(kw) || nameFr.includes(kw));
+}
+
 export function ExerciseDetailModal({ exercise, open, onClose }: ExerciseDetailModalProps) {
   const { addCustomTask } = useForge();
   const [activeTab, setActiveTab] = useState<"detail" | "add">("detail");
@@ -51,7 +93,14 @@ export function ExerciseDetailModal({ exercise, open, onClose }: ExerciseDetailM
   const [restMinutes, setRestMinutes] = useState<number>(1);
   const [restSecondsValue, setRestSecondsValue] = useState<number>(0);
 
+  // Cardio Specific Form State
+  const [cardioDistance, setCardioDistance] = useState<number>(5);
+  const [cardioUnit, setCardioUnit] = useState<"km" | "m">("km");
+  const [cardioDurationMinutes, setCardioDurationMinutes] = useState<number>(45);
+
   if (!exercise) return null;
+
+  const isCardio = isCardioExercise(exercise);
 
   const displayName = exercise.nameFr || exercise.name;
   const primaryMusclesList = exercise.primaryMusclesFr || exercise.primaryMuscles || [];
@@ -93,17 +142,30 @@ export function ExerciseDetailModal({ exercise, open, onClose }: ExerciseDetailM
       return;
     }
 
-    const restStr = formatRestString();
-    const detailString =
-      mode === "reps"
-        ? `${sets} séries × ${reps} reps • Repos : ${restStr}`
-        : `${sets} séries × ${durationSeconds}s d'isométrie • Repos : ${restStr}`;
+    let detailString = "";
+    let estimatedMinutes = 15;
+    let restStr = "";
+
+    if (isCardio) {
+      detailString = `${cardioDistance} ${cardioUnit} • Durée estimée : ${cardioDurationMinutes} min`;
+      estimatedMinutes = cardioDurationMinutes;
+      restStr = "Aisance respiratoire";
+    } else {
+      restStr = formatRestString();
+      detailString =
+        mode === "reps"
+          ? `${sets} séries × ${reps} reps • Repos : ${restStr}`
+          : `${sets} séries × ${durationSeconds}s d'isométrie • Repos : ${restStr}`;
+    }
 
     const mappedCategoryType = (() => {
+      if (isCardio) {
+        const nameLower = (displayName || "").toLowerCase();
+        if (nameLower.includes("nage") || nameLower.includes("natat") || nameLower.includes("swim")) return "swim";
+        return "run";
+      }
       const cat = (exercise.category || "").toLowerCase();
-      if (cat.includes("cardio")) return "run";
       if (cat.includes("stretch")) return "stretch";
-      if (cat.includes("swim")) return "swim";
       return "pull";
     })();
 
@@ -115,10 +177,10 @@ export function ExerciseDetailModal({ exercise, open, onClose }: ExerciseDetailM
         type: mappedCategoryType,
         detail: detailString,
         moment,
-        estimatedMinutes: 15,
+        estimatedMinutes,
         rest: restStr,
         steps: instructionsList.length > 0 ? instructionsList : [displayName],
-        xp: 25,
+        xp: isCardio ? 35 : 25,
         exerciseId: exercise.id,
       });
     });
@@ -258,7 +320,9 @@ export function ExerciseDetailModal({ exercise, open, onClose }: ExerciseDetailM
             <div className="rounded-xl border border-primary/30 bg-primary/10 p-3.5 text-xs space-y-1">
               <span className="font-bold text-primary block">Configuration Multi-Jours & Séances</span>
               <span className="text-muted-foreground">
-                Sélectionne un ou plusieurs jours d'un coup et personnalise tes séries et temps de repos en minutes/secondes.
+                {isCardio
+                  ? "Sélectionne tes jours d'entraînement et définis la distance et la durée cible de ta séance cardio."
+                  : "Sélectionne un ou plusieurs jours d'un coup et personnalise tes séries et temps de repos en minutes/secondes."}
               </span>
             </div>
 
@@ -307,149 +371,253 @@ export function ExerciseDetailModal({ exercise, open, onClose }: ExerciseDetailM
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {/* Slot / Moment selection */}
-                <div className="space-y-1.5 sm:col-span-2">
-                  <Label className="text-xs font-bold text-foreground">Créneau de la Journée</Label>
-                  <Select value={moment} onValueChange={(v) => setMoment(v as any)}>
-                    <SelectTrigger className="h-10 text-xs bg-background">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {MOMENTS.map((m) => (
-                        <SelectItem key={m.id} value={m.id}>
-                          {m.icon} {m.label}
-                        </SelectItem>
+              {/* Slot / Moment selection */}
+              <div className="space-y-1.5">
+                <Label className="text-xs font-bold text-foreground">Créneau de la Journée</Label>
+                <Select value={moment} onValueChange={(v) => setMoment(v as any)}>
+                  <SelectTrigger className="h-10 text-xs bg-background">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {MOMENTS.map((m) => (
+                      <SelectItem key={m.id} value={m.id}>
+                        {m.icon} {m.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* CARDIO MODE vs STRENGTH MODE */}
+              {isCardio ? (
+                <div className="space-y-4">
+                  {/* Target Distance */}
+                  <div className="space-y-2 rounded-xl border border-border/60 bg-background/40 p-3.5">
+                    <Label className="text-xs font-bold text-foreground block">
+                      Distance Cible
+                    </Label>
+                    <div className="flex items-center gap-3">
+                      <Input
+                        type="number"
+                        step="0.1"
+                        min="0.1"
+                        max="200"
+                        value={cardioDistance}
+                        onChange={(e) => setCardioDistance(Math.max(0.1, parseFloat(e.target.value) || 1))}
+                        className="h-10 text-xs bg-background flex-1"
+                      />
+                      <div className="flex items-center gap-1 bg-muted/60 p-1 rounded-lg border border-border/60">
+                        <Button
+                          type="button"
+                          variant={cardioUnit === "km" ? "default" : "ghost"}
+                          size="sm"
+                          className="h-8 text-xs font-bold px-3"
+                          onClick={() => setCardioUnit("km")}
+                        >
+                          km
+                        </Button>
+                        <Button
+                          type="button"
+                          variant={cardioUnit === "m" ? "default" : "ghost"}
+                          size="sm"
+                          className="h-8 text-xs font-bold px-3"
+                          onClick={() => setCardioUnit("m")}
+                        >
+                          mètres (m)
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* Preset Distance Shortcuts */}
+                    <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                      <span className="text-[10px] text-muted-foreground font-medium mr-1">Raccourcis distance :</span>
+                      {[
+                        { val: 800, unit: "m" as const, label: "800 m" },
+                        { val: 1000, unit: "m" as const, label: "1000 m" },
+                        { val: 3, unit: "km" as const, label: "3 km" },
+                        { val: 5, unit: "km" as const, label: "5 km" },
+                        { val: 8, unit: "km" as const, label: "8 km" },
+                        { val: 10, unit: "km" as const, label: "10 km" },
+                      ].map((p) => (
+                        <Button
+                          key={p.label}
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setCardioDistance(p.val);
+                            setCardioUnit(p.unit);
+                          }}
+                          className="h-6 text-[10px] px-2"
+                        >
+                          {p.label}
+                        </Button>
                       ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* Mode Toggle (Reps vs Duration) */}
-                <div className="space-y-1.5 sm:col-span-2">
-                  <Label className="text-xs font-bold text-foreground">Type d'Objectif</Label>
-                  <div className="grid grid-cols-2 gap-2">
-                    <Button
-                      type="button"
-                      variant={mode === "reps" ? "default" : "outline"}
-                      size="sm"
-                      className="text-xs font-semibold h-9"
-                      onClick={() => setMode("reps")}
-                    >
-                      Répétitions (reps)
-                    </Button>
-                    <Button
-                      type="button"
-                      variant={mode === "duration" ? "default" : "outline"}
-                      size="sm"
-                      className="text-xs font-semibold h-9"
-                      onClick={() => setMode("duration")}
-                    >
-                      Isométrie (secondes)
-                    </Button>
+                    </div>
                   </div>
-                </div>
 
-                {/* Sets */}
-                <div className="space-y-1.5">
-                  <Label className="text-xs font-bold text-foreground">Nombre de Séries</Label>
-                  <Input
-                    type="number"
-                    min="1"
-                    max="10"
-                    value={sets}
-                    onChange={(e) => setSets(parseInt(e.target.value, 10) || 1)}
-                    className="h-10 text-xs bg-background"
-                  />
-                </div>
-
-                {/* Reps or Duration */}
-                {mode === "reps" ? (
-                  <div className="space-y-1.5">
-                    <Label className="text-xs font-bold text-foreground">Répétitions par Série</Label>
-                    <Input
-                      type="number"
-                      min="1"
-                      max="100"
-                      value={reps}
-                      onChange={(e) => setReps(parseInt(e.target.value, 10) || 1)}
-                      className="h-10 text-xs bg-background"
-                    />
-                  </div>
-                ) : (
-                  <div className="space-y-1.5">
-                    <Label className="text-xs font-bold text-foreground">Temps de Maintien (secondes)</Label>
+                  {/* Target Session Duration */}
+                  <div className="space-y-2 rounded-xl border border-border/60 bg-background/40 p-3.5">
+                    <Label className="text-xs font-bold text-foreground block">
+                      Durée Cible de la Séance (Minutes)
+                    </Label>
                     <Input
                       type="number"
                       min="5"
-                      max="600"
-                      value={durationSeconds}
-                      onChange={(e) => setDurationSeconds(parseInt(e.target.value, 10) || 5)}
+                      max="300"
+                      value={cardioDurationMinutes}
+                      onChange={(e) => setCardioDurationMinutes(Math.max(5, parseInt(e.target.value, 10) || 15))}
                       className="h-10 text-xs bg-background"
                     />
-                  </div>
-                )}
-              </div>
 
-              {/* Rest Time (Minutes & Secondes) */}
-              <div className="space-y-2 rounded-xl border border-border/60 bg-background/40 p-3.5">
-                <Label className="text-xs font-bold text-foreground block">
-                  Temps de Repos entre Séries (Minutes & Secondes)
-                </Label>
-                
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1">
-                    <span className="text-[10px] font-semibold text-muted-foreground block">Minutes</span>
-                    <Input
-                      type="number"
-                      min="0"
-                      max="15"
-                      value={restMinutes}
-                      onChange={(e) => setRestMinutes(Math.max(0, parseInt(e.target.value, 10) || 0))}
-                      className="h-9 text-xs bg-background"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <span className="text-[10px] font-semibold text-muted-foreground block">Secondes</span>
-                    <Input
-                      type="number"
-                      min="0"
-                      max="59"
-                      step="5"
-                      value={restSecondsValue}
-                      onChange={(e) => setRestSecondsValue(Math.max(0, Math.min(59, parseInt(e.target.value, 10) || 0)))}
-                      className="h-9 text-xs bg-background"
-                    />
+                    {/* Preset Duration Shortcuts */}
+                    <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                      <span className="text-[10px] text-muted-foreground font-medium mr-1">Raccourcis durée :</span>
+                      {[15, 20, 30, 45, 60, 90].map((m) => (
+                        <Button
+                          key={m}
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setCardioDurationMinutes(m)}
+                          className="h-6 text-[10px] px-2"
+                        >
+                          {m} min
+                        </Button>
+                      ))}
+                    </div>
                   </div>
                 </div>
+              ) : (
+                <>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {/* Mode Toggle (Reps vs Duration) */}
+                    <div className="space-y-1.5 sm:col-span-2">
+                      <Label className="text-xs font-bold text-foreground">Type d'Objectif</Label>
+                      <div className="grid grid-cols-2 gap-2">
+                        <Button
+                          type="button"
+                          variant={mode === "reps" ? "default" : "outline"}
+                          size="sm"
+                          className="text-xs font-semibold h-9"
+                          onClick={() => setMode("reps")}
+                        >
+                          Répétitions (reps)
+                        </Button>
+                        <Button
+                          type="button"
+                          variant={mode === "duration" ? "default" : "outline"}
+                          size="sm"
+                          className="text-xs font-semibold h-9"
+                          onClick={() => setMode("duration")}
+                        >
+                          Isométrie (secondes)
+                        </Button>
+                      </div>
+                    </div>
 
-                {/* Preset Rest Buttons */}
-                <div className="flex flex-wrap items-center gap-1.5 pt-1">
-                  <span className="text-[10px] text-muted-foreground font-medium mr-1">Raccourcis :</span>
-                  {[
-                    { label: "30s", min: 0, sec: 30 },
-                    { label: "45s", min: 0, sec: 45 },
-                    { label: "1 min", min: 1, sec: 0 },
-                    { label: "1m30", min: 1, sec: 30 },
-                    { label: "2 min", min: 2, sec: 0 },
-                    { label: "3 min", min: 3, sec: 0 },
-                  ].map((p) => (
-                    <Button
-                      key={p.label}
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        setRestMinutes(p.min);
-                        setRestSecondsValue(p.sec);
-                      }}
-                      className="h-6 text-[10px] px-2"
-                    >
-                      {p.label}
-                    </Button>
-                  ))}
-                </div>
-              </div>
+                    {/* Sets */}
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-bold text-foreground">Nombre de Séries</Label>
+                      <Input
+                        type="number"
+                        min="1"
+                        max="10"
+                        value={sets}
+                        onChange={(e) => setSets(parseInt(e.target.value, 10) || 1)}
+                        className="h-10 text-xs bg-background"
+                      />
+                    </div>
+
+                    {/* Reps or Duration */}
+                    {mode === "reps" ? (
+                      <div className="space-y-1.5">
+                        <Label className="text-xs font-bold text-foreground">Répétitions par Série</Label>
+                        <Input
+                          type="number"
+                          min="1"
+                          max="100"
+                          value={reps}
+                          onChange={(e) => setReps(parseInt(e.target.value, 10) || 1)}
+                          className="h-10 text-xs bg-background"
+                        />
+                      </div>
+                    ) : (
+                      <div className="space-y-1.5">
+                        <Label className="text-xs font-bold text-foreground">Temps de Maintien (secondes)</Label>
+                        <Input
+                          type="number"
+                          min="5"
+                          max="600"
+                          value={durationSeconds}
+                          onChange={(e) => setDurationSeconds(parseInt(e.target.value, 10) || 5)}
+                          className="h-10 text-xs bg-background"
+                        />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Rest Time (Minutes & Secondes) */}
+                  <div className="space-y-2 rounded-xl border border-border/60 bg-background/40 p-3.5">
+                    <Label className="text-xs font-bold text-foreground block">
+                      Temps de Repos entre Séries (Minutes & Secondes)
+                    </Label>
+                    
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <span className="text-[10px] font-semibold text-muted-foreground block">Minutes</span>
+                        <Input
+                          type="number"
+                          min="0"
+                          max="15"
+                          value={restMinutes}
+                          onChange={(e) => setRestMinutes(Math.max(0, parseInt(e.target.value, 10) || 0))}
+                          className="h-9 text-xs bg-background"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <span className="text-[10px] font-semibold text-muted-foreground block">Secondes</span>
+                        <Input
+                          type="number"
+                          min="0"
+                          max="59"
+                          step="5"
+                          value={restSecondsValue}
+                          onChange={(e) => setRestSecondsValue(Math.max(0, Math.min(59, parseInt(e.target.value, 10) || 0)))}
+                          className="h-9 text-xs bg-background"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Preset Rest Buttons */}
+                    <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                      <span className="text-[10px] text-muted-foreground font-medium mr-1">Raccourcis :</span>
+                      {[
+                        { label: "30s", min: 0, sec: 30 },
+                        { label: "45s", min: 0, sec: 45 },
+                        { label: "1 min", min: 1, sec: 0 },
+                        { label: "1m30", min: 1, sec: 30 },
+                        { label: "2 min", min: 2, sec: 0 },
+                        { label: "3 min", min: 3, sec: 0 },
+                      ].map((p) => (
+                        <Button
+                          key={p.label}
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setRestMinutes(p.min);
+                            setRestSecondsValue(p.sec);
+                          }}
+                          className="h-6 text-[10px] px-2"
+                        >
+                          {p.label}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
 
             <div className="pt-2 flex items-center justify-end gap-3">

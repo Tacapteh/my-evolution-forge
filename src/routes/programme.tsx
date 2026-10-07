@@ -31,6 +31,7 @@ import {
   PlusCircle,
   Plus,
   Trash2,
+  GripVertical,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -65,12 +66,102 @@ const TASK_ICONS = {
 };
 
 function ProgrammePage() {
-  const { state, hydrated, toggleTask, startSession, addPerf, removeCustomTask, setTaskRealization } = useForge();
+  const { state, hydrated, toggleTask, startSession, addPerf, removeCustomTask, setTaskRealization, reorderCustomTasks } = useForge();
   const today = todayISO();
   const [viewMode, setViewMode] = useState<"today" | "week">("today");
   const [anchor, setAnchor] = useState(() => new Date());
   const [focusOpen, setFocusOpen] = useState(false);
   const [focusISO, setFocusISO] = useState(today);
+
+  // Drag and drop state
+  const [draggedTask, setDraggedTask] = useState<{ id: string; moment: string; dateISO: string } | null>(null);
+  const [dragOverTaskId, setDragOverTaskId] = useState<string | null>(null);
+  const [dragOverTarget, setDragOverTarget] = useState<{ moment: string; dateISO: string } | null>(null);
+
+  const handleDragStart = (e: React.DragEvent, task: any, dateISO: string) => {
+    e.stopPropagation();
+    e.dataTransfer.setData("text/plain", JSON.stringify({ id: task.id, moment: task.moment, dateISO }));
+    e.dataTransfer.effectAllowed = "move";
+    setDraggedTask({ id: task.id, moment: task.moment, dateISO });
+  };
+
+  const handleDragOverTask = (e: React.DragEvent, taskId: string, moment: string, dateISO: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    e.dataTransfer.dropEffect = "move";
+    if (dragOverTaskId !== taskId) {
+      setDragOverTaskId(taskId);
+    }
+    if (!dragOverTarget || dragOverTarget.moment !== moment || dragOverTarget.dateISO !== dateISO) {
+      setDragOverTarget({ moment, dateISO });
+    }
+  };
+
+  const handleDragOverMoment = (e: React.DragEvent, moment: string, dateISO: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    e.dataTransfer.dropEffect = "move";
+    if (!dragOverTarget || dragOverTarget.moment !== moment || dragOverTarget.dateISO !== dateISO) {
+      setDragOverTarget({ moment, dateISO });
+    }
+  };
+
+  const handleDropOnTask = (
+    e: React.DragEvent,
+    overTaskId: string,
+    targetMoment: "morning" | "afternoon" | "evening" | "psychotechniques",
+    targetDateISO: string,
+    fallbackTasks: any[]
+  ) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const active = draggedTask;
+    setDraggedTask(null);
+    setDragOverTaskId(null);
+    setDragOverTarget(null);
+
+    if (!active) return;
+
+    if (active.dateISO !== targetDateISO) {
+      removeCustomTask(active.dateISO, active.id);
+    }
+
+    reorderCustomTasks(targetDateISO, active.id, targetMoment, overTaskId, fallbackTasks);
+
+    const momentLabel = MOMENT_LABELS[targetMoment] || targetMoment;
+    if (active.moment !== targetMoment) {
+      toast.success(`Exercice déplacé vers ${momentLabel}`);
+    } else {
+      toast.success("Ordre des exercices mis à jour");
+    }
+  };
+
+  const handleDropOnMoment = (
+    e: React.DragEvent,
+    targetMoment: "morning" | "afternoon" | "evening" | "psychotechniques",
+    targetDateISO: string,
+    fallbackTasks: any[]
+  ) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const active = draggedTask;
+    setDraggedTask(null);
+    setDragOverTaskId(null);
+    setDragOverTarget(null);
+
+    if (!active) return;
+
+    if (active.dateISO !== targetDateISO) {
+      removeCustomTask(active.dateISO, active.id);
+    }
+
+    reorderCustomTasks(targetDateISO, active.id, targetMoment, undefined, fallbackTasks);
+
+    const momentLabel = MOMENT_LABELS[targetMoment] || targetMoment;
+    toast.success(`Exercice déplacé vers ${momentLabel}`);
+  };
 
   const handleLogDistance = (task: any, dateISO: string) => {
     const targetDist = task.targetDistance ?? 5;
@@ -321,10 +412,19 @@ function ProgrammePage() {
                   const Icon = MOMENT_ICONS[momentKey];
                   const label = MOMENT_LABELS[momentKey];
                   const tasks = todayMission.tasks.filter((t) => t.moment === momentKey);
+                  const isMomentOver = dragOverTarget?.moment === momentKey && dragOverTarget?.dateISO === today;
 
                   if (tasks.length === 0) {
                     return (
-                      <div key={momentKey} className="rounded-xl border border-border/40 bg-muted/10 p-4 space-y-2 opacity-80 hover:opacity-100 transition-opacity">
+                      <div
+                        key={momentKey}
+                        onDragOver={(e) => handleDragOverMoment(e, momentKey, today)}
+                        onDrop={(e) => handleDropOnMoment(e, momentKey, today, todayMission.tasks)}
+                        className={cn(
+                          "rounded-xl border border-dashed border-border/50 bg-muted/10 p-4 space-y-2 opacity-80 hover:opacity-100 transition-all duration-200",
+                          isMomentOver ? "border-primary ring-2 ring-primary/40 bg-primary/10 scale-[1.01]" : ""
+                        )}
+                      >
                         <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-muted-foreground pb-2 border-b border-border/40">
                           <div className="flex items-center gap-2">
                             <Icon className="h-4 w-4 text-muted-foreground/50" />
@@ -341,13 +441,23 @@ function ProgrammePage() {
                             </Button>
                           </Link>
                         </div>
-                        <p className="text-[11px] text-muted-foreground/70 italic">Aucune activité programmée.</p>
+                        <p className="text-[11px] text-muted-foreground/70 italic py-2 text-center border-2 border-dashed border-transparent rounded-lg">
+                          Aucune activité programmée. Glissez un exercice ici.
+                        </p>
                       </div>
                     );
                   }
 
                   return (
-                    <div key={momentKey} className="rounded-xl border border-border/60 bg-muted/20 p-4 space-y-3">
+                    <div
+                      key={momentKey}
+                      onDragOver={(e) => handleDragOverMoment(e, momentKey, today)}
+                      onDrop={(e) => handleDropOnMoment(e, momentKey, today, todayMission.tasks)}
+                      className={cn(
+                        "rounded-xl border border-border/60 bg-muted/20 p-4 space-y-3 transition-all duration-200",
+                        isMomentOver ? "border-primary ring-2 ring-primary/40 bg-primary/10 scale-[1.01]" : ""
+                      )}
+                    >
                       <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-muted-foreground pb-2 border-b border-border/40">
                         <div className="flex items-center gap-2">
                           <Icon className="h-4 w-4 text-primary" />
@@ -368,12 +478,25 @@ function ProgrammePage() {
                         {tasks.map((task) => {
                           const isDone = !!todayChecked[task.id];
                           const hasDistTarget = task.targetDistance != null;
+                          const isDragging = draggedTask?.id === task.id;
+                          const isTaskOver = dragOverTaskId === task.id;
 
                           return (
                             <li
                               key={task.id}
+                              draggable
+                              onDragStart={(e) => handleDragStart(e, task, today)}
+                              onDragOver={(e) => handleDragOverTask(e, task.id, momentKey, today)}
+                              onDrop={(e) => handleDropOnTask(e, task.id, momentKey, today, todayMission.tasks)}
+                              onDragEnd={() => {
+                                setDraggedTask(null);
+                                setDragOverTaskId(null);
+                                setDragOverTarget(null);
+                              }}
                               className={cn(
-                                "flex flex-col gap-2 p-3 rounded-lg border transition-all",
+                                "group flex flex-col gap-2 p-3 rounded-lg border transition-all cursor-grab active:cursor-grabbing",
+                                isTaskOver ? "border-primary ring-2 ring-primary/40 bg-primary/15" : "",
+                                isDragging ? "opacity-40 border-dashed" : "",
                                 task.isPenalized
                                   ? "bg-red-500/10 border-red-500/30 text-foreground"
                                   : isDone
@@ -382,7 +505,8 @@ function ProgrammePage() {
                               )}
                             >
                               <div className="flex items-start justify-between gap-3">
-                                <div className="flex items-start gap-3 flex-1 min-w-0">
+                                <div className="flex items-start gap-2 flex-1 min-w-0">
+                                  <GripVertical className="h-4 w-4 text-muted-foreground/40 group-hover:text-foreground shrink-0 self-center cursor-grab active:cursor-grabbing opacity-70 group-hover:opacity-100 transition-opacity" />
                                   <Checkbox
                                     id={`today-${task.id}`}
                                     checked={isDone}
@@ -574,10 +698,19 @@ function ProgrammePage() {
                       {moments.map(({ key, tasks }) => {
                         const Icon = MOMENT_ICONS[key];
                         const label = MOMENT_LABELS[key];
+                        const isMomentOver = dragOverTarget?.moment === key && dragOverTarget?.dateISO === day.iso;
 
                         if (tasks.length === 0) {
                           return (
-                            <div key={key} className="flex items-center justify-between text-[10px] text-muted-foreground/60 py-1 border-b border-border/20 last:border-0">
+                            <div
+                              key={key}
+                              onDragOver={(e) => handleDragOverMoment(e, key, day.iso)}
+                              onDrop={(e) => handleDropOnMoment(e, key, day.iso, mission.tasks)}
+                              className={cn(
+                                "flex items-center justify-between text-[10px] text-muted-foreground/60 py-1.5 px-2 rounded border border-dashed border-border/30 transition-all duration-200",
+                                isMomentOver ? "border-primary ring-2 ring-primary/40 bg-primary/10" : ""
+                              )}
+                            >
                               <div className="flex items-center gap-1.5 font-semibold uppercase">
                                 <Icon className="h-3 w-3 text-muted-foreground/40" />
                                 <span>{label}</span>
@@ -597,7 +730,15 @@ function ProgrammePage() {
                         }
 
                         return (
-                          <div key={key} className="space-y-2">
+                          <div
+                            key={key}
+                            onDragOver={(e) => handleDragOverMoment(e, key, day.iso)}
+                            onDrop={(e) => handleDropOnMoment(e, key, day.iso, mission.tasks)}
+                            className={cn(
+                              "space-y-1.5 p-1.5 rounded-lg border transition-all duration-200",
+                              isMomentOver ? "border-primary ring-2 ring-primary/40 bg-primary/10" : "border-transparent"
+                            )}
+                          >
                             <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
                               <div className="flex items-center gap-1.5">
                                 <Icon className="h-3 w-3 text-primary" />
@@ -619,21 +760,35 @@ function ProgrammePage() {
                               {tasks.map((task) => {
                                 const isDone = !!checked[task.id];
                                 const hasDistTarget = task.targetDistance != null;
+                                const isDragging = draggedTask?.id === task.id;
+                                const isTaskOver = dragOverTaskId === task.id;
 
                                 return (
                                   <li
                                     key={task.id}
+                                    draggable
+                                    onDragStart={(e) => handleDragStart(e, task, day.iso)}
+                                    onDragOver={(e) => handleDragOverTask(e, task.id, key, day.iso)}
+                                    onDrop={(e) => handleDropOnTask(e, task.id, key, day.iso, mission.tasks)}
+                                    onDragEnd={() => {
+                                      setDraggedTask(null);
+                                      setDragOverTaskId(null);
+                                      setDragOverTarget(null);
+                                    }}
                                     className={cn(
-                                      "group flex flex-col gap-1.5 rounded-lg px-2.5 py-1.5 border transition-all duration-200",
+                                      "group flex flex-col gap-1.5 rounded-lg px-2 py-1.5 border transition-all duration-200 cursor-grab active:cursor-grabbing",
+                                      isTaskOver ? "border-primary ring-2 ring-primary/40 bg-primary/15" : "",
+                                      isDragging ? "opacity-40 border-dashed" : "",
                                       task.isPenalized
                                         ? "bg-red-500/10 border-red-500/30 text-foreground"
                                         : isDone
                                         ? "bg-primary/5 border-transparent text-muted-foreground"
-                                        : "border-transparent hover:bg-muted/40 hover:border-border/60"
+                                        : "bg-card/40 border-border/40 hover:bg-muted/40 hover:border-border/60"
                                     )}
                                   >
                                     <div className="flex items-start justify-between gap-2">
-                                      <div className="flex items-start gap-2.5 flex-1 min-w-0">
+                                      <div className="flex items-start gap-1.5 flex-1 min-w-0">
+                                        <GripVertical className="h-3.5 w-3.5 text-muted-foreground/40 group-hover:text-foreground shrink-0 self-center cursor-grab active:cursor-grabbing opacity-70 group-hover:opacity-100 transition-opacity" />
                                         <Checkbox
                                           id={`week-${day.iso}-${task.id}`}
                                           checked={isDone}
