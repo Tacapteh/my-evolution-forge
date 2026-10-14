@@ -292,6 +292,14 @@ export function ForgeProvider({ children }: { children: ReactNode }) {
     };
 
     pullState();
+    const interval = setInterval(pullState, 10000);
+    window.addEventListener("focus", pullState);
+    window.addEventListener("visibilitychange", pullState);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener("focus", pullState);
+      window.removeEventListener("visibilitychange", pullState);
+    };
   }, [hydrated, state.healthToken]);
 
   // Cloud Sync: Push to server on state changes
